@@ -7,7 +7,7 @@
 | Review branch | `review/wp-12-scm-github` |
 | Reviewer | Chief Software Engineer (agent) |
 | QA reviewer | qa-review-agent (independent subagent) |
-| Status | `in_review` |
+| Status | `approved` |
 
 ## 1. Contract completeness
 
@@ -68,8 +68,8 @@
 
 ## 8. QA review
 
-- [ ] QA subagent verdict: `APPROVED`.
-- [ ] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 143, 10 scm tests, clippy, HMAC/idempotency/token broker).
+- [x] QA subagent verdict: `APPROVED`.
+- [x] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 143, 10 scm tests, clippy, HMAC/idempotency/token broker).
 - [x] First QA pass returned `CHANGES_REQUESTED` for the incomplete PR body/trace and missing commit-trailer enforcement; fixed with the full Appendix C.4.1 body, full trace, trailer enforcement and tests.
 
 ## 9. Deferred items and residual risks
