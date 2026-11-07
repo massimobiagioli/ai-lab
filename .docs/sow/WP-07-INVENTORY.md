@@ -19,7 +19,7 @@
 | 2026-11-07 | — | `ready` | Tech Lead | Initial SOW baseline |
 | 2026-11-07 | `ready` | `progress` | Dev (agent) | WP-04 and WP-06 done |
 | 2026-11-07 | `progress` | `done` | Dev (agent) | Inventory aggregates and invariants delivered; REST/OpenAPI/SQLx/UI owned by WP-16/WP-19/WP-12 |
-| 2026-11-07 | `done` | `done` | Tech Lead (agent) | WP review: QA first pass `CHANGES_REQUESTED`; model escalation invariant and deterministic description fallback added, then re-reviewed |
+| 2026-11-07 | `done` | `done` | Tech Lead (agent) | WP review: QA `APPROVED` (`.docs/product/evidence/WP-07-review.md`); model escalation invariant, description fallback and SSRF allowlist delivered |
 
 ---
 
@@ -311,3 +311,4 @@ Payloads include IDs, changed fields and actor; no secrets, no key material.
 2026-11-07 | T04 | .docs/product/inventory.md | doc link check | REST/OpenAPI/SQLx deferred to WP-16; GitHub verification WP-12; UI WP-19 | WP-08
 2026-11-07 | review | .docs/sow/WP-07-INVENTORY-review-plan.md, crates/domain/src/inventory.rs | domain tests; provider allowlist SSRF negatives; clippy; harness/sow | AC1/3/4/8/10 WP-16, AC6 WP-12 | QA review
 2026-11-07 | review-fix | crates/domain/src/inventory.rs | Model escalation invariant + validate_catalog; Agent::template_description 120-600 fallback; 52 domain tests green | QA first pass CHANGES_REQUESTED | re-review
+2026-11-07 | re-review | .docs/product/evidence/WP-07-review.md | QA APPROVED; SSRF negatives; model catalog; description fallback | AC1/3/8/10 WP-16, AC6 WP-12 | merge

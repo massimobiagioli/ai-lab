@@ -7,7 +7,7 @@
 | Review branch | `review/wp-07-inventory` |
 | Reviewer | Chief Software Engineer (agent) |
 | QA reviewer | qa-review-agent (independent subagent) |
-| Status | `in_review` |
+| Status | `approved` |
 
 ## 1. Contract completeness
 
@@ -31,7 +31,7 @@
 - [x] Project aggregate + archive + key prefix — evidence: `Project`, `next_card_seq`.
 - [x] Domain contract ready for the API — evidence: this plan; API WP-16.
 - [x] Events emitted — evidence: `inventory.agent.created`, `inventory.agent.cv_updated`; audit wiring WP-16.
-- [x] Domain tests green — evidence: 50 domain tests; API tests WP-16.
+- [x] Domain tests green — evidence: 52 domain tests; API tests WP-16.
 - [x] `.docs/product/inventory.md` — evidence: file.
 
 ## 4. Acceptance criteria
@@ -71,8 +71,8 @@
 
 ## 8. QA review
 
-- [ ] QA subagent verdict: `APPROVED`.
-- [ ] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 143, domain tests, clippy, SSRF negatives).
+- [x] QA subagent verdict: `APPROVED`.
+- [x] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 143, 52 domain tests, clippy, SSRF negatives, model catalog invariant, description fallback).
 - [x] First QA pass returned `CHANGES_REQUESTED` for the missing model escalation invariant and the missing deterministic description fallback; both fixed with `Model::is_escalation`/`validate_catalog` and `Agent::template_description`, plus tests.
 
 ## 9. Deferred items and residual risks
