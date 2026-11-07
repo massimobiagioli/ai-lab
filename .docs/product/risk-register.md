@@ -12,7 +12,7 @@
 
 Every risk has an identifier, description, impact, likelihood, mitigation, owner and review date. A risk without a mitigation owner escalates to the Human Operator in the weekly review. A risk is retired only with a recorded rationale; it is never deleted.
 
-Legend — impact/likelihood: `High`, `Medium`, `Low`. Owner is a role, not a person.
+Legend — impact/likelihood: `Critical`, `High`, `Medium`, `Low`. Owner is a role, not a person.
 
 ---
 

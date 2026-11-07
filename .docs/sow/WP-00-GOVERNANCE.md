@@ -19,6 +19,7 @@
 | 2026-11-07 | — | `ready` | Tech Lead | Initial SOW baseline |
 | 2026-11-07 | `ready` | `progress` | Dev (agent) | WIP slot acquired; T01 started |
 | 2026-11-07 | `progress` | `done` | Tech Lead (agent) | All tasks, deliverables and gates verified; independent review APPROVED; CR-0002 assigns environmental and consumer responsibilities |
+| 2026-11-07 | `done` | `done` | Tech Lead (agent) | WP review: CR-0003 closes B-01; branch protection applied with the 16 required contexts and verified |
 
 ---
 
@@ -285,7 +286,7 @@ sow-lint
 - [x] Governance docs reviewed by Tech Lead and QA. Evidence: independent `APPROVED` review in `.docs/product/evidence/WP-00-review.md`.
 - [x] Templates used in at least one real card and one real CR (`.docs/product/change-requests/CR-0001.md`, `.docs/product/backlog/AIL-101.md`..`AIL-103.md`).
 - [x] Metrics dashboard populated from the seed and reviewed in the weekly meeting. Assigned to WP-20 by CR-0002; WP-00 delivers the verified views and formulas (`migrations/0002_analytics_views.sql`, `.docs/product/metrics.md`, 25 assertions).
-- [x] No open P0/P1; no unresolved blocker. B-01..B-03 assigned by CR-0002; B-04 resolved by the independent review.
+- [x] No open P0/P1; no unresolved blocker. B-01 closed by CR-0003; B-02 and B-03 assigned by CR-0002; B-04 resolved by the independent review.
 - [x] Status updated to `done` with sign-off row (2026-11-07).
 
 ---
@@ -325,8 +326,10 @@ sow-lint
 ## Blockers
 
 - `blocked=false`
-- B-01 assigned by CR-0002: branch-protection configuration delivered; the repository now exists on `main`, but there is no GitHub remote yet. Application remains a deployment prerequisite performed with the documented `gh api` command once a remote exists.
+- B-01 closed by CR-0003: branch protection is applied on the GitHub `main` branch with the 16 required contexts; verified with `gh api repos/massimobiagioli/ai-lab/branches/main/protection` (admin bypass enabled for the review merge workflow, no required PR reviews, merge commits allowed, force pushes/deletions blocked).
 - B-02 assigned by CR-0002: AC7 is a cross-WP contract owned by WP-09/WP-15.
 - B-03 assigned by CR-0002: the live dashboard is WP-20 scope; the verified views and formulas are delivered.
 - B-04 resolved by `.docs/product/evidence/WP-00-review.md` (independent `APPROVED`).
 2026-11-07 | env-update | .git (operator first commit on main) | native hooks installed via scripts/hooks/install.sh; no remote | B-01 remains: branch protection needs a GitHub remote | WP-03
+
+2026-11-07 | review | .docs/sow/WP-00-GOVERNANCE-review-plan.md, CR-0003 | branch protection verified; doc links 138 | CR-0003 | QA re-review and merge

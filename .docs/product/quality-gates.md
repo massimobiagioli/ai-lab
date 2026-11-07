@@ -87,7 +87,7 @@ Performance gates run nightly and before release. A regression blocks release.
 
 ## 7. Branch protection
 
-The default branch requires every check in §1 to pass, requires a pull request, dismisses stale approvals on new commits, and blocks force pushes and deletions. The required contexts are stored in `.github/required-checks.txt`.
+The default branch requires every check in §1 and blocks force pushes and deletions. The 16 required contexts are stored in `.github/required-checks.txt` and applied with `gh api`. Per CR-0003, the authorized reviewer may merge a WP review branch with `--no-ff`; admin bypass, merge commits and direct review merges are enabled for the documented review workflow. Normal feature work uses a pull request; separation of duties is enforced by the application and the QA verdict.
 
 Applying branch protection is an operator action performed once a GitHub remote exists:
 

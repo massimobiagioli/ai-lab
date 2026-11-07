@@ -38,7 +38,7 @@ None.
 - `scripts/harness-lint.sh` → 16 checks passed.
 - `scripts/sow-lint.sh` → 31 checks passed.
 - `.tools/sow-lint-self-test.sh` → 11 cases.
-- `.tools/check-doc-links.sh` → 63 links checked.
+- `.tools/check-doc-links.sh` → 138 links checked.
 - `.tools/test-analytics-views.sh` → 25 assertions.
 
 ## Reviewer statement

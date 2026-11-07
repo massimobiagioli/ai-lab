@@ -56,7 +56,7 @@
 
 - [x] No secret or placeholder in the governance artifacts.
 - [x] Required check names match the workflow, `required-checks.txt` and `quality-gates.md`.
-- [x] Branch protection applied with the required contexts; admin bypass enabled for the review merge workflow (CR-0003).
+- [x] Branch protection applied with the 16 required contexts; admin bypass is global per CR-0003, required PR reviews and linear history are disabled, and force pushes/deletions are blocked.
 
 ## 7. Documentation, ADRs and indexes
 
