@@ -112,6 +112,7 @@ Every document under `.docs` is listed here. When a document is created, renamed
 | WP-06 Domain kernel | Domain kernel and eventing. | [`.docs/sow/WP-06-DOMAIN-KERNEL.md`](./.docs/sow/WP-06-DOMAIN-KERNEL.md) |
 | WP-06 review plan | Domain kernel and eventing review checklist and evidence. | [`.docs/sow/WP-06-DOMAIN-KERNEL-review-plan.md`](./.docs/sow/WP-06-DOMAIN-KERNEL-review-plan.md) |
 | WP-07 Inventory | Providers, models, agents, CV, projects, credentials. | [`.docs/sow/WP-07-INVENTORY.md`](./.docs/sow/WP-07-INVENTORY.md) |
+| WP-07 review plan | Inventory review checklist and evidence. | [`.docs/sow/WP-07-INVENTORY-review-plan.md`](./.docs/sow/WP-07-INVENTORY-review-plan.md) |
 | WP-08 Lab and memory | Lab aggregate and three-tier memory. | [`.docs/sow/WP-08-LAB-MEMORY.md`](./.docs/sow/WP-08-LAB-MEMORY.md) |
 | WP-09 Kanban engine | Kanban state machine, DoR/DoD, invariants. | [`.docs/sow/WP-09-KANBAN-ENGINE.md`](./.docs/sow/WP-09-KANBAN-ENGINE.md) |
 | WP-10 SOW and planning | Idea intake, SOW, WBS, materialization. | [`.docs/sow/WP-10-SOW-PLANNING.md`](./.docs/sow/WP-10-SOW-PLANNING.md) |
