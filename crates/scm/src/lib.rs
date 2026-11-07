@@ -333,8 +333,22 @@ pub struct PrConventions {
     pub card_title: String,
     /// Summary bullets.
     pub summary: Vec<String>,
+    /// Changed areas.
+    pub changes: Vec<String>,
     /// Acceptance criteria.
     pub acceptance: Vec<String>,
+    /// Verification evidence.
+    pub verification: Vec<String>,
+    /// Risks and rollback.
+    pub risks: Vec<String>,
+    /// Run id.
+    pub run: String,
+    /// Agent id.
+    pub agent: String,
+    /// Model name.
+    pub model: String,
+    /// Attempt number.
+    pub attempt: u32,
 }
 
 impl PrConventions {
@@ -354,12 +368,28 @@ impl PrConventions {
         for item in &self.summary {
             let _ = writeln!(body, "- {item}");
         }
+        let _ = writeln!(body, "\n## Changes");
+        for item in &self.changes {
+            let _ = writeln!(body, "- {item}");
+        }
         let _ = writeln!(body, "\n## Acceptance criteria");
         for item in &self.acceptance {
             let _ = writeln!(body, "- [ ] {item}");
         }
+        let _ = writeln!(body, "\n## Verification");
+        for item in &self.verification {
+            let _ = writeln!(body, "- {item}");
+        }
+        let _ = writeln!(body, "\n## Risks / rollback");
+        for item in &self.risks {
+            let _ = writeln!(body, "- {item}");
+        }
         let _ = writeln!(body, "\n## AI-Lab trace");
+        let _ = writeln!(body, "AI-Lab-Run: {}", self.run);
         let _ = writeln!(body, "AI-Lab-Card: {}", self.card_key);
+        let _ = writeln!(body, "AI-Lab-Agent: {}", self.agent);
+        let _ = writeln!(body, "AI-Lab-Model: {}", self.model);
+        let _ = writeln!(body, "AI-Lab-Attempt: {}", self.attempt);
         body
     }
 }
@@ -448,6 +478,17 @@ impl WebhookVerifier {
             payload,
         })
     }
+}
+
+fn ensure_commit_trailers(message: &str) -> Result<(), ScmError> {
+    for trailer in ["AI-Lab-Run:", "AI-Lab-Card:", "AI-Lab-Agent:"] {
+        if !message.lines().any(|line| line.starts_with(trailer)) {
+            return Err(ScmError::Validation(format!(
+                "missing required commit trailer: {trailer}"
+            )));
+        }
+    }
+    Ok(())
 }
 
 fn hex_decode(value: &str) -> Option<Vec<u8>> {
@@ -660,6 +701,7 @@ impl ScmProvider for GitHubClient {
         if files.is_empty() {
             return Err(ScmError::Validation("no files to commit".to_owned()));
         }
+        ensure_commit_trailers(message)?;
         let mut last_sha = String::new();
         for file in files {
             let body = json!({
@@ -968,10 +1010,55 @@ mod tests {
             card_key: "AIL-1".to_owned(),
             card_title: "Add board".to_owned(),
             summary: vec!["One".to_owned()],
+            changes: vec!["Added the board".to_owned()],
             acceptance: vec!["Works".to_owned()],
+            verification: vec!["cargo test".to_owned()],
+            risks: vec!["None".to_owned()],
+            run: "run-1".to_owned(),
+            agent: "agent-1".to_owned(),
+            model: "deepseek-flash".to_owned(),
+            attempt: 1,
         };
         assert_eq!(conventions.title(), "[AIL-1] Add board");
-        assert!(conventions.body().contains("AI-Lab-Card: AIL-1"));
+        let body = conventions.body();
+        for section in [
+            "## Summary",
+            "## Changes",
+            "## Verification",
+            "## Risks / rollback",
+        ] {
+            assert!(body.contains(section), "missing {section}");
+        }
+        for trailer in [
+            "AI-Lab-Run: run-1",
+            "AI-Lab-Card: AIL-1",
+            "AI-Lab-Agent: agent-1",
+        ] {
+            assert!(body.contains(trailer), "missing {trailer}");
+        }
+    }
+
+    #[test]
+    fn commit_requires_agent_trailers() {
+        let (client, _) = client(vec![response(200, r#"{"commit":{"sha":"abc123"}}"#)]);
+        let repo = repo();
+        let branch = BranchName::for_card("AIL-1", "fix").expect("branch");
+        let files = vec![FileChange::new("src/lib.rs", "content").expect("file")];
+        let missing = futures::executor::block_on(client.commit_files(
+            &repo,
+            &branch,
+            "feat(test): add thing",
+            &files,
+        ));
+        assert!(matches!(missing, Err(ScmError::Validation(_))));
+        let with_trailers = futures::executor::block_on(client.commit_files(
+            &repo,
+            &branch,
+            "feat(test): add thing\n\nAI-Lab-Run: run-1\nAI-Lab-Card: AIL-1\nAI-Lab-Agent: agent-1",
+            &files,
+        ))
+        .expect("commit");
+        assert_eq!(with_trailers, "abc123");
     }
 
     fn hex_encode(bytes: &[u8]) -> String {

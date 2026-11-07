@@ -21,7 +21,7 @@ GitHub is the only v1 SCM, behind an `ScmProvider` port. The adapter talks over 
 
 - Branch: `ailab/{card_key}-{slug}`.
 - PR title: `[{CARD_KEY}] {CARD_TITLE}`.
-- PR body: Card, Summary, Acceptance criteria, AI-Lab trace with `AI-Lab-Card`.
+- PR body: Card, Summary, Changes, Acceptance criteria, Verification, Risks / rollback, and the full AI-Lab trace (`AI-Lab-Run`, `AI-Lab-Card`, `AI-Lab-Agent`, `AI-Lab-Model`, `AI-Lab-Attempt`). Agent commits must carry the `AI-Lab-Run`/`AI-Lab-Card`/`AI-Lab-Agent` trailers.
 - Reviewer must differ from the author; merge is squash-only and requires green checks.
 
 ## 3. Checks and merge

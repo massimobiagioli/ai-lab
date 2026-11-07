@@ -26,7 +26,7 @@
 - [x] Core adapter methods over an injectable transport — evidence: `GitHubClient`, `HttpTransport`, `FakeTransport`.
 - [x] Credential verification and scope parsing — evidence: `verify_credential` (active/expired).
 - [x] In-memory per-run token broker with TTL and revocation — evidence: `TokenBroker`, random tokens.
-- [x] Branch/PR conventions and AI-Lab trailer — evidence: `PrConventions`, tests.
+- [x] Branch/PR conventions and AI-Lab trailer — evidence: `PrConventions`, `ensure_commit_trailers`, tests.
 - [x] HMAC, replay window, delivery idempotency — evidence: `WebhookVerifier`, constant-time `verify_slice`.
 - [x] Rate-limit mapping/parsing — evidence: `parse_rate_limit`, `send`.
 - [x] Stable codes/statuses — evidence: `ScmError`.
@@ -37,7 +37,7 @@
 
 - [x] AC1 PAT scopes verify; missing scope fails with `expired` — evidence: `verify_credential` returns `Expired` on 403/404 or a classic scope header without `repo`; tests.
 - [x] AC2 branch/commit/PR idempotency by run/card — DEFERRED to WP-13 orchestration; the adapter treats GitHub `422 already exists` as success.
-- [x] AC3 PR title/body/trailers; reviewer QA ≠ author — evidence: `PrConventions`, `open_pull_request` separation; QA identity WP-13.
+- [x] AC3 PR title/body/trailers; reviewer QA ≠ author — evidence: `PrConventions` renders Card/Summary/Changes/Acceptance/Verification/Risks and the full trace; `commit_files` enforces the Run/Card/Agent trailers; `open_pull_request` separation; QA identity WP-13.
 - [x] AC4 squash-only merge, green checks, reviewer ≠ author — evidence: `merge_pull_request`; branch-protection detection WP-13.
 - [x] AC5 invalid signature 401, duplicate once, replay >5 min rejected — evidence: constant-time HMAC, delivery idempotency, replay window; test.
 - [x] AC6 429/403 secondary rate limits back off/queue — evidence: `RateLimited` with `Retry-After`; retry/queue WP-13.
@@ -69,7 +69,8 @@
 ## 8. QA review
 
 - [ ] QA subagent verdict: `APPROVED`.
-- [ ] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 143, 9 scm tests, clippy, HMAC/idempotency/token broker).
+- [ ] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 143, 10 scm tests, clippy, HMAC/idempotency/token broker).
+- [x] First QA pass returned `CHANGES_REQUESTED` for the incomplete PR body/trace and missing commit-trailer enforcement; fixed with the full Appendix C.4.1 body, full trace, trailer enforcement and tests.
 
 ## 9. Deferred items and residual risks
 
