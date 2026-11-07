@@ -7,7 +7,7 @@
 | Review branch | `review/wp-11-llm-platform` |
 | Reviewer | Chief Software Engineer (agent) |
 | QA reviewer | qa-review-agent (independent subagent) |
-| Status | `in_review` |
+| Status | `approved` |
 
 ## 1. Contract completeness
 
@@ -70,8 +70,8 @@
 
 ## 8. QA review
 
-- [ ] QA subagent verdict: `APPROVED`.
-- [ ] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 143, 10 llm tests, clippy, retry/backoff, section order, secret guard).
+- [x] QA subagent verdict: `APPROVED`.
+- [x] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 143, 11 llm tests, clippy, retry/backoff, section order, secret guard).
 - [x] First QA pass returned `CHANGES_REQUESTED` for the retry policy values, blocking sleep and prompt section order; fixed with 4 attempts at 1/2/4/8 s ±20% jitter via `futures_timer`, the Appendix C.2 section order, and updated tests/docs.
 - [x] Second QA pass returned `CHANGES_REQUESTED` for the semantic-failure error variant/repair payload and the stale `agents.md` order; fixed: semantic failures now return `InvalidOutput`, the repair prompt includes the error and the truncated previous output, and `agents.md` reflects the normative order.
 

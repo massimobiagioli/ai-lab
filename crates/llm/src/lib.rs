@@ -240,8 +240,17 @@ impl PromptAssembler {
     /// role charter, character, CV summary, hard rules, tools, output contract,
     /// then the task packet and the wrapped untrusted context.
     pub fn assemble(&self, task: &str, blocks: &[UntrustedBlock]) -> Result<Prompt, LlmError> {
-        if contains_secret(task)
-            || contains_secret(&self.hard_rules)
+        if [
+            task,
+            self.hard_rules.as_str(),
+            self.role_charter.as_str(),
+            self.character.as_str(),
+            self.cv_summary.as_str(),
+            self.tools.as_str(),
+            self.output_contract.as_str(),
+        ]
+        .iter()
+        .any(|text| contains_secret(text))
             || blocks.iter().any(|block| contains_secret(&block.content))
         {
             return Err(LlmError::SecretDetected);
@@ -328,7 +337,7 @@ impl ModelPrice {
         let total = input
             .checked_add(output)
             .ok_or_else(|| LlmError::Validation("cost overflow".to_owned()))?;
-        Money::from_microusd(total / 1_000_000)
+        Money::from_microusd((total + 500_000) / 1_000_000)
             .map_err(|error| LlmError::Validation(error.to_string()))
     }
 }
