@@ -7,7 +7,7 @@
 | Review branch | `review/wp-02-repository-devex` |
 | Reviewer | Chief Software Engineer (agent) |
 | QA reviewer | qa-review-agent (independent subagent) |
-| Status | `in_review` |
+| Status | `approved` |
 
 ## 1. Contract completeness
 
@@ -71,8 +71,8 @@
 
 ## 8. QA review
 
-- [ ] QA subagent verdict: `APPROVED`.
-- [ ] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 141, `make check`, `cargo deny check`, supply-chain 2/2, hooks, openapi determinism, remote CI run 42409540109 with all 16 required checks).
+- [x] QA subagent verdict: `APPROVED`.
+- [x] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 141, `make check`, `cargo deny check`, supply-chain 2/2, hooks, openapi determinism, remote CI run 42409540109 with all 16 required checks; re-verified on 42410041787).
 - [x] First QA pass: `CHANGES_REQUESTED` for a broken `frontend-unit` command and the uncorrected TypeScript pin; fixed (CI/quality-gates corrected, CR-0005).
 - [x] Second QA pass: `CHANGES_REQUESTED` for the unresolvable Trivy action, `cargo deny` wildcard failures and the unsupported CI-green claim; fixed (trivy v0.36.0, `publish = false`, on-demand image pull) and verified with a green remote CI run.
 
