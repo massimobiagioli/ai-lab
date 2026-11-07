@@ -30,7 +30,7 @@ Exactly three scopes: lab, project, agent. Scope ids must match the scope; there
 
 ## 4. Secret quarantine
 
-A document containing a known secret shape (`sk-`, `ghp_`, `github_pat_`, `AKIA`, `xoxb-`, `AILAB_MASTER_KEY=`, `password=`, PEM header) is rejected with `MEMORY_QUARANTINED` and is not embedded.
+A document containing a known secret shape (`sk-`, `ghp_`, `github_pat_`, `AKIA`, `AIza`, `xoxb-`, `AILAB_MASTER_KEY=`, `password=`, PEM header) is rejected with `MEMORY_QUARANTINED` and is not embedded.
 
 ## 5. Hybrid retrieval
 

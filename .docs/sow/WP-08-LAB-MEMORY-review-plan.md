@@ -37,7 +37,7 @@
 ## 4. Acceptance criteria
 
 - [x] AC1 lab cannot be created without a Tech Lead — evidence: `Lab::create` → `validate_team`; test `lab_requires_one_tech_lead`.
-- [x] AC2 settings reject out-of-range values with field errors; unknown keys are rejected at the API boundary (WP-16) — evidence: `LabSettings::validate`, test.
+- [x] AC2 settings reject out-of-range values with field errors — evidence: `LabSettings` models WIP, autonomy flags, scheduler, office and maintenance blocks; `validate` enforces `doing 1-4`, `review 1-10`, budgets `0..=1e12` micro-USD, `tick 250-5000`, `lease 60-3600`, `retries 0-5`, non-empty theme/cron, `stale_days >= 1`; upper-bound tests; unknown keys are rejected by the WP-16 JSON Schema (`additionalProperties=false`).
 - [x] AC3 chunking is deterministic — evidence: `chunking_is_deterministic`.
 - [x] AC4 secret document is quarantined (not embedded) and a security event is emitted — evidence: `MemoryDocument::new` returns `MEMORY_QUARANTINED`, test; persistence as blocked + event emission is WP-16.
 - [x] AC5 near-duplicate (cosine ≥ 0.92) deduped — evidence: `near_duplicates_are_deduped`.
@@ -73,6 +73,7 @@
 
 - [ ] QA subagent verdict: `APPROVED`.
 - [ ] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 143, domain tests, clippy).
+- [x] First QA pass returned `CHANGES_REQUESTED` for incomplete lab-settings validation; fixed by modelling the full §3.1 settings schema and enforcing every documented range with upper-bound tests.
 
 ## 9. Deferred items and residual risks
 
