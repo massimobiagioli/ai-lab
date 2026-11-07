@@ -49,7 +49,7 @@ Source: [`diagrams/containers.mmd`](./diagrams/containers.mmd).
 | `docker-socket-proxy` | Proxy | Restricts Docker API access for the runner | No |
 | `otel-collector`, `prometheus`, `grafana` | Optional | Telemetry pipeline and dashboards | No |
 
-Networks: `edge` (browser-facing web/api), `backbone` (api/worker/prepostgres/redis), `runner` (worker↔runner↔socket proxy), `observability` (optional). Postgres and Redis are never published on the host in production. Sandboxes join only the isolated runner sandbox network with no host mounts.
+Networks: `edge` (browser-facing web/api), `backbone` (api/worker/postgres/redis), `runner` (worker↔runner↔socket proxy), `observability` (optional). Postgres and Redis are never published on the host in production. Sandboxes join only the isolated runner sandbox network with no host mounts.
 
 ## 4. C4 Level 3 — Components
 
@@ -156,6 +156,7 @@ All ADRs are canonical in [`.docs/adr/`](../adr/registry.md). The full set:
 | [ADR-0021](../adr/adr-0021.md) | Office engine decoupled from Angular |
 | [ADR-0022](../adr/adr-0022.md) | Version pinning, Renovate, SBOM, no EOL dependencies |
 | [ADR-0023](../adr/adr-0023.md) | Runner control-plane API |
+| [ADR-0024](../adr/adr-0024.md) | TypeScript 6.0.x for Angular 22.2 compatibility |
 
 ## 9. Evolution path
 

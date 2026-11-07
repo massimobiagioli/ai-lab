@@ -29,6 +29,7 @@ This catalog covers every runtime unit. WP-03 owns the Compose implementation; t
 | `prometheus` | Prometheus | Metrics storage | No | 1 (optional) | Observability degraded only | best effort | WP-20 |
 | `grafana` | Grafana | Dashboards | No | 1 (optional) | Observability degraded only | best effort | WP-20 |
 | `egress-proxy` | Squid/Envoy (profile `egress`) | Allowlisted sandbox egress | No | 1 (optional) | Sandbox package fetches fail; product unaffected | — | WP-14 |
+| `caddy` | Caddy 2.9 (profile `tls`) | Optional ACME TLS termination in front of `web` | No | 1 (optional) | TLS profile unavailable; use the default loopback profile | best effort | WP-03 |
 
 ## 2. Networks and exposure
 
@@ -72,7 +73,7 @@ Graceful shutdown: stop accepting work, drain ≤ 20 s, checkpoint or finish run
 
 ## 5. Compose coverage check
 
-The fitness check `.tools/check-architecture-fitness.sh` validates the context and dependency manifests. When `compose.yaml` or `docker-compose.yml` exists (WP-03), the check also verifies that every declared service appears in this catalog and that every catalog service with `Owner WP` WP-03 exists in Compose. Until then the check reports the catalog as the planned set.
+The fitness check `.tools/check-architecture-fitness.sh` validates the context and dependency manifests. It reads every Compose file (`compose.yaml`, `docker-compose.yml` or `infra/compose/docker-compose*.yml`) and verifies that each declared service appears in this catalog.
 
 ## 6. References
 

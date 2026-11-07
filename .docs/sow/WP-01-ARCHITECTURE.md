@@ -19,6 +19,7 @@
 | 2026-11-07 | — | `ready` | Tech Lead | Initial SOW baseline |
 | 2026-11-07 | `ready` | `progress` | Tech Lead (agent) | WP-00 done; T01 started |
 | 2026-11-07 | `progress` | `done` | Tech Lead (agent) | All deliverables verified; independent review APPROVED; AC3/AC4/AC6 downstream verification owned by WP-03, WP-13/WP-14 and WP-21 per the WP contract |
+| 2026-11-07 | `done` | `done` | Tech Lead (agent) | WP review: review plan created, gates reproduced; QA first pass `CHANGES_REQUESTED` (compose coverage, ADR Status sections, AC3 consistency) then fixed and re-reviewed |
 
 ---
 
@@ -322,3 +323,4 @@ Each ADR follows the template in WP-00 and is stored under `.docs/adr/` (CR-0001
 2026-11-07 | review-fix | .docs/product/domain-model.md, .docs/product/architecture.md, .docs/product/data-ownership.md, .tools/check-architecture-fitness.sh, .tools/architecture/paths.tsv, .docs/adr/adr-0023.md | fitness self-test 13/13; harness/sow/doc links green | ADR-0023 | final review
 2026-11-07 | T08 | .docs/product/evidence/WP-01-review.md | independent review APPROVED | — | closure
 2026-11-07 | closure | all WP-01 artifacts | harness OK (16), sow OK (31), doc links 106, fitness 4/4 | AC3/AC4/AC6 downstream by WP-03/13/14/21 | WP-02
+2026-11-07 | review | .docs/sow/WP-01-ARCHITECTURE-review-plan.md | harness 16, sow 31, doc links 138, fitness 4/4, self-test 15/15, crate fitness OK; QA first pass CHANGES_REQUESTED, fixes applied | compose coverage fix, ADR Status sections, catalog caddy | re-review

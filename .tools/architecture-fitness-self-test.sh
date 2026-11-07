@@ -87,6 +87,10 @@ d="$TMP/lowercase-same"; write_base "$d"; mkdir -p "$d/crates/delivery/src"; pri
 
 d="$TMP/compose"; write_base "$d"; printf 'services:\n  api:\n    image: example/api\n  postgres:\n    image: example/pg\n' > "$d/compose.yaml"; run_case "compose service missing from catalog" nonzero "$d"
 
+d="$TMP/compose-infra-missing"; write_base "$d"; mkdir -p "$d/infra/compose"; printf 'services:\n  api:\n    image: example/api\n  postgres:\n    image: example/pg\n' > "$d/infra/compose/docker-compose.yml"; run_case "infra compose service missing from catalog" nonzero "$d"
+
+d="$TMP/compose-infra-ok"; write_base "$d"; mkdir -p "$d/infra/compose"; printf 'services:\n  api:\n    image: example/api\n  web:\n    image: example/web\n' > "$d/infra/compose/docker-compose.yml"; run_case "infra compose all catalogued" zero "$d"
+
 echo
 if [ "$FAIL" -ne 0 ]; then
   echo "ARCHITECTURE FITNESS SELF-TEST: FAILED ($PASS passed, $FAIL failed)"

@@ -89,7 +89,7 @@ The fitness check validates:
 4. The dependency graph is acyclic.
 5. No context-attributed Rust file references another context's table.
 6. No unattributed SQL exists under `crates/infrastructure/`.
-7. When a Compose file exists, every Compose service appears in `.docs/product/service-catalog.md`.
+7. When a Compose file exists (including `infra/compose/docker-compose*.yml`), every Compose service appears in `.docs/product/service-catalog.md`.
 
 ## 6. Enforcement and exceptions
 
