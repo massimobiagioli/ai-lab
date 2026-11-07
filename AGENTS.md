@@ -124,6 +124,7 @@ Every document under `.docs` is listed here. When a document is created, renamed
 | WP-12 SCM and GitHub | SCM port, GitHub adapter, webhooks, merge. | [`.docs/sow/WP-12-SCM-GITHUB.md`](./.docs/sow/WP-12-SCM-GITHUB.md) |
 | WP-12 review plan | SCM and GitHub review checklist and evidence. | [`.docs/sow/WP-12-SCM-GITHUB-review-plan.md`](./.docs/sow/WP-12-SCM-GITHUB-review-plan.md) |
 | WP-13 Orchestration | Scheduler, leases, run pipeline, recovery. | [`.docs/sow/WP-13-ORCHESTRATION.md`](./.docs/sow/WP-13-ORCHESTRATION.md) |
+| WP-13 review plan | Orchestration review checklist and evidence. | [`.docs/sow/WP-13-ORCHESTRATION-review-plan.md`](./.docs/sow/WP-13-ORCHESTRATION-review-plan.md) |
 | WP-14 Sandbox runner | Sandbox isolation and tool policy. | [`.docs/sow/WP-14-SANDBOX-RUNNER.md`](./.docs/sow/WP-14-SANDBOX-RUNNER.md) |
 | WP-15 QA and merge | QA review, merge policy, autonomy. | [`.docs/sow/WP-15-QA-MERGE.md`](./.docs/sow/WP-15-QA-MERGE.md) |
 | WP-16 API and realtime | REST, WebSocket, contracts, rate limits. | [`.docs/sow/WP-16-API-REALTIME.md`](./.docs/sow/WP-16-API-REALTIME.md) |
