@@ -19,6 +19,7 @@
 | 2026-11-07 | — | `ready` | Tech Lead | Initial SOW baseline |
 | 2026-11-07 | `ready` | `progress` | QA (agent) | WP-01 and WP-03 done |
 | 2026-11-07 | `progress` | `done` | QA (agent) | Threat model, crypto, exposure guard, redaction and headers delivered; M7 sign-off and consumer wiring owned by WP-11/12/14/16 |
+| 2026-11-07 | `done` | `done` | Tech Lead (agent) | WP review: review plan created, primitives and exit-78 matrix reproduced, QA verdict recorded |
 
 ---
 
@@ -338,3 +339,4 @@ Incident runbook: detect → contain (revoke token/rotate key/disable provider) 
 2026-11-07 | T11 | .docs/product/security/audit-matrix.md | 21 sensitive actions mapped | — | T12
 2026-11-07 | T12 | .docs/product/security/asvs-l2.md, .docs/product/runbooks/security-incident.md | ASVS checklist and incident runbook; M7 sign-off/tabletop pending | — | closure
 2026-11-07 | closure | crates/infrastructure/src/{crypto,exposure,redact,security_headers}.rs | cargo test 22/22; clippy green; doc links 115 | M7 sign-off/tabletop, WP-11/12/14/16 wiring | WP-06
+2026-11-07 | review | .docs/sow/WP-05-SECURITY-review-plan.md | crypto/exposure/redact/headers tests; exit-78 matrix; supply-chain 2/2; harness/sow green | AC2/4 WP-07, AC5/12 WP-16, AC6 WP-08, AC7 WP-11, AC8 WP-12, AC9 WP-14 | QA review

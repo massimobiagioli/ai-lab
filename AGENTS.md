@@ -108,6 +108,7 @@ Every document under `.docs` is listed here. When a document is created, renamed
 | WP-04 Data platform | Schema, migrations, persistence, Redis, integrity. | [`.docs/sow/WP-04-DATA-PLATFORM.md`](./.docs/sow/WP-04-DATA-PLATFORM.md) |
 | WP-04 review plan | Schema, migration and persistence review checklist and evidence. | [`.docs/sow/WP-04-DATA-PLATFORM-review-plan.md`](./.docs/sow/WP-04-DATA-PLATFORM-review-plan.md) |
 | WP-05 Security | Security architecture and secrets management. | [`.docs/sow/WP-05-SECURITY.md`](./.docs/sow/WP-05-SECURITY.md) |
+| WP-05 review plan | Security review checklist and evidence. | [`.docs/sow/WP-05-SECURITY-review-plan.md`](./.docs/sow/WP-05-SECURITY-review-plan.md) |
 | WP-06 Domain kernel | Domain kernel and eventing. | [`.docs/sow/WP-06-DOMAIN-KERNEL.md`](./.docs/sow/WP-06-DOMAIN-KERNEL.md) |
 | WP-07 Inventory | Providers, models, agents, CV, projects, credentials. | [`.docs/sow/WP-07-INVENTORY.md`](./.docs/sow/WP-07-INVENTORY.md) |
 | WP-08 Lab and memory | Lab aggregate and three-tier memory. | [`.docs/sow/WP-08-LAB-MEMORY.md`](./.docs/sow/WP-08-LAB-MEMORY.md) |
