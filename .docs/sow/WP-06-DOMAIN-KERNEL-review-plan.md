@@ -7,7 +7,7 @@
 | Review branch | `review/wp-06-domain-kernel` |
 | Reviewer | Chief Software Engineer (agent) |
 | QA reviewer | qa-review-agent (independent subagent) |
-| Status | `in_review` |
+| Status | `approved` |
 
 ## 1. Contract completeness
 
@@ -71,8 +71,8 @@
 
 ## 8. QA review
 
-- [ ] QA subagent verdict: `APPROVED`.
-- [ ] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 143, crate fitness, workspace tests, outbox concurrency, config exit 78).
+- [x] QA subagent verdict: `APPROVED`.
+- [x] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 143, crate/architecture fitness, workspace tests incl. outbox 20-writer concurrency, config exit 78).
 
 ## 9. Deferred items and residual risks
 
