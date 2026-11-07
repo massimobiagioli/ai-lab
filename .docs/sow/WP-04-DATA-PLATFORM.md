@@ -19,6 +19,7 @@
 | 2026-11-07 | — | `ready` | Tech Lead | Initial SOW baseline |
 | 2026-11-07 | `ready` | `progress` | Dev (agent) | WP-01 and WP-03 done |
 | 2026-11-07 | `progress` | `done` | Dev (agent) | Schema, migrations, seeds, integrity, Redis keys and backups delivered; repositories co-delivered in WP-06, HNSW in WP-08, retention in WP-20/WP-23, perf in WP-21 |
+| 2026-11-07 | `done` | `done` | Tech Lead (agent) | WP review: review plan created, schema/constraint/integrity/backup gates reproduced, QA verdict recorded |
 
 ---
 
@@ -394,3 +395,4 @@ Output: JSON report stored in `artifacts/integrity/YYYYMMDD.json` + metric; P1 i
 2026-11-07 | T12 | retention/compaction jobs | deferred to WP-20/WP-23 | — | T13
 2026-11-07 | T13 | .docs/product/database.md | doc link check | — | closure
 2026-11-07 | closure | .docs/product/database.md, migrations/*, scripts/* | make up healthy; seed/integrity/backup/restore verified | repositories/.sqlx → WP-06; HNSW → WP-08; perf → WP-21; retention → WP-20/WP-23 | WP-05
+2026-11-07 | review | .docs/sow/WP-04-DATA-PLATFORM-review-plan.md | schema diff OK; constraints 8/8; analytics 25/25; seed + integrity OK; backup/restore drill OK | AC4 WP-06/13, AC5/6 WP-08, AC10 WP-21 | QA review
