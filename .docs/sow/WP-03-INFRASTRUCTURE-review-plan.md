@@ -7,7 +7,7 @@
 | Review branch | `review/wp-03-infrastructure` |
 | Reviewer | Chief Software Engineer (agent) |
 | QA reviewer | qa-review-agent (independent subagent) |
-| Status | `in_review` |
+| Status | `approved` |
 
 ## 1. Contract completeness
 
@@ -73,8 +73,8 @@
 
 ## 8. QA review
 
-- [ ] QA subagent verdict: `APPROVED`.
-- [ ] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 142, compose-validate all profiles, isolation 8 services, rendered config).
+- [x] QA subagent verdict: `APPROVED`.
+- [x] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 142, compose-validate all profiles, isolation 8 services, fmt/clippy, 131 tests, rendered config with one published port, zero unpinned third-party images).
 - [x] First QA pass returned `CHANGES_REQUESTED` for the runner image toolchains, missing digest pins, the unregistered isolation tool and the worker runner probe; all fixed:
   - runner image rebuilt on `debian:trixie-slim` with Rust/Node/Python/build toolchains and `just`;
   - all third-party Compose and Dockerfile bases pinned by digest;

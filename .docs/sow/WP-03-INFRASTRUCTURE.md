@@ -19,7 +19,7 @@
 | 2026-11-07 | — | `ready` | Tech Lead | Initial SOW baseline |
 | 2026-11-07 | `ready` | `progress` | Dev (agent) | WP-01 and WP-02 done; T01 started |
 | 2026-11-07 | `progress` | `done` | Dev (agent) | Platform artifacts, images, Compose, isolation tests and operations docs delivered; make up/backup drill executed with WP-04 schema |
-| 2026-11-07 | `done` | `done` | Tech Lead (agent) | WP review: review plan created, compose/isolation gates reproduced, QA verdict recorded |
+| 2026-11-07 | `done` | `done` | Tech Lead (agent) | WP review: review plan created, compose/isolation gates reproduced, QA `APPROVED` (`.docs/product/evidence/WP-03-review.md`) |
 
 ---
 
@@ -354,4 +354,5 @@ No command requires interactive input. Every command documents its side effects 
 2026-11-07 | T09 | .github/workflows/images.yml | build job skeleton; Trivy/SBOM/sign owned by WP-22 | — | T10
 2026-11-07 | T10 | .tools/test-compose-isolation.sh + runtime checks | edge cannot reach postgres/redis; proxy allowlist verified | — | closure
 2026-11-07 | closure | .docs/product/operations.md | make check green; make up smoke runs after WP-04 | AC2/AC3/AC8 downstream by WP-04 | WP-04
-2026-11-07 | review | .docs/sow/WP-03-INFRASTRUCTURE-review-plan.md | compose-validate all profiles; isolation 8 services; harness/sow green | AC2/AC3/AC8 WP-04, AC7 WP-22, AC9 WP-13 | QA review
+2026-11-07 | review | .docs/sow/WP-03-INFRASTRUCTURE-review-plan.md | compose-validate all profiles; isolation 8 services; harness/sow green | AC2/AC3/AC8 WP-04, AC5/AC6 WP-14, AC7 WP-22, AC9 WP-13 | QA review
+2026-11-07 | review-fix | infra/docker/*.Dockerfile, infra/compose/*.yml, crates/worker/src/main.rs, crates/orchestrator/src/bin/runner.rs, CR-0006 | digest pins; runner toolchains + readiness listener; worker runner probe; clippy/tests green; QA APPROVED | CR-0006 | merge
