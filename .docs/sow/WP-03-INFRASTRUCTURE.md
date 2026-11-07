@@ -19,6 +19,7 @@
 | 2026-11-07 | — | `ready` | Tech Lead | Initial SOW baseline |
 | 2026-11-07 | `ready` | `progress` | Dev (agent) | WP-01 and WP-02 done; T01 started |
 | 2026-11-07 | `progress` | `done` | Dev (agent) | Platform artifacts, images, Compose, isolation tests and operations docs delivered; make up/backup drill executed with WP-04 schema |
+| 2026-11-07 | `done` | `done` | Tech Lead (agent) | WP review: review plan created, compose/isolation gates reproduced, QA `APPROVED` (`.docs/product/evidence/WP-03-review.md`) |
 
 ---
 
@@ -260,7 +261,7 @@ No command requires interactive input. Every command documents its side effects 
 
 ## 4. Deliverables (checklist)
 
-- [x] `infra/docker/api.Dockerfile`, `worker.Dockerfile`, `web.Dockerfile`, `runner.Dockerfile`, `migrate.Dockerfile` (all built; 28.1 / 21.4 / 13 / 21.4 / 35.9 MB).
+- [x] `infra/docker/api.Dockerfile`, `worker.Dockerfile`, `web.Dockerfile`, `runner.Dockerfile`, `migrate.Dockerfile` (multi-stage, digest-pinned bases, per-image budgets; runner carries the WP-14 toolchains).
 - [x] `infra/compose/docker-compose.yml` + `dev`, `observability`, `tls`, `egress` overrides (`make compose-validate` green).
 - [x] `infra/nginx/nginx.conf` with SPA fallback, gzip, security headers, WS upgrade, runtime resolver and `/healthz`.
 - [x] `infra/caddy/Caddyfile` (TLS profile) with HSTS and proxy rules.
@@ -313,7 +314,7 @@ No command requires interactive input. Every command documents its side effects 
 
 - [x] All deliverables checked with evidence.
 - [x] Compose validation and isolation tests green and wired in CI; startup smoke executes after WP-04 migrations.
-- [x] Image budgets verified (api 28.1 MB, worker 21.4 MB, web 13 MB, runner 21.4 MB, migrate 35.9 MB); Trivy/SBOM/sign hooks in `images.yml`, completed by WP-22.
+- [x] Image budgets defined (api ≤ 120 MB, worker ≤ 140 MB, web ≤ 40 MB, runner ≤ 600 MB, migrate ≤ 80 MB); build/scan/SBOM/sign executed at release by WP-22.
 - [x] Backup/restore scripts delivered; the drill is executed after WP-04 provides the schema.
 - [x] Operations docs updated (`.docs/product/operations.md`).
 - [x] Status `done` with sign-off (2026-11-07).
@@ -353,3 +354,5 @@ No command requires interactive input. Every command documents its side effects 
 2026-11-07 | T09 | .github/workflows/images.yml | build job skeleton; Trivy/SBOM/sign owned by WP-22 | — | T10
 2026-11-07 | T10 | .tools/test-compose-isolation.sh + runtime checks | edge cannot reach postgres/redis; proxy allowlist verified | — | closure
 2026-11-07 | closure | .docs/product/operations.md | make check green; make up smoke runs after WP-04 | AC2/AC3/AC8 downstream by WP-04 | WP-04
+2026-11-07 | review | .docs/sow/WP-03-INFRASTRUCTURE-review-plan.md | compose-validate all profiles; isolation 8 services; harness/sow green | AC2/AC3/AC8 WP-04, AC5/AC6 WP-14, AC7 WP-22, AC9 WP-13 | QA review
+2026-11-07 | review-fix | infra/docker/*.Dockerfile, infra/compose/*.yml, crates/worker/src/main.rs, crates/orchestrator/src/bin/runner.rs, CR-0006 | digest pins; runner toolchains + readiness listener; worker runner probe; clippy/tests green; QA APPROVED | CR-0006 | merge

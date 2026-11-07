@@ -10,7 +10,7 @@ use std::time::Duration;
 fn main() {
     if std::env::args().any(|arg| arg == "healthcheck") {
         let healthy = ailab_infrastructure::health::check_urls(
-            &["AILAB_DATABASE_URL", "AILAB_REDIS_URL"],
+            &["AILAB_DATABASE_URL", "AILAB_REDIS_URL", "AILAB_RUNNER_URL"],
             Duration::from_secs(3),
         );
         std::process::exit(if healthy { 0 } else { 1 });
