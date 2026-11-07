@@ -23,7 +23,7 @@
 ## 3. Deliverables
 
 - [x] Provider aggregate + encrypted key + rotation + status — evidence: `Provider`, `EncryptedKey`, `rotate_key`, lifecycle tests.
-- [x] Model catalog + default/escalation invariants — evidence: `Model::default_models`, tests.
+- [x] Model catalog + default/escalation invariants — evidence: `Model::default_models` (flash default, pro escalation), `Model::validate_catalog` (exactly one default, at most one escalation), tests.
 - [x] SCM credential aggregate (write-only token, verification) — evidence: `ScmCredential`.
 - [x] 10 characters seeded — evidence: `migrations/0001_init.sql`.
 - [x] Agent aggregate, Tech Lead invariant, lifecycle, 120–600 description — evidence: `Agent`, `validate_team`.
@@ -39,7 +39,7 @@
 - [x] AC1 provider creation seeds exactly two models in one transaction — DEFERRED to WP-16 (API/repository transaction); `Model::default_models` returns flash + pro.
 - [x] AC2 provider/SCM tokens never returned; only `last4` — evidence: `EncryptedKey` Debug redaction, `last4` accessor; API leak tests WP-16.
 - [x] AC3 second Tech Lead fails `422 TECH_LEAD_EXISTS` incl. 20 concurrent requests — evidence: `validate_team` guard + DB partial unique index; HTTP/concurrency WP-16.
-- [x] AC4 agent creation creates CV v1 atomically; description 120–600 — evidence: `Agent::create` sets `cv_version = 1`, description guard test; DB atomicity WP-16.
+- [x] AC4 agent creation creates CV v1 atomically; description 120–600 even without the LLM — evidence: `Agent::create` sets `cv_version = 1`; `Agent::template_description` returns an always-valid deterministic fallback (test); DB atomicity WP-16.
 - [x] AC5 retired agent cannot be assigned — evidence: `can_receive_cards` false when retired; requeue event WP-09/WP-16.
 - [x] AC6 project connection verifies repo access/branch — DEFERRED to WP-12 (GitHub adapter).
 - [x] AC7 key_prefix/slug unique per lab; key_prefix immutable after first card — evidence: domain `CardKey::new` validation, no mutable setter; DB unique indexes.
@@ -73,6 +73,7 @@
 
 - [ ] QA subagent verdict: `APPROVED`.
 - [ ] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 143, domain tests, clippy, SSRF negatives).
+- [x] First QA pass returned `CHANGES_REQUESTED` for the missing model escalation invariant and the missing deterministic description fallback; both fixed with `Model::is_escalation`/`validate_catalog` and `Agent::template_description`, plus tests.
 
 ## 9. Deferred items and residual risks
 

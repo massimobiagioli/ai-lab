@@ -321,6 +321,7 @@ pub struct Model {
     input_cost_microusd_per_mtok: i64,
     output_cost_microusd_per_mtok: i64,
     is_default: bool,
+    is_escalation: bool,
     status: ModelStatus,
 }
 
@@ -336,10 +337,17 @@ impl Model {
         input_cost_microusd_per_mtok: i64,
         output_cost_microusd_per_mtok: i64,
         is_default: bool,
+        is_escalation: bool,
     ) -> Result<Self, DomainError> {
         let name = name.into();
         if name.trim().is_empty() {
             return Err(DomainError::validation("model.name", "must not be empty"));
+        }
+        if is_default && is_escalation {
+            return Err(DomainError::validation(
+                "model.role",
+                "a model cannot be both default and escalation",
+            ));
         }
         if context_window == 0 || max_output_tokens == 0 {
             return Err(DomainError::validation(
@@ -362,6 +370,7 @@ impl Model {
             input_cost_microusd_per_mtok,
             output_cost_microusd_per_mtok,
             is_default,
+            is_escalation,
             status: ModelStatus::Active,
         })
     }
@@ -378,6 +387,7 @@ impl Model {
                 0,
                 0,
                 true,
+                false,
             )?,
             Self::create(
                 ModelId::generate(),
@@ -388,8 +398,29 @@ impl Model {
                 0,
                 0,
                 false,
+                true,
             )?,
         ])
+    }
+
+    /// Validate a provider's catalog: exactly one default and at most one
+    /// escalation model.
+    pub fn validate_catalog(models: &[Self]) -> Result<(), DomainError> {
+        let defaults = models.iter().filter(|model| model.is_default).count();
+        let escalations = models.iter().filter(|model| model.is_escalation).count();
+        if defaults != 1 {
+            return Err(DomainError::policy(
+                "MODEL_DEFAULT_REQUIRED",
+                "a provider must have exactly one default model",
+            ));
+        }
+        if escalations > 1 {
+            return Err(DomainError::policy(
+                "MODEL_ESCALATION_UNIQUE",
+                "a provider can have at most one escalation model",
+            ));
+        }
+        Ok(())
     }
 
     /// Identity.
@@ -438,6 +469,12 @@ impl Model {
     #[must_use]
     pub const fn is_default(&self) -> bool {
         self.is_default
+    }
+
+    /// True when the model is the escalation target.
+    #[must_use]
+    pub const fn is_escalation(&self) -> bool {
+        self.is_escalation
     }
 
     /// Provider reference.
@@ -625,6 +662,19 @@ impl Agent {
             version: Version::ONE,
             events: vec![event],
         })
+    }
+
+    /// Deterministic, always-valid description used when the LLM is unavailable.
+    ///
+    /// The result is within the 120–600 character invariant so agent creation
+    /// never blocks on the description generator (WP-07 T07, AC4).
+    #[must_use]
+    pub fn template_description(role: AgentRole, character_id: &str) -> String {
+        format!(
+            "The {role} works as a {character} for this lab and follows the role charter. It keeps work inside its assigned cards, verifies with tests before claiming completion, records evidence for every acceptance criterion, respects the tool policy and separation of duties, and escalates ambiguity to the Tech Lead instead of guessing.",
+            role = role.as_str(),
+            character = character_id,
+        )
     }
 
     /// Identity.
@@ -1056,9 +1106,66 @@ mod tests {
         let models = Model::default_models(provider).expect("models");
         assert_eq!(models.len(), 2);
         assert!(models[0].is_default());
+        assert!(!models[0].is_escalation());
         assert_eq!(models[0].name(), "deepseek-flash");
+        assert!(!models[1].is_default());
+        assert!(models[1].is_escalation());
         assert_eq!(models[1].name(), "deepseek-v4-pro");
         assert_eq!(models[0].provider_id(), provider);
+        Model::validate_catalog(&models).expect("one default, one escalation");
+    }
+
+    #[test]
+    fn model_catalog_rejects_duplicate_roles() {
+        let provider = ProviderId::generate();
+        let mut models = Model::default_models(provider).expect("models");
+        models[1] = Model::create(
+            ModelId::generate(),
+            provider,
+            "deepseek-v4-pro",
+            131_072,
+            16_384,
+            0,
+            0,
+            true,
+            false,
+        )
+        .expect("second default");
+        assert!(Model::validate_catalog(&models).is_err());
+        assert!(
+            Model::create(
+                ModelId::generate(),
+                provider,
+                "both",
+                131_072,
+                16_384,
+                0,
+                0,
+                true,
+                true,
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn template_description_is_always_valid() {
+        let description = Agent::template_description(AgentRole::Dev, "scrappy_dev");
+        let length = description.chars().count();
+        assert!((120..=600).contains(&length), "length {length}");
+        let agent = Agent::create(
+            AgentId::generate(),
+            LabId::generate(),
+            "Nico",
+            AgentRole::Dev,
+            "scrappy_dev",
+            Agent::template_description(AgentRole::Dev, "scrappy_dev"),
+            AutonomyLevel::A2,
+            1,
+            chrono::Utc::now(),
+        )
+        .expect("template description satisfies the invariant");
+        assert_eq!(agent.cv_version(), 1);
     }
 
     #[test]
