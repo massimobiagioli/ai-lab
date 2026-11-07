@@ -15,18 +15,18 @@ The review was iterative: the first pass returned `CHANGES_REQUESTED` for two bl
 | AC | Result | Evidence |
 |---|---|---|
 | AC1 clean clone: `make doctor && make up && make check` ≤ 10 min | DEFERRED | `make doctor` OK, clean-clone `make setup && make check` exit 0 in 169 s; `make up` is owned by WP-03 and the Compose file is not present yet |
-| AC2 `make help` lists every target; non-interactive | PASS | 35 targets, all with fail-fast guards and no prompts |
+| AC2 `make help` lists every target; non-interactive | PASS | 41 targets, all with fail-fast guards and no prompts |
 | AC3 bad commit and secret rejected locally | PASS | `commit-msg.sh`: bad subject exit 1, good subject exit 0, missing agent trailers exit 1; gitleaks private-key fixture exit 1 |
 | AC4 CI checks match WP-00 §3.8 and block merge | PASS | 16 job keys match `.github/required-checks.txt`, `.docs/product/quality-gates.md` and `.github/branch-protection.json` |
 | AC5 negative supply-chain fixtures rejected | PASS | `.tools/test-supply-chain.sh`: npm audit exit 1 (1 high), cargo-deny exit 4 (license denied) |
-| AC6 `.env.example` complete, no real secret | PASS | All 39 Appendix D.4 variables present; only placeholders and empty values |
+| AC6 `.env.example` complete, no real secret | PASS | All 40 Appendix D.4 variables present (including AILAB_RUNNER_TOKEN per CR-0004); only placeholders and empty values |
 | AC7 `sow-lint` detects invalid status and broken link | PASS | `.tools/sow-lint-self-test.sh` 11/11 cases |
 | AC8 `make openapi` deterministic | DEFERRED | Scripts delivered; generation is owned by WP-16 and `openapi-compat` activates when the contract exists |
 
 ## Blocking defects found and resolved
 
 1. No negative supply-chain fixture. Resolved with `.tools/fixtures/supply-chain/` and `.tools/test-supply-chain.sh`; both gates reject the fixtures.
-2. Layout drift: missing `.github/ISSUE_TEMPLATE/` and `.docs/adr/`. Resolved with issue templates and a `.docs/adr/README.md` pointer to the canonical `.docs/adr/` registry (no duplication).
+2. Layout drift: missing `.github/ISSUE_TEMPLATE/` and `.docs/adr/`. Resolved with issue templates; the canonical ADR registry is `.docs/adr/registry.md` (per CR-0001).
 
 ## Verification commands
 
@@ -43,6 +43,20 @@ The review was iterative: the first pass returned `CHANGES_REQUESTED` for two bl
 - `make openapi` and `make asyncapi` are owned by WP-16. The scripts and the `openapi-compat` CI job are in place.
 - Release images, SBOM and signing are owned by WP-22; the `images.yml` and `release.yml` skeletons carry the required hooks.
 
+## Review round 2 (WP review, 2026-11-07)
+
+The reviewer re-ran the gates and found one contract inconsistency: `.env.example` carried `AILAB_RUNNER_TOKEN` required by ADR-0023, while Appendix D.4 (declared complete) omitted it and the WP claimed 39/39 variables. Resolved with CR-0004, which adds the variable to Appendix D.4; the WP and this evidence now record 40/40. The `make help` target count was also refreshed from 35 to 41. No blocking defect remained.
+
+## Review round 3 (WP review, 2026-11-07)
+
+The reviewer reproduced the required CI jobs on a pull request and found three real gate defects; all were fixed:
+
+1. `aquasecurity/trivy-action@0.28.0` referenced a deleted `setup-trivy` tag. Fixed by pinning `v0.36.0` in `ci.yml` and `images.yml`; `security-image` passes.
+2. `cargo deny check` failed because path dependencies were treated as wildcards and `allow-wildcard-paths` does not apply to public crates. Fixed by marking the workspace crates `publish = false`; `security-deps` passes.
+3. The negative supply-chain test required the pinned Node image without pulling it. Fixed with an on-demand `docker pull`; `security-deps` passes.
+
+Remote evidence: CI run `42409540109` on `review/wp-02-repository-devex` → all 16 required checks pass. `make check`, `cargo deny check`, `.tools/test-supply-chain.sh` and `npm test` reproduce green locally.
+
 ## Reviewer statement
 
-WP-02 artifacts satisfy the repository and developer-experience contract. The two deferred acceptance criteria are downstream WP responsibilities and are documented without fake gates. Approved for WP closure.
+WP-02 artifacts satisfy the repository and developer-experience contract. AC1 and AC8 are downstream WP responsibilities documented without fake gates; all required CI checks pass. Approved for WP closure.

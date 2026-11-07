@@ -28,11 +28,11 @@ Do not use this skill for Rust-only or documentation-only tasks.
    - Component: TestBed with DOM assertions and keyboard interactions.
    - E2E: Playwright for the journey.
 3. Run the focused test and confirm the expected failure:
-   - `npm --prefix web test -- --run <pattern>`
+   - `npm --prefix web test -- --include <pattern>`
    - `npx --prefix web playwright test <spec>`
 4. Implement the minimum component, store or service change.
 5. Run the focused test, then the suite:
-   - `npm --prefix web test -- --run`
+   - `npm --prefix web test`
 6. Refactor with tests green.
 7. Run gates:
    - `npm --prefix web run lint`

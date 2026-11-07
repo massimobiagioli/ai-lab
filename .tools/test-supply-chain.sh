@@ -27,8 +27,11 @@ if ! command -v docker >/dev/null 2>&1 || ! docker info >/dev/null 2>&1; then
   exit 2
 fi
 if ! docker image inspect "$NODE_IMAGE" >/dev/null 2>&1; then
-  echo "ENV ERROR: $NODE_IMAGE is not available" >&2
-  exit 2
+  echo "pulling $NODE_IMAGE ..." >&2
+  if ! docker pull "$NODE_IMAGE" >/dev/null 2>&1; then
+    echo "ENV ERROR: $NODE_IMAGE is not available and could not be pulled" >&2
+    exit 2
+  fi
 fi
 
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/supply-chain-npm.XXXXXX")"

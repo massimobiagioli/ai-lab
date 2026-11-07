@@ -44,7 +44,7 @@ Repeat until every acceptance criterion is covered. Do not write production beha
 Use the exact commands from the specialist skill. Examples:
 
 - Rust: `cargo nextest run -p ailab-domain <test>` then `cargo nextest run --workspace`.
-- Frontend: `npm --prefix web test -- --run <pattern>` then `npx --prefix web playwright test`.
+- Frontend: `npm --prefix web test -- --include <pattern>` then `npx --prefix web playwright test`.
 - Data: `make migrate` then the repository and concurrency tests.
 - Contracts: `make openapi`, `make asyncapi`, `schemathesis run .docs/product/api/openapi.json`.
 

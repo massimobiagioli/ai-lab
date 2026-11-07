@@ -24,7 +24,7 @@ These names are exact. They are the required status contexts for the default bra
 | `rust-unit` | Dev | `cargo nextest run --workspace --lib --bins` | All pass | Author fixes; P1 if flaky > 24 h |
 | `rust-integration` | Dev | `cargo nextest run --workspace --test '*'` | All pass | Author fixes; merge blocked |
 | `frontend-lint` | Dev | `npm --prefix web run lint` | Zero errors | Author fixes; merge blocked |
-| `frontend-unit` | Dev | `npm --prefix web test -- --run` | All pass; line coverage ≥ 80% | Author fixes; merge blocked |
+| `frontend-unit` | Dev | `npm --prefix web test` | All pass; line coverage ≥ 80% | Author fixes; merge blocked |
 | `frontend-build` | Dev | `npm --prefix web run build` | Exit 0; bundle budgets met | Author fixes; merge blocked |
 | `e2e` | QA | `npx --prefix web playwright test` | All pass; no new flaky entry | QA triages; release blocked |
 | `a11y` | QA | `npx --prefix web playwright test --project=a11y` | Zero serious/critical axe findings | QA files defect; merge blocked |

@@ -19,6 +19,7 @@
 | 2026-11-07 | — | `ready` | Tech Lead | Initial SOW baseline |
 | 2026-11-07 | `ready` | `progress` | Dev (agent) | WP-00 and WP-01 done; T01 started |
 | 2026-11-07 | `progress` | `done` | Dev (agent) | All deliverables verified; independent review APPROVED; AC1 and AC8 downstream verification owned by WP-03 and WP-16 |
+| 2026-11-07 | `done` | `done` | Tech Lead (agent) | WP review: review plan created, gates reproduced, CR-0004 adds AILAB_RUNNER_TOKEN; QA verdict recorded in the review plan |
 
 ---
 
@@ -118,7 +119,6 @@ ai-lab/
 │   ├── seed-demo.sh
 │   └── hooks/
 ├── .docs/product/
-│   ├── adr/
 │   ├── architecture.md
 │   ├── domain-model.md
 │   ├── api/
@@ -136,7 +136,7 @@ ai-lab/
     └── ISSUE_TEMPLATE/
 ```
 
-**Rules:** no source file outside the layout above; `scripts/` contains only executable tooling; generated artifacts never committed except documented contract snapshots (`.docs/product/api/*.json`) and lockfiles.
+**Rules:** no source file outside the layout above; `scripts/` contains only executable tooling; generated artifacts never committed except documented contract snapshots (`.docs/product/api/*.json`) and lockfiles. ADRs live in `.docs/adr/` per CR-0001; `.docs/product/` holds product documentation.
 
 ### 3.2 Toolchain pinning
 
@@ -234,7 +234,7 @@ ai-lab/
 
 | Workflow | Trigger | Jobs | Required |
 |---|---|---|---|
-| `ci.yml` | PR, push to `main` | `fmt`, `clippy`, `rust-unit`, `rust-integration`, `frontend-lint`, `frontend-unit`, `frontend-build`, `e2e`, `a11y`, `visual`, `openapi-compat`, `security-secrets`, `security-deps`, `docs-build`, `sow-lint` | Yes |
+| `ci.yml` | PR, push to `main` | `fmt`, `clippy`, `rust-unit`, `rust-integration`, `frontend-lint`, `frontend-unit`, `frontend-build`, `e2e`, `a11y`, `visual`, `openapi-compat`, `security-secrets`, `security-deps`, `security-image`, `docs-build`, `sow-lint` | Yes |
 | `images.yml` | tag, manual | build api/worker/web/runner, Trivy scan, SBOM, sign (cosign keyless) | Release gate |
 | `nightly.yml` | cron 02:00 UTC | load (k6), chaos, fuzz, soak, dependency audit | Advisory → blocks release |
 | `release.yml` | tag `v*` | changelog, images, docs deploy, GitHub release | Release gate |
@@ -277,7 +277,7 @@ CI rules: no secrets in logs; least-privilege `permissions:` per job; concurrenc
 - [x] Monorepo skeleton with every directory and placeholder crate/app (12 crates, Angular app, infra and docs directories).
 - [x] `rust-toolchain.toml`, `.tool-versions`, `Cargo.toml` workspace with lints and profiles (Rust 1.99.1, edition 2024, clippy `-D warnings` green).
 - [x] `web/` Angular 22.2 workspace, strict TypeScript 6.0 (ADR-0024), ESLint/Prettier, budgets (`npm run lint`, `npm run build`, `npm test` green).
-- [x] `Makefile` with all §3.5 targets, each idempotent and non-interactive (`make help` lists 35 targets).
+- [x] `Makefile` with all §3.5 targets, each idempotent and non-interactive (`make help` lists 41 targets).
 - [x] `scripts/doctor.sh` validating Docker/Compose/ports/disk/tools/keys/connectivity (`make doctor` OK, 4 environment warnings).
 - [x] `scripts/sow-lint.sh` validating SOW statuses, links, dependencies and checklists (WP-00; self-test 11/11).
 - [x] `lefthook.yml` with pre-commit, commit-msg and pre-push hooks (`scripts/hooks/*`; bad-subject and missing-trailer tests).
@@ -285,7 +285,7 @@ CI rules: no secrets in logs; least-privilege `permissions:` per job; concurrenc
 - [x] `.github/workflows/images.yml`, `nightly.yml`, `release.yml` skeletons with the exact jobs.
 - [x] `renovate.json`, `deny.toml`, `.gitignore`, `.dockerignore`, `.editorconfig`, `.gitattributes`.
 - [x] `CODEOWNERS`, `CONTRIBUTING.md`, `.docs/product/review-checklist.md`, PR template (WP-00 template).
-- [x] `.env.example` complete and consistent with Appendix D.4 (39/39 variables, placeholders only).
+- [x] `.env.example` complete and consistent with Appendix D.4 (40/40 variables including `AILAB_RUNNER_TOKEN` per CR-0004, placeholders only).
 - [x] `README.md` quickstart verified from a clean clone (`make setup && make check` exit 0 in 169 s).
 - [x] Contract generation scripts (`gen-openapi.sh`, `gen-asyncapi.sh`) and drift check in CI (generation owned by WP-16; job present).
 
@@ -325,7 +325,7 @@ CI rules: no secrets in logs; least-privilege `permissions:` per job; concurrenc
 
 - [x] All deliverables checked with evidence.
 - [x] Clean-clone bootstrap test recorded: `make setup && make check` exit 0 in 169 s (macOS, Docker 24.0.7, Compose 2.23.3, Rust 1.99.1, Node container 24.22). `make up` is deferred to WP-03.
-- [x] CI green on `main` with all required checks: local `make check` green, workflow and 16 required contexts validated; remote execution needs a GitHub remote (operator action).
+- [x] CI green on `main` with all required checks: local `make check` green; remote CI run `42409540109` on `review/wp-02-repository-devex` reports all 16 required checks passing; branch protection applied with the 16 contexts (CR-0003).
 - [x] Hooks verified with a bad-commit test: bad subject exit 1, good subject exit 0, missing agent trailers exit 1; gitleaks private-key fixture exit 1.
 - [x] Contribution docs reviewed by Tech Lead: independent `APPROVED` review in `.docs/product/evidence/WP-02-review.md`.
 - [x] Status `done` with sign-off (2026-11-07).
@@ -363,6 +363,7 @@ CI rules: no secrets in logs; least-privilege `permissions:` per job; concurrenc
 2026-11-07 | T08 | renovate.json, deny.toml, .gitignore, .dockerignore, .editorconfig, .gitattributes, .env.example | JSON/YAML parse OK; env covers Appendix D.4 | ADR-0024 (TS major blocked) | T09
 2026-11-07 | T09 | CODEOWNERS, CONTRIBUTING.md, .docs/product/review-checklist.md, CHANGELOG.md, SECURITY.md, CODE_OF_CONDUCT.md, LICENSE | docs link check OK | — | T10
 2026-11-07 | T10 | clean-clone simulation | make setup + make check exit 0 in 169 s (macOS, Docker 24.0.7, Compose 2.23.3, Rust 1.99.1, Node container 24.22); frontend build 217.16 kB raw / 59.63 kB transfer; npm audit high gate exit 0 (15 moderate); gitleaks private-key fixture exit 1 | — | review
-2026-11-07 | review-fix | .tools/test-supply-chain.sh, .tools/fixtures/supply-chain/*, .github/ISSUE_TEMPLATE/*, .docs/adr/README.md, web/angular.json, .github/workflows/ci.yml, Makefile | supply-chain 2/2 negative fixtures rejected; make check OK; frontend build OK | ADR-0024 | re-review
+2026-11-07 | review-fix | .tools/test-supply-chain.sh, .tools/fixtures/supply-chain/*, .github/ISSUE_TEMPLATE/*, .docs/adr/registry.md, web/angular.json, .github/workflows/ci.yml, Makefile | supply-chain 2/2 negative fixtures rejected; make check OK; frontend build OK | ADR-0024 | re-review
 2026-11-07 | closure | .docs/product/evidence/WP-02-review.md | independent review APPROVED | AC1 WP-03, AC8 WP-16 | WP-03
 2026-11-07 | tool-fix | scripts/sow-lint.sh | replaced recursive bash-3.2 cycle detection with an awk topological sort; 20/20 stable runs; self-test 11/11 | — | gates
+2026-11-07 | review | .docs/sow/WP-02-REPOSITORY-DEVEX-review-plan.md, CR-0004 | make check OK; supply-chain 2/2; hooks reject bad input; openapi deterministic; env 40/40 | CR-0004 | QA review

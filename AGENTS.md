@@ -102,6 +102,7 @@ Every document under `.docs` is listed here. When a document is created, renamed
 | WP-01 review plan | Architecture review checklist and evidence. | [`.docs/sow/WP-01-ARCHITECTURE-review-plan.md`](./.docs/sow/WP-01-ARCHITECTURE-review-plan.md) |
 | WP-01 Architecture | Architecture and service topology. | [`.docs/sow/WP-01-ARCHITECTURE.md`](./.docs/sow/WP-01-ARCHITECTURE.md) |
 | WP-02 Repository/DevEx | Repository, toolchain and developer experience. | [`.docs/sow/WP-02-REPOSITORY-DEVEX.md`](./.docs/sow/WP-02-REPOSITORY-DEVEX.md) |
+| WP-02 review plan | Repository and developer-experience review checklist and evidence. | [`.docs/sow/WP-02-REPOSITORY-DEVEX-review-plan.md`](./.docs/sow/WP-02-REPOSITORY-DEVEX-review-plan.md) |
 | WP-03 Infrastructure | Docker and runtime platform. | [`.docs/sow/WP-03-INFRASTRUCTURE.md`](./.docs/sow/WP-03-INFRASTRUCTURE.md) |
 | WP-04 Data platform | Schema, migrations, persistence, Redis, integrity. | [`.docs/sow/WP-04-DATA-PLATFORM.md`](./.docs/sow/WP-04-DATA-PLATFORM.md) |
 | WP-05 Security | Security architecture and secrets management. | [`.docs/sow/WP-05-SECURITY.md`](./.docs/sow/WP-05-SECURITY.md) |
@@ -161,7 +162,7 @@ A task or work package is not done until all applicable gates pass:
 5. `cargo clippy --workspace --all-targets -- -D warnings`.
 6. `cargo nextest run --workspace`.
 7. `npm --prefix web run lint`.
-8. `npm --prefix web test -- --run`.
+8. `npm --prefix web test`.
 9. `npm --prefix web run build`.
 10. `npx --prefix web playwright test`.
 11. `make openapi` and `make asyncapi` with no drift.
