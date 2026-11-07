@@ -1,0 +1,21 @@
+AIL-101 branch protection evidence — captured 2026-11-07
+
+Command:
+  gh api repos/massimobiagioli/ai-lab/branches/main/protection
+
+Result (abridged, no credentials):
+  required_status_checks.strict: true
+  required_status_checks.contexts (16):
+    fmt, clippy, rust-unit, rust-integration, frontend-lint, frontend-unit,
+    frontend-build, e2e, a11y, visual, openapi-compat, security-secrets,
+    security-deps, security-image, docs-build, sow-lint
+  enforce_admins.enabled: false        (per CR-0003, review merge workflow)
+  required_pull_request_reviews: null   (per CR-0003)
+  required_linear_history.enabled: false (per CR-0003, --no-ff merge commits)
+  allow_force_pushes.enabled: false
+  allow_deletions.enabled: false
+  required_conversation_resolution.enabled: true
+
+Outcome: the 16 required contexts from .github/required-checks.txt are enforced
+on the default branch; force pushes and deletions are blocked. Settings
+relaxations are recorded in .docs/product/change-requests/CR-0003.md.

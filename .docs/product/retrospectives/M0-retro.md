@@ -24,6 +24,8 @@ This record covers the WP-00 governance slice of M0. The full M0 exit gate remai
 - Flow metrics have no live data because the API, database runtime and seed do not exist yet. The views are verified against fixtures only.
 - Independent review could not be performed by a second actor in this execution environment.
 
+> Post-retro closure (2026-11-07): the statements above record the point-in-time state at the retrospective. The GitHub remote now exists and branch protection is applied with the 16 required contexts (CR-0003, AIL-101), and an independent QA subagent completed the review. See `.docs/product/evidence/WP-00-review.md`.
+
 ## 3. Metrics snapshot
 
 | Metric | Value | Target | Source |
