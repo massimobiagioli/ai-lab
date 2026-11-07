@@ -15,7 +15,7 @@ The Lab context owns the lab aggregate, settings and the team invariant. The Kno
 - A lab belongs to a workspace; `slug` is validated.
 - A lab cannot be created without exactly one active Tech Lead (`TECH_LEAD_REQUIRED` / `TECH_LEAD_EXISTS`).
 - Team members must belong to the lab.
-- Settings: WIP limits, per-card and per-day budgets, hard stop. Per-card budget cannot exceed per-day.
+- Settings: WIP limits, autonomy flags, per-card and per-day budgets with hard stop, scheduler tick/lease/retries, office theme/sound/reduced motion, and maintenance cron/stale days. Every range is validated in the domain; per-card budget cannot exceed per-day.
 - Archive is terminal and guarded.
 
 ## 2. Memory scopes

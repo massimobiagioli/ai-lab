@@ -49,6 +49,10 @@ pub enum MemoryKind {
     Policy,
     /// Skill.
     Skill,
+    /// Compacted episode summary.
+    EpisodeSummary,
+    /// Review record.
+    Review,
 }
 
 /// Target embedding dimension.
@@ -611,6 +615,10 @@ mod tests {
         )
         .expect_err("quarantined");
         assert_eq!(error.code(), "MEMORY_QUARANTINED");
+        assert!(contains_secret("key AIzaSyExampleToken"));
+        assert!(contains_secret("token sk-example"));
+        assert!(contains_secret("-----BEGIN RSA PRIVATE KEY-----"));
+        assert!(!contains_secret("card AIL-42 moved to READY"));
     }
 
     #[test]
