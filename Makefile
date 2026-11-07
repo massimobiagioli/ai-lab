@@ -155,6 +155,7 @@ docs-check: ## Validate the harness and relative documentation links
 
 arch-fitness: ## Validate context ownership, dependencies and table access
 	.tools/check-architecture-fitness.sh
+	.tools/architecture-fitness-self-test.sh
 
 crate-fitness: ## Validate crate direction, acyclicity, unsafe and unwrap gates
 	.tools/check-crate-dependencies.sh

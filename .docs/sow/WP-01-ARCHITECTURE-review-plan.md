@@ -30,13 +30,13 @@
 - [x] `.docs/product/failure-modes.md` — evidence: file exists.
 - [x] Four Mermaid sources + four fresh SVG exports — evidence: `.docs/product/diagrams/` (SVGs newer than `.mmd`).
 - [x] ADR-0001…ADR-0023 committed and linked — evidence: `.docs/adr/registry.md`, harness-lint ADR checks.
-- [x] Fitness test + self-test wired in CI — evidence: `.tools/check-architecture-fitness.sh` 4 checks; `.tools/architecture-fitness-self-test.sh` 13 cases; `ci.yml`.
+- [x] Fitness test + self-test wired in CI — evidence: `.tools/check-architecture-fitness.sh` 4 checks; `.tools/architecture-fitness-self-test.sh` 15 cases; `ci.yml`.
 - [x] Independent review record — evidence: `.docs/product/evidence/WP-01-review.md`.
 
 ## 4. Acceptance criteria
 
 - [x] AC1 every context has one owner, aggregates, owned tables, published/consumed events — evidence: `.docs/product/domain-model.md`, `.docs/product/data-ownership.md`, `.tools/architecture/contexts.tsv` (32/32 tables mapped once).
-- [x] AC2 fitness test fails on cross-context table access — evidence: `.tools/architecture-fitness-self-test.sh` 13/13, including schema-qualified, quoted, escaped, multi-line, lowercase and unattributed SQL.
+- [x] AC2 fitness test fails on cross-context table access — evidence: `.tools/architecture-fitness-self-test.sh` 15/15, including schema-qualified, quoted, escaped, multi-line, lowercase and unattributed SQL.
 - [x] AC3 service catalog covers every Compose container — evidence: `.tools/check-architecture-fitness.sh` scans `infra/compose/docker-compose*.yml`; all 8 base services plus the `tls`, `observability` and `egress` profile services are catalogued; self-test 15/15.
 - [x] AC4 runner API contract implemented by WP-14 and consumed by WP-13 without drift — DEFERRED to WP-13/WP-14 with ADR-0023 as the canonical contract; compatibility test owned there.
 - [x] AC5 every ADR exists, follows the template and is linked — evidence: 24 ADRs in `.docs/adr/registry.md`; harness-lint ADR field check.
@@ -47,7 +47,7 @@
 
 - [x] Bounded-context ownership enforced — test: `.tools/check-architecture-fitness.sh` 4/4.
 - [x] Crate dependency direction and acyclicity — test: `.tools/check-crate-dependencies.sh` (12 packages).
-- [x] Regression coverage for fitness extraction edge cases — test: `.tools/architecture-fitness-self-test.sh` 13/13.
+- [x] Regression coverage for fitness extraction edge cases — test: `.tools/architecture-fitness-self-test.sh` 15/15.
 - [x] No real external API in tests.
 - [x] Coverage thresholds met (docs-only WP; no new executable production code in this WP).
 
@@ -68,9 +68,9 @@
 
 ## 8. QA review
 
-- [ ] QA subagent verdict: `APPROVED`.
-- [ ] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 139, fitness 4/4, self-test 15/15, crate fitness OK).
-- [x] First QA pass returned `CHANGES_REQUESTED` for the compose-coverage false negative, ADR template conformance, contradictory AC3 text and pre-asserted approval; all fixed and sent for re-review.
+- [x] QA subagent verdict: `APPROVED`.
+- [x] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 139, fitness 4/4, self-test 15/15, crate fitness OK); uncatalogued `infra/compose` service rejected; all 24 ADRs carry `## Status`; 32 tables mapped once.
+- [x] First QA pass returned `CHANGES_REQUESTED` for the compose-coverage false negative, ADR template conformance, contradictory AC3 text and pre-asserted approval; all fixed and re-reviewed.
 
 ## 9. Deferred items and residual risks
 
