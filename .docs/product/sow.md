@@ -14,7 +14,7 @@ A SOW is a versioned structured document. Approval freezes a version; later chan
 
 Executive summary, objectives, scope in, scope out, stakeholders, functional requirements, non-functional requirements, architecture, milestones, deliverables, acceptance criteria, assumptions, risks, timeline, budget, governance, change control.
 
-A document is rejected if a required section is missing or empty. Semantic validation rejects duplicate `FR-*` identifiers.
+A document is rejected if a required section is missing or empty, if the executive summary is under 120 characters, if no `FR-*`/`NFR-*` requirement exists, or if a requirement id is duplicated. `SowDocument::validate_requirements` additionally rejects a missing priority or acceptance criterion, an unknown FR dependency, and an NFR without a target or measurement.
 
 ## 2. Lifecycle
 
@@ -27,12 +27,13 @@ Approved/Draft --revise--> Draft (new immutable version)
 - Versions are immutable and numbered from 1.
 - `revise` requires a non-empty change note and returns to draft.
 - `approve` records the approver and freezes the current version.
-- `supersede` requires an approved SOW.
+- `reject` requires a reason and returns the SOW to draft.
+- `supersede` requires an approved SOW with a newer approved version.
 - The Markdown rendering is deterministic and its SHA-256 is the content hash.
 
 ## 3. Tests
 
-`cargo test -p ailab-domain` covers required sections, duplicate requirement IDs, deterministic Markdown, the submit/approve/revise lifecycle, version immutability and the change-note guard.
+`cargo test -p ailab-domain` covers required sections, duplicate requirement IDs, structured-requirement validation, deterministic Markdown, the submit/approve/reject/revise/supersede lifecycle, version immutability and the change-note guard.
 
 ## 4. Deferred to consumer WPs
 

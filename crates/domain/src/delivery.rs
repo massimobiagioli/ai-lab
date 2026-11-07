@@ -99,8 +99,32 @@ pub struct SowDocument {
     sections: BTreeMap<SowSection, String>,
 }
 
+/// A structured functional requirement (parsed from the JSON SOW in WP-16).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FunctionalRequirement {
+    /// Stable `FR-*` id.
+    pub id: String,
+    /// Priority.
+    pub priority: String,
+    /// Acceptance criteria.
+    pub acceptance_criteria: Vec<String>,
+    /// Dependency FR ids.
+    pub dependencies: Vec<String>,
+}
+
+/// A structured non-functional requirement.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NonFunctionalRequirement {
+    /// Stable `NFR-*` id.
+    pub id: String,
+    /// Numeric or observable target.
+    pub target: String,
+    /// Measurement method.
+    pub measurement: String,
+}
+
 impl SowDocument {
-    /// Validate required sections and semantics.
+    /// Validate required sections and the text-level semantic invariants.
     pub fn new(sections: BTreeMap<SowSection, String>) -> Result<Self, DomainError> {
         for section in REQUIRED_SECTIONS {
             match sections.get(&section) {
@@ -113,19 +137,103 @@ impl SowDocument {
                 }
             }
         }
+        let summary = sections
+            .get(&SowSection::ExecutiveSummary)
+            .map_or("", String::as_str);
+        if summary.chars().count() < 120 {
+            return Err(DomainError::validation(
+                "sow.executive_summary",
+                "must be at least 120 characters",
+            ));
+        }
         let functional = sections
             .get(&SowSection::FunctionalRequirements)
             .map_or("", String::as_str);
-        let mut ids = BTreeSet::new();
-        for token in functional.split_whitespace() {
-            if token.starts_with("FR-") && !ids.insert(token.to_owned()) {
-                return Err(DomainError::validation(
-                    "sow.functional_requirements",
-                    format!("duplicate requirement id: {token}"),
-                ));
+        let non_functional = sections
+            .get(&SowSection::NonFunctionalRequirements)
+            .map_or("", String::as_str);
+        let fr_ids = requirement_ids(functional, "FR-");
+        if fr_ids.is_empty() {
+            return Err(DomainError::validation(
+                "sow.functional_requirements",
+                "at least one FR-* requirement is required",
+            ));
+        }
+        if requirement_ids(non_functional, "NFR-").is_empty() {
+            return Err(DomainError::validation(
+                "sow.non_functional_requirements",
+                "at least one NFR-* requirement is required",
+            ));
+        }
+        for (label, section_text, prefix) in [
+            ("sow.functional_requirements", functional, "FR-"),
+            ("sow.non_functional_requirements", non_functional, "NFR-"),
+        ] {
+            let mut seen = BTreeSet::new();
+            for id in requirement_ids(section_text, prefix) {
+                if !seen.insert(id.clone()) {
+                    return Err(DomainError::validation(
+                        label,
+                        format!("duplicate requirement id: {id}"),
+                    ));
+                }
             }
         }
         Ok(Self { sections })
+    }
+
+    /// Validate structured requirements parsed from the JSON SOW (WP-16).
+    pub fn validate_requirements(
+        functional: &[FunctionalRequirement],
+        non_functional: &[NonFunctionalRequirement],
+    ) -> Result<(), DomainError> {
+        let mut ids = BTreeSet::new();
+        for requirement in functional {
+            if !requirement.id.starts_with("FR-") || !ids.insert(requirement.id.clone()) {
+                return Err(DomainError::validation(
+                    "sow.functional_requirements",
+                    format!("invalid or duplicate FR id: {}", requirement.id),
+                ));
+            }
+            if requirement.priority.trim().is_empty() {
+                return Err(DomainError::validation(
+                    "sow.functional_requirements.priority",
+                    format!("missing priority for {}", requirement.id),
+                ));
+            }
+            if requirement.acceptance_criteria.is_empty() {
+                return Err(DomainError::validation(
+                    "sow.functional_requirements.acceptance_criteria",
+                    format!("missing acceptance criteria for {}", requirement.id),
+                ));
+            }
+        }
+        for requirement in functional {
+            for dependency in &requirement.dependencies {
+                if !ids.contains(dependency) {
+                    return Err(DomainError::validation(
+                        "sow.functional_requirements.dependencies",
+                        format!("unknown dependency {dependency} for {}", requirement.id),
+                    ));
+                }
+            }
+        }
+        let mut nfr_ids = BTreeSet::new();
+        for requirement in non_functional {
+            if !requirement.id.starts_with("NFR-") || !nfr_ids.insert(requirement.id.clone()) {
+                return Err(DomainError::validation(
+                    "sow.non_functional_requirements",
+                    format!("invalid or duplicate NFR id: {}", requirement.id),
+                ));
+            }
+            if requirement.target.trim().is_empty() || requirement.measurement.trim().is_empty() {
+                return Err(DomainError::validation(
+                    "sow.non_functional_requirements",
+                    format!("{} needs a target and a measurement", requirement.id),
+                ));
+            }
+        }
+        Ok(())
     }
 
     /// Section content.
@@ -193,6 +301,7 @@ pub struct Sow {
     status: SowStatus,
     versions: Vec<SowVersion>,
     approved_by: Option<String>,
+    rejection_reason: Option<String>,
 }
 
 impl Sow {
@@ -222,6 +331,7 @@ impl Sow {
                 change_note: "Initial version".to_owned(),
             }],
             approved_by: None,
+            rejection_reason: None,
         })
     }
 
@@ -293,16 +403,31 @@ impl Sow {
         Ok(())
     }
 
-    /// Reject the current version.
-    pub fn reject(&mut self, _reason: impl Into<String>) -> Result<(), DomainError> {
+    /// Reject the current version; a reason is required and the SOW returns to
+    /// draft so a new version can be produced.
+    pub fn reject(&mut self, reason: impl Into<String>) -> Result<(), DomainError> {
         if self.status != SowStatus::InReview {
             return Err(DomainError::policy(
                 "SOW_NOT_IN_REVIEW",
                 "only an in-review SOW can be rejected",
             ));
         }
-        self.status = SowStatus::Rejected;
+        let reason = reason.into();
+        if reason.trim().is_empty() {
+            return Err(DomainError::validation(
+                "sow.rejection_reason",
+                "a rejection reason is required",
+            ));
+        }
+        self.rejection_reason = Some(reason);
+        self.status = SowStatus::Draft;
         Ok(())
+    }
+
+    /// Rejection reason, when the current version was rejected.
+    #[must_use]
+    pub fn rejection_reason(&self) -> Option<&str> {
+        self.rejection_reason.as_deref()
     }
 
     /// Create a new immutable version and return to draft.
@@ -337,12 +462,18 @@ impl Sow {
         Ok(next)
     }
 
-    /// Supersede an approved SOW.
+    /// Supersede an approved SOW by a newer approved version.
     pub fn supersede(&mut self) -> Result<(), DomainError> {
         if self.status != SowStatus::Approved {
             return Err(DomainError::policy(
                 "SOW_NOT_APPROVED",
                 "only an approved SOW can be superseded",
+            ));
+        }
+        if self.versions.len() < 2 {
+            return Err(DomainError::policy(
+                "SOW_SUPERSEDE_REQUIRES_NEW_VERSION",
+                "supersede requires a newer approved version",
             ));
         }
         self.status = SowStatus::Superseded;
@@ -638,6 +769,13 @@ impl Plan {
     }
 }
 
+fn requirement_ids(text: &str, prefix: &str) -> Vec<String> {
+    text.split(|character: char| !(character.is_ascii_alphanumeric() || character == '-'))
+        .filter(|token| token.starts_with(prefix))
+        .map(ToOwned::to_owned)
+        .collect()
+}
+
 fn validate_tasks(tasks: &[PlanTask]) -> Result<(), DomainError> {
     if tasks.is_empty() {
         return Err(DomainError::validation("plan.tasks", "must not be empty"));
@@ -693,7 +831,15 @@ mod tests {
     fn sections() -> BTreeMap<SowSection, String> {
         REQUIRED_SECTIONS
             .iter()
-            .map(|section| (*section, format!("{} content", section.label())))
+            .map(|section| {
+                let value = match section {
+                    SowSection::ExecutiveSummary => "S".repeat(130),
+                    SowSection::FunctionalRequirements => "FR-1 FR-2".to_owned(),
+                    SowSection::NonFunctionalRequirements => "NFR-1".to_owned(),
+                    _ => format!("{} content", section.label()),
+                };
+                (*section, value)
+            })
             .collect()
     }
 
@@ -747,6 +893,90 @@ mod tests {
         assert_eq!(sow.status(), SowStatus::Draft);
         assert_eq!(sow.versions().len(), 2);
         assert_eq!(sow.current().expect("current").version, 2);
+    }
+
+    #[test]
+    fn sow_reject_requires_reason_and_returns_to_draft() {
+        let mut sow = Sow::create(
+            SowId::generate(),
+            ProjectId::generate(),
+            LabId::generate(),
+            "Demo SOW",
+            document(),
+        )
+        .expect("sow");
+        sow.submit().expect("submit");
+        assert!(sow.reject("  ").is_err());
+        sow.reject("scope changed").expect("reject");
+        assert_eq!(sow.status(), SowStatus::Draft);
+        assert_eq!(sow.rejection_reason(), Some("scope changed"));
+    }
+
+    #[test]
+    fn sow_supersede_requires_a_new_version_and_versions_stay_immutable() {
+        let mut sow = Sow::create(
+            SowId::generate(),
+            ProjectId::generate(),
+            LabId::generate(),
+            "Demo SOW",
+            document(),
+        )
+        .expect("sow");
+        sow.submit().expect("submit");
+        sow.approve("operator").expect("approve");
+        assert!(sow.supersede().is_err(), "v1 cannot be superseded directly");
+        let original_hash = sow.current().expect("v1").content_hash.clone();
+        sow.revise(document(), "second version").expect("revise");
+        assert_eq!(sow.versions()[0].content_hash, original_hash);
+        assert_eq!(sow.versions()[0].version, 1);
+        sow.submit().expect("submit v2");
+        sow.approve("operator").expect("approve v2");
+        sow.supersede().expect("supersede by v2");
+        assert_eq!(sow.status(), SowStatus::Superseded);
+        assert!(sow.revise(document(), "").is_err());
+    }
+
+    #[test]
+    fn sow_validates_structured_requirements() {
+        let valid = vec![
+            FunctionalRequirement {
+                id: "FR-1".to_owned(),
+                priority: "must".to_owned(),
+                acceptance_criteria: vec!["works".to_owned()],
+                dependencies: vec![],
+            },
+            FunctionalRequirement {
+                id: "FR-2".to_owned(),
+                priority: "should".to_owned(),
+                acceptance_criteria: vec!["works".to_owned()],
+                dependencies: vec!["FR-1".to_owned()],
+            },
+        ];
+        let nfr = vec![NonFunctionalRequirement {
+            id: "NFR-1".to_owned(),
+            target: "p95 <= 200ms".to_owned(),
+            measurement: "histogram".to_owned(),
+        }];
+        SowDocument::validate_requirements(&valid, &nfr).expect("valid");
+
+        let mut missing_ac = valid.clone();
+        missing_ac[0].acceptance_criteria.clear();
+        assert!(SowDocument::validate_requirements(&missing_ac, &nfr).is_err());
+
+        let mut unknown_dependency = valid.clone();
+        unknown_dependency[1].dependencies = vec!["FR-404".to_owned()];
+        assert!(SowDocument::validate_requirements(&unknown_dependency, &nfr).is_err());
+
+        let mut duplicate = valid.clone();
+        duplicate[1].id = "FR-1".to_owned();
+        assert!(SowDocument::validate_requirements(&duplicate, &nfr).is_err());
+
+        let bad_nfr = vec![NonFunctionalRequirement {
+            id: "NFR-1".to_owned(),
+            target: String::new(),
+            measurement: "histogram".to_owned(),
+        }];
+        assert!(SowDocument::validate_requirements(&valid, &bad_nfr).is_err());
     }
 
     #[test]

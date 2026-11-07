@@ -35,8 +35,8 @@
 
 - [x] AC1 idea → 1–20 cards within 3 s; invalid LLM output → one fallback card — DEFERRED to WP-11/WP-16 (LLM pipeline/API).
 - [x] AC2 idempotency (same key/text) — DEFERRED to WP-16 (HTTP idempotency/store).
-- [x] AC3 schema + semantic validation (duplicate IDs, missing AC, missing scope_out) — evidence: `SowDocument::new` requires all 17 sections and unique FR IDs; JSON Schema WP-16.
-- [x] AC4 versions immutable, approve freezes, supersede requires a change note — evidence: `revise` requires a change note, `approve`/`reject` guarded, `supersede` guarded; version list append-only.
+- [x] AC3 schema + semantic validation — evidence: `SowDocument::new` requires all 17 sections, an executive summary >=120 chars, at least one FR and one NFR, and unique FR/NFR ids; `SowDocument::validate_requirements` rejects missing priority/AC, unknown dependencies and missing NFR target/measurement (structured JSON parse is WP-16).
+- [x] AC4 versions immutable, approve freezes, supersede requires a new approved version and change note; reject requires a reason and returns to draft — evidence: `revise` change-note guard, `supersede` requires >=2 versions, `reject` reason guard; immutability/reject/supersede tests.
 - [x] AC5 cycle/dangling/duplicate/uncovered FR rejected — evidence: `Plan::create` → `topological_order` (cycles), `validate_tasks` (dangling/duplicates), `validate_coverage` (uncovered/unknown FR); test.
 - [x] AC6 materialization idempotent; dry-run preview — evidence: `preview` (no mutation), `mark_materialized` guarded; DB idempotency WP-16.
 - [x] AC7 every materialized card links `sow_id`/`plan_task_id`; traceability tree — evidence: `MaterializedCard` carries `task_key`, `covers`, `sow_id`; tree API WP-16.
@@ -68,7 +68,8 @@
 ## 8. QA review
 
 - [ ] QA subagent verdict: `APPROVED`.
-- [ ] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 143, domain tests, clippy, FR coverage).
+- [ ] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 143, 59 domain tests, clippy, FR coverage).
+- [x] First QA pass returned `CHANGES_REQUESTED` for incomplete SOW semantic validation and the reject/supersede lifecycle; fixed with text-level invariants, a structured-requirement validator, reason-guarded reject (back to draft), version-guarded supersede, and lifecycle/immutability tests.
 
 ## 9. Deferred items and residual risks
 
