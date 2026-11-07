@@ -19,7 +19,7 @@ Status: `met`, `partial` (control exists, test or wiring pending) or `deferred` 
 | V4 Access control | Separation of duties | partial | DB/card guard; WP-09/WP-15 tests |
 | V4 Access control | Deny-by-default tool policy | deferred | WP-11/WP-14 |
 | V5 Validation | Boundary validation, deny unknown fields | deferred | WP-16 DTOs |
-| V5 Validation | Output encoding and CSP | partial | Nginx CSP; WP-17 tests |
+| V5 Validation | Output encoding and CSP | met | `security_headers.rs` + nginx (no inline, form-action, COOP/CORP, Permissions-Policy); WP-17 encoding tests |
 | V6 Cryptography | AES-256-GCM with unique nonce and AAD | met | `crypto.rs` tests |
 | V6 Cryptography | Key rotation with versions | partial | Primitive; rotation job WP-07 |
 | V7 Errors/logging | Secrets never logged | met | `redact.rs` tests |
