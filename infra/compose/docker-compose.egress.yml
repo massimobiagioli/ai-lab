@@ -1,0 +1,29 @@
+services:
+  egress-proxy:
+    image: sameersbn/squid:3.5.27-2
+    profiles: ["egress"]
+    restart: unless-stopped
+    volumes:
+      - ../egress/squid.conf:/etc/squid/squid.conf:ro
+      - ../egress/allowlist.txt:/etc/squid/allowlist.txt:ro
+    networks:
+      - sandbox-egress
+      - runner
+    read_only: true
+    tmpfs:
+      - /var/spool/squid
+      - /var/log/squid
+      - /run
+      - /tmp
+    mem_limit: 128m
+    cpus: 0.5
+    pids_limit: 128
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

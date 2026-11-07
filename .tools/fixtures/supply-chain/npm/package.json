@@ -1,0 +1,9 @@
+{
+  "name": "ailab-supply-chain-negative-fixture",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Negative fixture: a known vulnerable lodash version must fail npm audit --audit-level=high.",
+  "dependencies": {
+    "lodash": "4.17.15"
+  }
+}

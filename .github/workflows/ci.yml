@@ -1,0 +1,268 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Gate names are normative (docs/quality-gates.md §1, .github/required-checks.txt).
+# Jobs that need a toolchain that does not exist yet carry an explicit presence
+# guard. The guard activates the real command as soon as the manifest lands; it
+# is not a permanent bypass. WP-02 removes the guards when the workspace exists.
+
+jobs:
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.99.1
+        with:
+          components: rustfmt
+      - name: Format check
+        run: |
+          if [ ! -f Cargo.toml ]; then
+            echo "No Rust workspace yet (WP-02/WP-06); fmt check is inert."
+            exit 0
+          fi
+          cargo fmt --all --check
+
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.99.1
+        with:
+          components: clippy
+      - name: Clippy
+        run: |
+          if [ ! -f Cargo.toml ]; then
+            echo "No Rust workspace yet (WP-02/WP-06); clippy check is inert."
+            exit 0
+          fi
+          cargo clippy --workspace --all-targets -- -D warnings
+
+  rust-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.99.1
+      - uses: taiki-e/install-action@nextest
+      - name: Unit tests
+        run: |
+          if [ ! -f Cargo.toml ]; then
+            echo "No Rust workspace yet (WP-02/WP-06); rust-unit is inert."
+            exit 0
+          fi
+          cargo nextest run --workspace --lib --bins
+
+  rust-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.99.1
+      - uses: taiki-e/install-action@nextest
+      - name: Integration tests
+        run: |
+          if [ ! -f Cargo.toml ]; then
+            echo "No Rust workspace yet (WP-02/WP-06); rust-integration is inert."
+            exit 0
+          fi
+          cargo nextest run --workspace --test '*'
+      - name: Architecture fitness
+        run: .tools/check-architecture-fitness.sh
+
+  frontend-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Frontend lint
+        run: |
+          if [ ! -f web/package.json ]; then
+            echo "No Angular app yet (WP-17); frontend-lint is inert."
+            exit 0
+          fi
+          npm --prefix web ci
+          npm --prefix web run lint
+
+  frontend-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Frontend unit tests
+        run: |
+          if [ ! -f web/package.json ]; then
+            echo "No Angular app yet (WP-17); frontend-unit is inert."
+            exit 0
+          fi
+          npm --prefix web ci
+          npm --prefix web test -- --run
+
+  frontend-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Frontend build
+        run: |
+          if [ ! -f web/package.json ]; then
+            echo "No Angular app yet (WP-17); frontend-build is inert."
+            exit 0
+          fi
+          npm --prefix web ci
+          npm --prefix web run build
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Playwright e2e
+        run: |
+          if [ ! -f web/playwright.config.ts ]; then
+            echo "No Playwright harness yet (WP-17/WP-21); e2e is inert."
+            exit 0
+          fi
+          npm --prefix web ci
+          npx --prefix web playwright install --with-deps
+          npx --prefix web playwright test
+
+  a11y:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Accessibility suite
+        run: |
+          if [ ! -f web/playwright.config.ts ]; then
+            echo "No Playwright harness yet (WP-17/WP-21); a11y is inert."
+            exit 0
+          fi
+          npm --prefix web ci
+          npx --prefix web playwright install --with-deps
+          npx --prefix web playwright test --project=a11y
+
+  visual:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Visual suite
+        run: |
+          if [ ! -f web/playwright.config.ts ]; then
+            echo "No Playwright harness yet (WP-17/WP-21); visual is inert."
+            exit 0
+          fi
+          npm --prefix web ci
+          npx --prefix web playwright install --with-deps
+          npx --prefix web playwright test --project=visual
+
+  openapi-compat:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Contract drift
+        run: |
+          if [ ! -f Makefile ] || [ ! -f docs/api/openapi.json ]; then
+            echo "No API contracts yet (WP-16); openapi-compat is inert."
+            exit 0
+          fi
+          make openapi
+          make asyncapi
+          git diff --exit-code docs/api/openapi.json docs/api/asyncapi.json
+
+  security-secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  security-deps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.99.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: cargo-deny
+        if: hashFiles('Cargo.toml') != ''
+        uses: EmbarkStudios/cargo-deny-action@v2
+      - name: npm audit
+        run: |
+          if [ ! -f web/package-lock.json ]; then
+            echo "No frontend lockfile yet (WP-17); npm audit is inert."
+            exit 0
+          fi
+          npm --prefix web audit --audit-level=high
+      - name: Supply-chain negative fixtures
+        run: |
+          cargo install cargo-deny --locked
+          .tools/test-supply-chain.sh
+
+  security-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Filesystem and image scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+          ignore-unfixed: true
+          skip-dirs: .opencode/node_modules,web/node_modules,node_modules
+
+  docs-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Harness lint
+        run: scripts/harness-lint.sh
+      - name: SOW lint
+        run: scripts/sow-lint.sh
+      - name: Documentation link check
+        run: .tools/check-doc-links.sh
+      - name: Architecture fitness
+        run: .tools/check-architecture-fitness.sh
+      - name: Crate fitness
+        run: .tools/check-crate-dependencies.sh
+      - name: Compose validation
+        run: make compose-validate
+      - name: Compose isolation
+        run: .tools/test-compose-isolation.sh
+      - name: Database suites
+        run: make db-check
+
+  sow-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: SOW lint
+        run: scripts/sow-lint.sh

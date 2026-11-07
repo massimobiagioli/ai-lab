@@ -1,0 +1,28 @@
+# Rust
+/target/
+**/target/
+
+# Node / Angular
+node_modules/
+web/dist/
+web/.angular/
+web/coverage/
+.angular/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Runtime artifacts
+artifacts/
+workspaces/
+
+# OS and editor
+.DS_Store
+*.log
+
+# Generated reports
+coverage/

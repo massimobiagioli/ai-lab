@@ -1,0 +1,50 @@
+flowchart TB
+  subgraph api["api (axum)"]
+    http["http: routers, extractors,<br/>request-id, timeout, body limit"]
+    dto["dto + OpenAPI"]
+    auth["auth / exposure mode"]
+    ws["ws hub<br/>registry, backpressure, heartbeat"]
+    proj["projections"]
+    comp["composition"]
+  end
+
+  subgraph worker["worker (tokio)"]
+    sched["scheduler<br/>eligibility, leases"]
+    orch["orchestrator<br/>run pipeline, agent loop"]
+    tools["tools<br/>registry, policy"]
+    relay["relay<br/>outbox → Redis → WS"]
+    refl["reflection<br/>CV + memory"]
+    maint["maintenance<br/>cron, compaction"]
+    rec["recovery<br/>lease expiry, reconcile"]
+  end
+
+  subgraph shared["shared crates"]
+    dom["domain<br/>entities, invariants, events"]
+    app["application<br/>use cases, ports"]
+    infra["infrastructure<br/>sqlx, redis, clock, ids"]
+    llm["llm<br/>port + DeepSeek"]
+    scm["scm<br/>port + GitHub"]
+    mem["memory<br/>chunk, embed, retrieve"]
+    tel["telemetry"]
+  end
+
+  http --> dto --> app
+  auth --> app
+  ws --> relay
+  proj --> infra
+  comp --> infra
+  sched --> app
+  orch --> app
+  orch --> llm
+  orch --> scm
+  orch --> mem
+  tools --> app
+  relay --> infra
+  refl --> mem
+  maint --> app
+  rec --> app
+  app --> dom
+  infra --> dom
+  llm --> app
+  scm --> app
+  mem --> dom

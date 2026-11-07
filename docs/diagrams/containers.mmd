@@ -1,0 +1,41 @@
+flowchart TB
+  browser["Browser<br/>Angular 22 SPA"]
+
+  subgraph edge["edge network"]
+    web["web<br/>Nginx + static SPA"]
+    api["api<br/>Rust/axum"]
+  end
+
+  subgraph backbone["backbone network"]
+    pg[("postgres<br/>PostgreSQL 18 + pgvector")]
+    redis[("redis<br/>Redis 8.8")]
+    migrate["migrate<br/>sqlx-cli one-shot"]
+    worker["worker<br/>Rust/tokio"]
+  end
+
+  subgraph runnet["runner network"]
+    runner["runner<br/>Rust + Docker API"]
+    proxy["docker-socket-proxy"]
+    egress["egress-proxy<br/>(profile egress)"]
+  end
+
+  subgraph obs["observability (optional)"]
+    otel["otel-collector"]
+    prom["prometheus"]
+    graf["grafana"]
+  end
+
+  browser -->|"HTTPS / WSS"| web
+  web --> api
+  api --> pg
+  api --> redis
+  migrate --> pg
+  worker --> pg
+  worker --> redis
+  worker -->|"private HTTP"| runner
+  runner --> proxy
+  runner -.-> egress
+  api -.-> otel
+  worker -.-> otel
+  otel -.-> prom
+  prom -.-> graf

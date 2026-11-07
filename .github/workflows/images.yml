@@ -1,0 +1,85 @@
+name: Images
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build api image
+        run: |
+          if [ ! -f infra/docker/api.Dockerfile ]; then
+            echo "api image is owned by WP-03 and is not present yet"; exit 0
+          fi
+          docker build -f infra/docker/api.Dockerfile -t "ailab/api:${GITHUB_REF_NAME}" .
+  worker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build worker image
+        run: |
+          if [ ! -f infra/docker/worker.Dockerfile ]; then
+            echo "worker image is owned by WP-03 and is not present yet"; exit 0
+          fi
+          docker build -f infra/docker/worker.Dockerfile -t "ailab/worker:${GITHUB_REF_NAME}" .
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build web image
+        run: |
+          if [ ! -f infra/docker/web.Dockerfile ]; then
+            echo "web image is owned by WP-03 and is not present yet"; exit 0
+          fi
+          docker build -f infra/docker/web.Dockerfile -t "ailab/web:${GITHUB_REF_NAME}" .
+  runner:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build runner image
+        run: |
+          if [ ! -f infra/docker/runner.Dockerfile ]; then
+            echo "runner image is owned by WP-03 and is not present yet"; exit 0
+          fi
+          docker build -f infra/docker/runner.Dockerfile -t "ailab/runner:${GITHUB_REF_NAME}" .
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+          ignore-unfixed: true
+          skip-dirs: .opencode/node_modules,web/node_modules,node_modules
+  sbom:
+    runs-on: ubuntu-latest
+    needs: [api, worker, web, runner]
+    steps:
+      - uses: actions/checkout@v4
+      - name: SBOM placeholder
+        run: |
+          echo "SBOM generation is owned by WP-22 and runs on built images"
+          echo "This job is the required hook; it must not be removed"
+  sign:
+    runs-on: ubuntu-latest
+    needs: [sbom]
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Sign placeholder
+        run: |
+          echo "cosign keyless signing is owned by WP-22 and runs on release images"

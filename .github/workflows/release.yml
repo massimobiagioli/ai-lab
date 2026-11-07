@@ -1,0 +1,45 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+
+jobs:
+  changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Changelog and notes
+        run: |
+          test -f CHANGELOG.md
+          echo "Release notes are assembled by WP-22 from CHANGELOG.md and the milestone gate"
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Documentation gates
+        run: |
+          scripts/harness-lint.sh
+          scripts/sow-lint.sh
+          .tools/check-doc-links.sh
+  images:
+    runs-on: ubuntu-latest
+    needs: [changelog, docs]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Images and SBOM
+        run: |
+          echo "Images, Trivy, SBOM and cosign are produced by WP-22 on the release tag"
+  release:
+    runs-on: ubuntu-latest
+    needs: [images]
+    steps:
+      - uses: actions/checkout@v4
+      - name: GitHub release
+        run: |
+          echo "Release publication is owned by WP-22 and requires the acceptance report"

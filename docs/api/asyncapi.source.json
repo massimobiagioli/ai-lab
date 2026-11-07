@@ -1,0 +1,40 @@
+{
+  "asyncapi": "3.0.0",
+  "info": {
+    "title": "AI-Lab Event Stream",
+    "version": "1.0.0",
+    "description": "WebSocket event envelope and core channels."
+  },
+  "servers": {
+    "ws": {
+      "host": "127.0.0.1:8080",
+      "protocol": "wss",
+      "pathname": "/api/v1/ws"
+    }
+  },
+  "channels": {
+    "inventory.agent.created": { "address": "inventory.agent.created", "messages": { "event": { "payload": { "$ref": "#/components/schemas/EventEnvelope" } } } },
+    "inventory.project.connected": { "address": "inventory.project.connected", "messages": { "event": { "payload": { "$ref": "#/components/schemas/EventEnvelope" } } } },
+    "kanban.card.created": { "address": "kanban.card.created", "messages": { "event": { "payload": { "$ref": "#/components/schemas/EventEnvelope" } } } },
+    "kanban.card.moved": { "address": "kanban.card.moved", "messages": { "event": { "payload": { "$ref": "#/components/schemas/EventEnvelope" } } } },
+    "delivery.run.completed": { "address": "delivery.run.completed", "messages": { "event": { "payload": { "$ref": "#/components/schemas/EventEnvelope" } } } },
+    "memory.document.created": { "address": "memory.document.created", "messages": { "event": { "payload": { "$ref": "#/components/schemas/EventEnvelope" } } } },
+    "system.health.changed": { "address": "system.health.changed", "messages": { "event": { "payload": { "$ref": "#/components/schemas/EventEnvelope" } } } }
+  },
+  "components": {
+    "schemas": {
+      "EventEnvelope": {
+        "type": "object",
+        "required": ["event_id", "event", "seq", "lab_id", "occurred_at", "payload"],
+        "properties": {
+          "event_id": { "type": "string", "format": "uuid" },
+          "event": { "type": "string" },
+          "seq": { "type": "integer", "format": "int64" },
+          "lab_id": { "type": "string", "format": "uuid" },
+          "occurred_at": { "type": "string", "format": "date-time" },
+          "payload": { "type": "object" }
+        }
+      }
+    }
+  }
+}

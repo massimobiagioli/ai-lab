@@ -1,0 +1,23 @@
+:root {
+  --ailab-color-bg: #0f172a;
+  --ailab-color-surface: #1e293b;
+  --ailab-color-surface-raised: #273449;
+  --ailab-color-text: #f8fafc;
+  --ailab-color-muted: #94a3b8;
+  --ailab-color-accent: #f2b84b;
+  --ailab-color-success: #57c785;
+  --ailab-color-warning: #f2b84b;
+  --ailab-color-danger: #e07a5f;
+  --ailab-border: 2px solid var(--ailab-color-muted);
+  --ailab-radius: 0;
+  --ailab-space-1: 0.25rem;
+  --ailab-space-2: 0.5rem;
+  --ailab-space-3: 0.75rem;
+  --ailab-space-4: 1rem;
+  --ailab-space-6: 1.5rem;
+  --ailab-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --ailab-font-size-sm: 0.75rem;
+  --ailab-font-size-md: 0.875rem;
+  --ailab-font-size-lg: 1rem;
+  --ailab-line-height: 1.4;
+}

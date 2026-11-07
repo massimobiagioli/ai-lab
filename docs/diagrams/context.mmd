@@ -1,0 +1,13 @@
+flowchart LR
+  operator["Human Operator<br/>(browser)"]
+  subgraph ailab["AI-Lab"]
+    lifecycle["Idea → SOW → WBS → Kanban<br/>→ Run → Review → Merge<br/>→ Release → Maintain → Learn"]
+  end
+  deepseek["DeepSeek API<br/>LLM inference"]
+  github["GitHub API<br/>repos / PRs / checks"]
+  docker["Docker Engine<br/>sandbox containers"]
+
+  operator -->|"HTTPS + WSS<br/>loopback by default"| ailab
+  ailab -->|"HTTPS"| deepseek
+  ailab -->|"HTTPS"| github
+  ailab -->|"Docker API<br/>via socket proxy"| docker

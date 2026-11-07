@@ -1,0 +1,31 @@
+flowchart TB
+  subgraph shell["app shell (zoneless, signals)"]
+    router["router + route guards"]
+    stores["signal stores"]
+    apiClient["API client (REST)"]
+    wsClient["WS client<br/>resume by seq"]
+  end
+
+  subgraph features["feature surfaces"]
+    dash["Dashboard"]
+    office["Pixel office<br/>Canvas engine"]
+    board["Kanban board"]
+    inv["Inventory"]
+    sow["SOW / Plan"]
+    memory["Memory"]
+    settings["Settings"]
+  end
+
+  subgraph design["design system"]
+    tokens["design tokens"]
+    kit["pixel UI kit"]
+    a11y["a11y primitives"]
+  end
+
+  router --> features
+  features --> stores
+  stores --> apiClient
+  stores --> wsClient
+  features --> kit
+  kit --> tokens
+  kit --> a11y

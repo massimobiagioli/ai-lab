@@ -1,0 +1,8 @@
+crates.io
+static.crates.io
+index.crates.io
+registry.npmjs.org
+pypi.org
+files.pythonhosted.org
+github.com
+objects.githubusercontent.com

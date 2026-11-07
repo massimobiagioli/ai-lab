@@ -1,0 +1,23 @@
+[package]
+name = "ailab-application"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "AI-Lab application kernel"
+
+[lints]
+workspace = true
+
+[dependencies]
+ailab-domain = { path = "../domain" }
+async-trait = "0.1"
+chrono = { version = "0.4", features = ["serde"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+uuid = { version = "1", features = ["serde", "v7"] }
+
+[dev-dependencies]
+proptest = "1"

@@ -1,0 +1,17 @@
+# Required status contexts for the default branch. One check name per line.
+fmt
+clippy
+rust-unit
+rust-integration
+frontend-lint
+frontend-unit
+frontend-build
+e2e
+a11y
+visual
+openapi-compat
+security-secrets
+security-deps
+security-image
+docs-build
+sow-lint

@@ -1,0 +1,176 @@
+SHELL := /bin/bash
+.DEFAULT_GOAL := help
+
+ROOT := $(CURDIR)
+COMPOSE_FILE := $(ROOT)/infra/compose/docker-compose.yml
+COMPOSE := docker compose -f $(COMPOSE_FILE)
+COMPOSE_DEV := docker compose -f $(COMPOSE_FILE) -f $(ROOT)/infra/compose/docker-compose.dev.yml
+COMPOSE_OBS := docker compose -f $(COMPOSE_FILE) -f $(ROOT)/infra/compose/docker-compose.observability.yml
+COMPOSE_TLS := docker compose -f $(COMPOSE_FILE) -f $(ROOT)/infra/compose/docker-compose.tls.yml
+COMPOSE_EGRESS := docker compose -f $(COMPOSE_FILE) -f $(ROOT)/infra/compose/docker-compose.egress.yml
+WEB := $(ROOT)/scripts/run-web.sh
+
+.PHONY: help setup hooks compose-validate up up-dev up-obs up-tls up-egress down reset logs ps migrate seed seed-demo \
+	fmt fmt-check lint typecheck test check frontend-build frontend-test frontend-lint \
+	e2e load doctor backup restore-drill openapi asyncapi sbom sow-lint \
+	docs-check arch-fitness crate-fitness compose-validate compose-isolation db-check supply-chain-test clean
+
+help: ## List targets with one-line descriptions
+	@grep -E '^[a-zA-Z0-9_-]+:.*?## ' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-22s %s\n", $$1, $$2}'
+
+setup: ## Install local dependencies (cargo fetch, npm ci)
+	cargo fetch
+	$(WEB) npm ci
+
+hooks: ## Install commit hooks (lefthook or native git hooks)
+	scripts/hooks/install.sh
+
+compose-validate: ## Validate the Compose base and every profile
+	$(COMPOSE) --profile core config -q
+	$(COMPOSE_DEV) --profile core config -q
+	$(COMPOSE_OBS) --profile core --profile observability config -q
+	$(COMPOSE_TLS) --profile core --profile tls config -q
+	$(COMPOSE_EGRESS) --profile core --profile egress config -q
+	@echo "compose-validate: all profiles valid"
+
+up: ## Build and start the core stack (WP-03)
+	@test -f $(COMPOSE_FILE) || { echo "error: $(COMPOSE_FILE) is missing" >&2; exit 1; }
+	$(COMPOSE) --profile core up -d --build
+
+up-dev: ## Start the core stack with development ports and mounts
+	@test -f $(COMPOSE_FILE) || { echo "error: $(COMPOSE_FILE) is missing" >&2; exit 1; }
+	$(COMPOSE_DEV) --profile core up -d --build
+
+up-obs: ## Start the core and observability profiles (WP-03/WP-20)
+	@test -f $(COMPOSE_FILE) || { echo "error: $(COMPOSE_FILE) is missing" >&2; exit 1; }
+	$(COMPOSE_OBS) --profile core --profile observability up -d --build
+
+up-tls: ## Start the core stack behind Caddy TLS
+	@test -f $(COMPOSE_FILE) || { echo "error: $(COMPOSE_FILE) is missing" >&2; exit 1; }
+	$(COMPOSE_TLS) --profile core --profile tls up -d --build
+
+up-egress: ## Start the core stack with the sandbox egress proxy
+	@test -f $(COMPOSE_FILE) || { echo "error: $(COMPOSE_FILE) is missing" >&2; exit 1; }
+	$(COMPOSE_EGRESS) --profile core --profile egress up -d --build
+
+down: ## Stop containers, preserving volumes
+	@test -f $(COMPOSE_FILE) || { echo "error: $(COMPOSE_FILE) is owned by WP-03 and does not exist yet" >&2; exit 1; }
+	$(COMPOSE) down
+
+reset: ## Stop, remove volumes, re-up, migrate and seed demo
+	@test -f $(COMPOSE_FILE) || { echo "error: $(COMPOSE_FILE) is owned by WP-03 and does not exist yet" >&2; exit 1; }
+	$(COMPOSE) down -v
+	$(MAKE) up
+	$(MAKE) migrate
+	$(MAKE) seed-demo
+
+logs: ## Follow core service logs
+	@test -f $(COMPOSE_FILE) || { echo "error: $(COMPOSE_FILE) is owned by WP-03 and does not exist yet" >&2; exit 1; }
+	$(COMPOSE) logs -f --tail=200
+
+ps: ## Show service status and health
+	@test -f $(COMPOSE_FILE) || { echo "error: $(COMPOSE_FILE) is owned by WP-03 and does not exist yet" >&2; exit 1; }
+	$(COMPOSE) ps
+
+migrate: ## Apply sqlx migrations (WP-03/WP-04)
+	@test -f $(COMPOSE_FILE) || { echo "error: $(COMPOSE_FILE) is owned by WP-03 and does not exist yet" >&2; exit 1; }
+	$(COMPOSE) run --rm migrate
+
+seed: ## Seed reference data (WP-04)
+	@test -f $(COMPOSE_FILE) || { echo "error: $(COMPOSE_FILE) is owned by WP-03 and does not exist yet" >&2; exit 1; }
+	$(COMPOSE) run --rm seed
+
+seed-demo: ## Seed the deterministic demo dataset (WP-04)
+	scripts/seed-demo.sh
+
+fmt: ## Format Rust and frontend code
+	cargo fmt --all
+	$(WEB) npm run format
+
+fmt-check: ## Check formatting without writing
+	cargo fmt --all --check
+	$(WEB) npm run format:check
+
+lint: ## Clippy with -D warnings and ESLint
+	cargo clippy --workspace --all-targets -- -D warnings
+	$(WEB) npm run lint
+
+test: ## Rust and frontend unit/integration tests
+	@if command -v cargo-nextest >/dev/null 2>&1; then cargo nextest run --workspace; else cargo test --workspace; fi
+	$(WEB) npm test
+
+typecheck: ## Type-check the frontend without emitting
+	$(WEB) npx tsc -p tsconfig.app.json --noEmit
+
+check: fmt-check lint typecheck test sow-lint docs-check arch-fitness crate-fitness compose-validate compose-isolation ## Fast local gate
+	@echo "check: OK"
+
+frontend-build: ## Build the Angular app and enforce budgets
+	$(WEB) npm run build
+
+frontend-test: ## Run frontend unit tests
+	$(WEB) npm test
+
+frontend-lint: ## Run ESLint and Prettier checks
+	$(WEB) npm run lint
+	$(WEB) npm run format:check
+
+e2e: ## Run Playwright end-to-end tests (WP-17/WP-21)
+	@test -f $(ROOT)/web/playwright.config.ts || { echo "error: Playwright is owned by WP-17/WP-21 and is not configured yet" >&2; exit 1; }
+	$(WEB) npx playwright test
+
+load: ## Run k6 load scenarios (WP-21)
+	@command -v k6 >/dev/null 2>&1 || { echo "error: k6 is not installed; owned by WP-21" >&2; exit 1; }
+	k6 run infra/load/board.js
+
+doctor: ## Validate Docker, ports, disk, tools, keys and connectivity
+	scripts/doctor.sh
+
+backup: ## Dump the database and write an artifact manifest (WP-03/WP-20)
+	scripts/backup.sh
+
+restore-drill: ## Restore into a scratch database and verify (WP-03/WP-20)
+	@test -n "$(BACKUP)" || { echo "usage: make restore-drill BACKUP=artifacts/backups/<file>.dump" >&2; exit 1; }
+	scripts/restore-drill.sh "$(BACKUP)"
+
+openapi: ## Regenerate OpenAPI and client types (WP-16)
+	scripts/gen-openapi.sh
+
+asyncapi: ## Regenerate AsyncAPI (WP-16)
+	scripts/gen-asyncapi.sh
+
+sbom: ## Generate SBOMs for built images (WP-22)
+	@command -v syft >/dev/null 2>&1 || { echo "error: syft is not installed; owned by WP-22" >&2; exit 1; }
+	@test -n "$(IMAGES)" || { echo "usage: make sbom IMAGES='ailab/api:1.0.0 ...'" >&2; exit 1; }
+	@mkdir -p artifacts/sbom
+	@for image in $(IMAGES); do syft "$$image" -o cyclonedx-json > "artifacts/sbom/$$(echo $$image | tr '/:' '__').cdx.json"; done
+	@echo "sbom: written to artifacts/sbom"
+
+sow-lint: ## Validate SOW statuses, links, checklists and dependencies
+	scripts/sow-lint.sh
+
+docs-check: ## Validate the harness and relative documentation links
+	scripts/harness-lint.sh
+	.tools/check-doc-links.sh
+
+arch-fitness: ## Validate context ownership, dependencies and table access
+	.tools/check-architecture-fitness.sh
+
+crate-fitness: ## Validate crate direction, acyclicity, unsafe and unwrap gates
+	.tools/check-crate-dependencies.sh
+
+compose-isolation: ## Assert Compose isolation, hardening and resource limits
+	.tools/test-compose-isolation.sh
+
+db-check: ## Run migration, constraint and analytics database suites
+	.tools/test-migrations.sh
+	.tools/test-constraints.sh
+	.tools/test-analytics-views.sh
+
+supply-chain-test: ## Negative tests for npm audit and cargo-deny
+	.tools/test-supply-chain.sh
+
+clean: ## Remove build artifacts, never source
+	cargo clean
+	rm -rf web/dist web/.angular web/coverage artifacts/backups artifacts/sbom
+	@echo "clean: build artifacts removed"

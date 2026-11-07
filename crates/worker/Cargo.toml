@@ -1,0 +1,14 @@
+[package]
+name = "ailab-worker"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "AI-Lab worker crate"
+
+[lints]
+workspace = true
+
+[dependencies]
+ailab-infrastructure = { path = "../infrastructure" }

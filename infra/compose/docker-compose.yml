@@ -1,0 +1,333 @@
+name: ailab
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-security: &default-security
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+
+x-app-env: &app-env
+  AILAB_ENV: ${AILAB_ENV:-production}
+  AILAB_DATABASE_URL: postgres://${POSTGRES_USER:-ailab}:${POSTGRES_PASSWORD:-ailab}@postgres:5432/${POSTGRES_DB:-ailab}
+  AILAB_REDIS_URL: redis://redis:6379/0
+  AILAB_MASTER_KEY: ${AILAB_MASTER_KEY:-}
+  AILAB_LOG_LEVEL: ${AILAB_LOG_LEVEL:-info}
+  AILAB_LOG_FORMAT: ${AILAB_LOG_FORMAT:-json}
+  AILAB_RUNNER_TOKEN: ${AILAB_RUNNER_TOKEN:-change-me-in-env}
+  AILAB_RUNNER_IMAGE: ${AILAB_RUNNER_IMAGE:-ailab/runner:1.0.0}
+  AILAB_WORKER_CONCURRENCY: ${AILAB_WORKER_CONCURRENCY:-4}
+  AILAB_LEASE_TTL_S: ${AILAB_LEASE_TTL_S:-900}
+  AILAB_LLM_DEFAULT_MODEL: ${AILAB_LLM_DEFAULT_MODEL:-deepseek-flash}
+  AILAB_LLM_ESCALATION_MODEL: ${AILAB_LLM_ESCALATION_MODEL:-deepseek-v4-pro}
+  AILAB_GITHUB_API_URL: ${AILAB_GITHUB_API_URL:-https://api.github.com}
+  AILAB_GITHUB_WEBHOOK_SECRET: ${AILAB_GITHUB_WEBHOOK_SECRET:-}
+  AILAB_ARTIFACTS_DIR: /var/lib/ailab/artifacts
+  AILAB_WORKSPACES_DIR: /var/lib/ailab/workspaces
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.7-pg18-trixie
+    profiles: ["core"]
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ailab}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ailab}
+      POSTGRES_DB: ${POSTGRES_DB:-ailab}
+      PGDATA: /var/lib/postgresql/data
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - backbone
+    shm_size: 256m
+    mem_limit: 2g
+    cpus: 2.0
+    pids_limit: 512
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    # The official PostgreSQL entrypoint needs these to own and initialize the
+    # data directory. They are the only cap_add exception in the platform.
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+  redis:
+    image: redis:8.8.4-trixie
+    profiles: ["core"]
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --maxmemory
+      - 512mb
+      - --maxmemory-policy
+      - allkeys-lru
+    volumes:
+      - redisdata:/data
+    networks:
+      - backbone
+    mem_limit: 768m
+    cpus: 1.0
+    pids_limit: 256
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    # The official Redis entrypoint needs these to own the AOF directory and
+    # to apply its own capability bounding set.
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+      - SETPCAP
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+  migrate:
+    build:
+      context: ../..
+      dockerfile: infra/docker/migrate.Dockerfile
+    image: ailab/migrate:1.0.0
+    profiles: ["core"]
+    restart: "no"
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-ailab}:${POSTGRES_PASSWORD:-ailab}@postgres:5432/${POSTGRES_DB:-ailab}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - backbone
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 128
+    <<: *default-security
+    logging: *default-logging
+
+  api:
+    build:
+      context: ../..
+      dockerfile: infra/docker/api.Dockerfile
+    image: ailab/api:1.0.0
+    profiles: ["core"]
+    restart: unless-stopped
+    environment: *app-env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - edge
+      - backbone
+    read_only: true
+    tmpfs:
+      - /tmp
+    mem_limit: 512m
+    cpus: 1.0
+    pids_limit: 256
+    <<: *default-security
+    logging: *default-logging
+    stop_grace_period: 20s
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/ailab-api", "healthcheck"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 20s
+
+  worker:
+    build:
+      context: ../..
+      dockerfile: infra/docker/worker.Dockerfile
+    image: ailab/worker:1.0.0
+    profiles: ["core"]
+    restart: unless-stopped
+    environment:
+      <<: *app-env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      runner:
+        condition: service_started
+    networks:
+      - backbone
+      - runner
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      - artifacts:/var/lib/ailab/artifacts
+      - workspaces:/var/lib/ailab/workspaces
+    mem_limit: 1g
+    cpus: 2.0
+    pids_limit: 512
+    <<: *default-security
+    logging: *default-logging
+    stop_grace_period: 20s
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/ailab-worker", "healthcheck"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+  runner:
+    build:
+      context: ../..
+      dockerfile: infra/docker/runner.Dockerfile
+    image: ailab/runner:1.0.0
+    profiles: ["core"]
+    restart: unless-stopped
+    environment:
+      AILAB_RUNNER_TOKEN: ${AILAB_RUNNER_TOKEN:-change-me-in-env}
+      DOCKER_HOST: tcp://docker-socket-proxy:2375
+      AILAB_ARTIFACTS_DIR: /var/lib/ailab/artifacts
+      AILAB_WORKSPACES_DIR: /var/lib/ailab/workspaces
+    depends_on:
+      docker-socket-proxy:
+        condition: service_healthy
+    networks:
+      - runner
+      - sandbox-control
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      - artifacts:/var/lib/ailab/artifacts
+      - workspaces:/var/lib/ailab/workspaces
+    mem_limit: 512m
+    cpus: 1.0
+    pids_limit: 256
+    <<: *default-security
+    logging: *default-logging
+    stop_grace_period: 20s
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/ailab-runner", "healthcheck"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 10s
+
+  docker-socket-proxy:
+    image: tecnativa/docker-socket-proxy:0.3.0
+    profiles: ["core"]
+    restart: unless-stopped
+    environment:
+      CONTAINERS: 1
+      POST: 1
+      IMAGES: 1
+      EXEC: 1
+      LOGS: 1
+      INFO: 1
+      VERSION: 0
+      AUTH: 0
+      BUILD: 0
+      COMMIT: 0
+      CONFIGS: 0
+      DISTRIBUTION: 0
+      EVENTS: 0
+      NODES: 0
+      NETWORKS: 0
+      PLUGINS: 0
+      SERVICES: 0
+      SESSION: 0
+      SWARM: 0
+      SYSTEM: 0
+      TASKS: 0
+      VOLUMES: 0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - runner
+    # The proxy writes its generated haproxy.cfg at startup, so it cannot use
+    # a read-only root filesystem. It still drops all capabilities and the
+    # Docker socket mount is read-only.
+    mem_limit: 64m
+    cpus: 0.25
+    pids_limit: 64
+    <<: *default-security
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:2375/_ping >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 5s
+
+  web:
+    build:
+      context: ../..
+      dockerfile: infra/docker/web.Dockerfile
+    image: ailab/web:1.0.0
+    profiles: ["core"]
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_started
+    networks:
+      - edge
+    ports:
+      - "127.0.0.1:8080:8080"
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+      - /var/run
+    mem_limit: 128m
+    cpus: 0.5
+    pids_limit: 128
+    <<: *default-security
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/healthz >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 10s
+
+volumes:
+  pgdata:
+  redisdata:
+  artifacts:
+  workspaces:
+
+networks:
+  edge:
+  backbone:
+  runner:
+    internal: true
+  sandbox-control:
+    internal: true
+  sandbox-egress:
+  observability:

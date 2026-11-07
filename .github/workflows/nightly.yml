@@ -1,0 +1,65 @@
+name: Nightly
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  load:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Load scenarios
+        run: |
+          if [ ! -d infra/load ]; then
+            echo "Load scenarios are owned by WP-21 and are not present yet"; exit 0
+          fi
+          echo "k6 scenarios run when infra/load and a running stack exist"
+  chaos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Chaos scenarios
+        run: |
+          if [ ! -d infra/chaos ]; then
+            echo "Chaos scenarios are owned by WP-21 and are not present yet"; exit 0
+          fi
+          echo "Chaos scenarios run when infra/chaos and a running stack exist"
+  fuzz:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fuzz targets
+        run: |
+          if [ ! -d fuzz ]; then
+            echo "Fuzz targets are owned by WP-21 and are not present yet"; exit 0
+          fi
+          cargo fuzz run
+  soak:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Soak
+        run: |
+          if [ ! -d infra/load ]; then
+            echo "Soak scenarios are owned by WP-21 and are not present yet"; exit 0
+          fi
+          echo "60-minute soak runs when the stack is available"
+  dependency-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.99.1
+      - name: cargo-deny
+        if: hashFiles('Cargo.toml') != ''
+        uses: EmbarkStudios/cargo-deny-action@v2
+      - name: npm audit
+        run: |
+          if [ ! -f web/package-lock.json ]; then
+            echo "No frontend lockfile yet"; exit 0
+          fi
+          npm --prefix web audit --audit-level=high

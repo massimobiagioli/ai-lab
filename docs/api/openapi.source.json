@@ -1,0 +1,170 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "AI-Lab API",
+    "version": "1.0.0",
+    "description": "REST contract for the local-first AI-Lab product."
+  },
+  "servers": [
+    { "url": "http://127.0.0.1:8080/api/v1", "description": "Default loopback server" }
+  ],
+  "paths": {
+    "/health/live": {
+      "get": {
+        "operationId": "healthLive",
+        "responses": { "200": { "description": "Process alive" } }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "operationId": "healthReady",
+        "responses": {
+          "200": { "description": "Ready" },
+          "503": { "description": "Dependencies not ready" }
+        }
+      }
+    },
+    "/providers": {
+      "get": {
+        "operationId": "listProviders",
+        "responses": { "200": { "description": "Providers" } }
+      },
+      "post": {
+        "operationId": "createProvider",
+        "responses": {
+          "201": { "description": "Created; only last4 is readable" },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/problem+json": {
+                "schema": { "$ref": "#/components/schemas/Problem" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/models": {
+      "get": {
+        "operationId": "listModels",
+        "responses": { "200": { "description": "Models" } }
+      }
+    },
+    "/projects": {
+      "get": {
+        "operationId": "listProjects",
+        "responses": { "200": { "description": "Projects" } }
+      },
+      "post": {
+        "operationId": "createProject",
+        "responses": { "201": { "description": "Created" } }
+      }
+    },
+    "/projects/{id}/board": {
+      "get": {
+        "operationId": "getBoard",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": { "200": { "description": "Board projection" } }
+      }
+    },
+    "/cards/{id}": {
+      "get": {
+        "operationId": "getCard",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": { "200": { "description": "Card" } }
+      },
+      "patch": {
+        "operationId": "updateCard",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": { "200": { "description": "Updated card" } }
+      }
+    },
+    "/cards/{id}/transition": {
+      "post": {
+        "operationId": "transitionCard",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Transition applied" },
+          "409": {
+            "description": "Version conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": { "$ref": "#/components/schemas/Problem" }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid transition or guard",
+            "content": {
+              "application/problem+json": {
+                "schema": { "$ref": "#/components/schemas/Problem" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events": {
+      "get": {
+        "operationId": "backfillEvents",
+        "parameters": [
+          { "name": "after", "in": "query", "required": false, "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "responses": { "200": { "description": "Events after the cursor" } }
+      }
+    },
+    "/labs/{id}/metrics": {
+      "get": {
+        "operationId": "getMetrics",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": { "200": { "description": "Flow metrics" } }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Problem": {
+        "type": "object",
+        "required": ["type", "title", "status", "code", "detail"],
+        "properties": {
+          "type": { "type": "string", "format": "uri" },
+          "title": { "type": "string" },
+          "status": { "type": "integer" },
+          "code": { "type": "string" },
+          "detail": { "type": "string" },
+          "violations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "rule": { "type": "string" },
+                "field": { "type": "string" },
+                "message": { "type": "string" }
+              }
+            }
+          },
+          "trace_id": { "type": "string" }
+        }
+      },
+      "Page": {
+        "type": "object",
+        "required": ["data"],
+        "properties": {
+          "data": { "type": "array", "items": {} },
+          "next_cursor": { "type": ["string", "null"] },
+          "total_estimate": { "type": "integer", "format": "int64" }
+        }
+      }
+    }
+  }
+}

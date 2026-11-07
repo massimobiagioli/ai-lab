@@ -1,0 +1,15 @@
+pre-commit:
+  parallel: true
+  commands:
+    checks:
+      run: scripts/hooks/pre-commit.sh
+
+commit-msg:
+  commands:
+    conventional:
+      run: scripts/hooks/commit-msg.sh {1}
+
+pre-push:
+  commands:
+    check:
+      run: make check

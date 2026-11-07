@@ -1,0 +1,32 @@
+.dashboard {
+  border: var(--ailab-border);
+  background: var(--ailab-color-surface);
+  padding: var(--ailab-space-4);
+  font-family: var(--ailab-font-mono);
+}
+
+.dashboard__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ailab-space-4);
+  margin-bottom: var(--ailab-space-4);
+}
+
+.dashboard__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: var(--ailab-space-3);
+  margin: 0;
+}
+
+.dashboard__grid dt {
+  color: var(--ailab-color-muted);
+  font-size: var(--ailab-font-size-sm);
+  text-transform: uppercase;
+}
+
+.dashboard__grid dd {
+  margin: var(--ailab-space-1) 0 0;
+  font-size: var(--ailab-font-size-lg);
+}

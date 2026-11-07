@@ -1,0 +1,10 @@
+[package]
+name = "gpl-license-negative-fixture"
+version = "0.0.0"
+edition = "2021"
+license = "GPL-3.0"
+description = "Negative fixture: a disallowed license must fail cargo-deny licenses."
+
+[dependencies]
+
+[workspace]

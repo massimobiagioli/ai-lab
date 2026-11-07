@@ -1,0 +1,27 @@
+# Path prefix	context. Longest prefix wins. The path-segment fallback applies
+# when no prefix matches. SQL in crates/infrastructure/ must be attributed.
+crates/domain/src/inventory	inventory
+crates/domain/src/lab	lab
+crates/domain/src/kanban	kanban
+crates/domain/src/delivery	delivery
+crates/domain/src/memory	memory
+crates/domain/src/platform	platform
+crates/domain/src/scm	scm
+crates/application/src/inventory	inventory
+crates/application/src/lab	lab
+crates/application/src/kanban	kanban
+crates/application/src/delivery	delivery
+crates/application/src/memory	memory
+crates/application/src/platform	platform
+crates/application/src/scm	scm
+crates/infrastructure/src/inventory	inventory
+crates/infrastructure/src/lab	lab
+crates/infrastructure/src/kanban	kanban
+crates/infrastructure/src/delivery	delivery
+crates/infrastructure/src/memory	memory
+crates/infrastructure/src/platform	platform
+crates/infrastructure/src/scm	scm
+crates/memory/	memory
+crates/scm/	scm
+crates/orchestrator/	delivery
+crates/llm/	inventory

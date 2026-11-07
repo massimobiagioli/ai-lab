@@ -1,0 +1,28 @@
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--ailab-space-1) var(--ailab-space-2);
+  border: var(--ailab-border);
+  border-radius: var(--ailab-radius);
+  font-family: var(--ailab-font-mono);
+  font-size: var(--ailab-font-size-sm);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--ailab-color-surface);
+  color: var(--ailab-color-text);
+}
+
+.status-badge--success {
+  border-color: var(--ailab-color-success);
+  color: var(--ailab-color-success);
+}
+
+.status-badge--warning {
+  border-color: var(--ailab-color-warning);
+  color: var(--ailab-color-warning);
+}
+
+.status-badge--danger {
+  border-color: var(--ailab-color-danger);
+  color: var(--ailab-color-danger);
+}
