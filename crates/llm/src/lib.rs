@@ -3,6 +3,7 @@
 #![forbid(unsafe_code)]
 
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 use ailab_application::Secret;
 use ailab_domain::Money;
@@ -262,7 +263,10 @@ fn hex(bytes: &[u8]) -> String {
 /// Detect secret material before it reaches a model.
 #[must_use]
 pub fn contains_secret(text: &str) -> bool {
-    const PREFIXES: &[&str] = &["sk-", "ghp_", "github_pat_", "AKIA", "xoxb-"];
+    const PREFIXES: &[&str] = &["sk-", "ghp_", "github_pat_", "AKIA", "AIza", "xoxb-"];
+    if text.contains("-----BEGIN") {
+        return true;
+    }
     text.split_whitespace().any(|token| {
         PREFIXES.iter().any(|prefix| token.starts_with(prefix))
             || token.contains("AILAB_MASTER_KEY=")
@@ -550,6 +554,10 @@ impl LlmProvider for DeepSeekProvider {
                         breaker.record_failure(Utc::now());
                     }
                     if self.retry.should_retry(status) && attempt < self.retry.max_attempts {
+                        let delay = response
+                            .retry_after_ms
+                            .unwrap_or_else(|| self.retry.backoff_ms(attempt));
+                        std::thread::sleep(Duration::from_millis(delay));
                         attempt += 1;
                         continue;
                     }
@@ -566,6 +574,7 @@ impl LlmProvider for DeepSeekProvider {
                         breaker.record_failure(Utc::now());
                     }
                     if attempt < self.retry.max_attempts {
+                        std::thread::sleep(Duration::from_millis(self.retry.backoff_ms(attempt)));
                         attempt += 1;
                         continue;
                     }
@@ -746,6 +755,23 @@ mod tests {
             assembler.assemble("task", &blocks),
             Err(LlmError::SecretDetected)
         ));
+        for secret in [
+            "AIzaSyExampleToken",
+            "-----BEGIN RSA PRIVATE KEY-----",
+            "sk-example",
+        ] {
+            let blocks = vec![UntrustedBlock {
+                label: "memory".to_owned(),
+                content: secret.to_owned(),
+            }];
+            assert!(
+                matches!(
+                    assembler.assemble("task", &blocks),
+                    Err(LlmError::SecretDetected)
+                ),
+                "secret not detected: {secret}"
+            );
+        }
         assert!(PromptAssembler::new("rules", "charter", "x".repeat(601)).is_err());
     }
 
