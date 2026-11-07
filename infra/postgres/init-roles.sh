@@ -21,7 +21,15 @@ SELECT format('CREATE ROLE ailab_readonly LOGIN PASSWORD %L', :'readonly_pw')
 WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'ailab_readonly')
 \gexec
 
+-- Extensions need superuser; create them once here so the migrate role can
+-- apply the schema migrations as a non-superuser.
+CREATE EXTENSION IF NOT EXISTS vector;
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE EXTENSION IF NOT EXISTS citext;
+
 GRANT CONNECT ON DATABASE :"db" TO ailab_migrate, ailab_app, ailab_readonly;
+GRANT CREATE ON DATABASE :"db" TO ailab_migrate;
 GRANT USAGE ON SCHEMA public TO ailab_migrate, ailab_app, ailab_readonly;
 GRANT CREATE, USAGE ON SCHEMA public TO ailab_migrate;
 

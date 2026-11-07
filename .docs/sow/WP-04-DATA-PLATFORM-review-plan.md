@@ -81,7 +81,7 @@
 - [x] First QA pass returned `CHANGES_REQUESTED` for three blocking defects:
   - B1 constraint coverage: expanded from 7 to 18 negatives across every family; exhaustive per-object coverage still open (owner WP-21).
   - B2 restore drill: rewritten to verify the manifest SHA-256, per-table content checksums, integrity checks, RTO and to drop the scratch database.
-  - B3 least privilege: `infra/postgres/init-roles.sh` creates `ailab_migrate`, `ailab_app` and `ailab_readonly`; the migrate service uses `ailab_migrate`, the app uses `ailab_app` (CR-0007).
+  - B3 least privilege: `infra/postgres/init-roles.sh` (executable) creates `ailab_migrate`, `ailab_app` and `ailab_readonly`, pre-creates the extensions as superuser and grants `CREATE` on the database; `migrations/0003_grants.sql` grants the application/read-only privileges on `public` and `analytics`; the migrate service uses `ailab_migrate`, the app uses `ailab_app` (CR-0007). Verified end-to-end on a fresh container: roles created, all migrations apply as `ailab_migrate`, and `ailab_app` can select from `cards` and `analytics.card_timeline`.
 
 ## 9. Deferred items and residual risks
 

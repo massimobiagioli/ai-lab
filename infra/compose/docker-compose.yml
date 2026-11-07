@@ -40,6 +40,9 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-ailab}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ailab}
       POSTGRES_DB: ${POSTGRES_DB:-ailab}
+      AILAB_APP_DB_PASSWORD: ${AILAB_APP_DB_PASSWORD:-ailab_app}
+      AILAB_MIGRATE_DB_PASSWORD: ${AILAB_MIGRATE_DB_PASSWORD:-ailab_migrate}
+      AILAB_READONLY_DB_PASSWORD: ${AILAB_READONLY_DB_PASSWORD:-ailab_readonly}
       PGDATA: /var/lib/postgresql/data
     volumes:
       - pgdata:/var/lib/postgresql/data

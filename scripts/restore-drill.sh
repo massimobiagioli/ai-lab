@@ -25,21 +25,25 @@ psql_scratch() { docker compose -f "$COMPOSE_FILE" exec -T postgres psql -U "$DB
 START="$(date +%s)"
 
 # 1. The dump must match the manifest checksum.
-if [ -f "$MANIFEST" ]; then
-  EXPECTED="$(python3 - "$MANIFEST" <<'PY'
+if [ ! -f "$MANIFEST" ]; then
+  echo "restore-drill: missing manifest $MANIFEST" >&2
+  exit 1
+fi
+EXPECTED="$(python3 - "$MANIFEST" <<'PY'
 import json, sys
 print(json.load(open(sys.argv[1])).get("sha256", ""))
 PY
 )"
-  ACTUAL="$(shasum -a 256 "$BACKUP" | awk '{print $1}')"
-  if [ -n "$EXPECTED" ] && [ "$EXPECTED" != "$ACTUAL" ]; then
-    echo "restore-drill: dump checksum mismatch (manifest $EXPECTED != actual $ACTUAL)" >&2
-    exit 1
-  fi
-  echo "restore-drill: dump checksum verified against the manifest"
+if command -v sha256sum >/dev/null 2>&1; then
+  ACTUAL="$(sha256sum "$BACKUP" | awk '{print $1}')"
 else
-  echo "restore-drill: no manifest next to the dump; skipping checksum" >&2
+  ACTUAL="$(shasum -a 256 "$BACKUP" | awk '{print $1}')"
 fi
+if [ -z "$EXPECTED" ] || [ "$EXPECTED" != "$ACTUAL" ]; then
+  echo "restore-drill: dump checksum mismatch (manifest $EXPECTED != actual $ACTUAL)" >&2
+  exit 1
+fi
+echo "restore-drill: dump checksum verified against the manifest"
 
 # 2. Restore into a fresh scratch database.
 docker compose -f "$COMPOSE_FILE" exec -T postgres psql -U "$DB_USER" -d postgres \
@@ -84,6 +88,10 @@ if [ "$KEEP" != "--keep" ]; then
 fi
 
 if [ "$FAILED" -ne 0 ]; then
+  exit 1
+fi
+if [ "$RTO" -gt 3600 ]; then
+  echo "restore-drill: RTO ${RTO}s exceeds the 3600s target" >&2
   exit 1
 fi
 echo "restore-drill: OK ($BACKUP restored into $SCRATCH in ${RTO}s; row counts, content checksums and integrity verified)"
