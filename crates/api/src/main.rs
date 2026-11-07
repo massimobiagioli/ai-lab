@@ -29,6 +29,11 @@ fn main() {
         std::process::exit(i32::from(!healthy));
     }
 
+    if let Err(error) = ailab_application::Config::from_env() {
+        eprintln!("refusing to start: {error}");
+        std::process::exit(78);
+    }
+
     if let Err(error) = validate_startup(&bind, token.as_deref(), master_key.as_deref()) {
         eprintln!("refusing to start: {error}");
         std::process::exit(78);

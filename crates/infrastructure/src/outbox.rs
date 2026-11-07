@@ -157,4 +157,39 @@ mod tests {
             0
         );
     }
+
+    #[test]
+    fn concurrent_writers_get_unique_sequences() {
+        use std::sync::Arc;
+        use std::thread;
+
+        let outbox = Arc::new(InMemoryOutbox::new());
+        let lab = LabId::generate();
+        let writers: Vec<_> = (0..20)
+            .map(|index| {
+                let outbox = Arc::clone(&outbox);
+                thread::spawn(move || {
+                    let event = event(
+                        lab,
+                        if index % 2 == 0 {
+                            "kanban.card.created"
+                        } else {
+                            "kanban.card.moved"
+                        },
+                    );
+                    futures::executor::block_on(outbox.append(&[event])).expect("append");
+                })
+            })
+            .collect();
+        for writer in writers {
+            writer.join().expect("writer");
+        }
+        let mut seqs: Vec<i64> = futures::executor::block_on(outbox.pending())
+            .expect("pending")
+            .into_iter()
+            .filter_map(|event| event.seq)
+            .collect();
+        seqs.sort_unstable();
+        assert_eq!(seqs, (1..=20).collect::<Vec<i64>>());
+    }
 }

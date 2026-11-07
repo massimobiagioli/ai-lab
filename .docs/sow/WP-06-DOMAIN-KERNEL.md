@@ -19,6 +19,7 @@
 | 2026-11-07 | — | `ready` | Tech Lead | Initial SOW baseline |
 | 2026-11-07 | `ready` | `progress` | Dev (agent) | WP-01 and WP-04 done |
 | 2026-11-07 | `progress` | `done` | Dev (agent) | Kernel primitives, ports, outbox, events, config and fitness delivered; Postgres adapters land with WP-07/WP-13 |
+| 2026-11-07 | `done` | `done` | Tech Lead (agent) | WP review: QA `APPROVED` (`.docs/product/evidence/WP-06-review.md`); config validation wired, outbox concurrency test added |
 
 ---
 
@@ -302,3 +303,5 @@ pub trait Repository<A: Aggregate>: Send + Sync {
 2026-11-07 | T09 | crates/testkit/src/{fakes,repository}.rs | fakes and fake repository tests | — | T10
 2026-11-07 | T10 | .tools/check-crate-dependencies.sh, .docs/product/eventing.md, .docs/product/domain-model.md | fitness OK; doc links 116 | — | closure
 2026-11-07 | closure | crates/*, .docs/product/* | cargo test/clippy green; crate fitness OK | Postgres outbox/relay WP-13; logging middleware WP-16/WP-20 | WP-07
+2026-11-07 | review | .docs/sow/WP-06-DOMAIN-KERNEL-review-plan.md | workspace tests; outbox 20-writer concurrency; config exit 78 wired; crate/architecture fitness | AC3/AC5 DB allocator WP-13 | QA review
+2026-11-07 | re-review | .docs/product/evidence/WP-06-review.md | QA APPROVED; 26 golden events; Secret no-leak; 409 mapping | AC3/AC5 WP-13 | merge
