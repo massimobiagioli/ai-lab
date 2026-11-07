@@ -131,13 +131,13 @@ AI-Lab uses trunk-based development. `main` is the only long-lived branch and is
 
 - Branch from `main`: `ailab/{card_key}-{slug}` (for example `ailab/AIL-42-fix-retry-backoff`).
 - Keep branches short-lived: aim for one card and one review cycle.
-- No direct pushes to `main`; a pull request is mandatory.
+- No direct pushes to `main` except the authorized reviewer merge in the documented WP review workflow (CR-0003); normal feature work uses a pull request.
 - No force pushes or deletions on `main`. Feature branches may be rebased before review.
 - Release cuts, when needed, are documented tags, not long-running branches.
 
 ### 12.2 Merge
 
-- Squash merge only; the default branch keeps a linear history.
+- Normal feature work squash-merges. The WP review workflow merges with `--no-ff` for an auditable review commit (CR-0003); the default branch does not require linear history under the review configuration.
 - Reviewer ≠ author and merger ≠ author (ADR-0011).
 - The PR template in `.github/pull_request_template.md` must be complete, including evidence.
 - A merged PR records the merge SHA on the card before the card moves to `DONE`.

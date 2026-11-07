@@ -19,6 +19,7 @@
 | 2026-11-07 | — | `ready` | Tech Lead | Initial SOW baseline |
 | 2026-11-07 | `ready` | `progress` | Dev (agent) | WIP slot acquired; T01 started |
 | 2026-11-07 | `progress` | `done` | Tech Lead (agent) | All tasks, deliverables and gates verified; independent review APPROVED; CR-0002 assigns environmental and consumer responsibilities |
+| 2026-11-07 | `done` | `done` | Tech Lead (agent) | WP review: CR-0003 closes B-01; branch protection applied with the 16 required contexts and verified |
 
 ---
 
@@ -285,7 +286,7 @@ sow-lint
 - [x] Governance docs reviewed by Tech Lead and QA. Evidence: independent `APPROVED` review in `.docs/product/evidence/WP-00-review.md`.
 - [x] Templates used in at least one real card and one real CR (`.docs/product/change-requests/CR-0001.md`, `.docs/product/backlog/AIL-101.md`..`AIL-103.md`).
 - [x] Metrics dashboard populated from the seed and reviewed in the weekly meeting. Assigned to WP-20 by CR-0002; WP-00 delivers the verified views and formulas (`migrations/0002_analytics_views.sql`, `.docs/product/metrics.md`, 25 assertions).
-- [x] No open P0/P1; no unresolved blocker. B-01..B-03 assigned by CR-0002; B-04 resolved by the independent review.
+- [x] No open P0/P1; no unresolved blocker. B-01 closed by CR-0003; B-02 closed by the AC7 integration test (`crates/api/tests/separation_of_duties.rs`); B-03 assigned by CR-0002; B-04 resolved by the independent review.
 - [x] Status updated to `done` with sign-off row (2026-11-07).
 
 ---
@@ -313,20 +314,24 @@ sow-lint
 2026-11-07 | T01 | .docs/product/governance.md, .docs/product/change-control.md, .docs/product/change-requests/CR-0001.md, .docs/product/change-requests/README.md | doc link check | CR-0001 (docs root convention) | T02
 2026-11-07 | T02 | .docs/product/status-model.md | doc link check | — | T03
 2026-11-07 | T03 | .docs/product/quality-gates.md, .github/required-checks.txt | sow-lint | — | T04
-2026-11-07 | T04 | .docs/product/metrics.md, migrations/analytics_views.sql, .tools/test-analytics-views.sh, .tools/fixtures/analytics-seed.sql | .tools/test-analytics-views.sh (25 assertions) | — | T05
+2026-11-07 | T04 | .docs/product/metrics.md, migrations/0002_analytics_views.sql, .tools/test-analytics-views.sh, .tools/fixtures/analytics-seed.sql | .tools/test-analytics-views.sh (25 assertions) | — | T05
 2026-11-07 | T05 | .docs/product/templates/WP.md, card.md, adr.md, change-request.md, milestone-gate.md, retro.md | doc link check | — | T06
 2026-11-07 | T06 | scripts/sow-lint.sh, .tools/sow-lint-self-test.sh, .github/workflows/ci.yml | .tools/sow-lint-self-test.sh (11 cases) | — | T07
 2026-11-07 | T07 | .github/pull_request_template.md, .github/branch-protection.json, .docs/product/governance.md | sow-lint (required checks) | — | T08
 2026-11-07 | T08 | .docs/product/risk-register.md | doc link check | — | T09
 2026-11-07 | T09 | .docs/product/retrospectives/M0-retro.md, .docs/product/backlog/AIL-101.md, AIL-102.md, AIL-103.md, .docs/product/backlog/README.md | doc link check | — | gates
-2026-11-07 | gates | all WP-00 artifacts | harness-lint OK (16 checks), sow-lint OK (31 checks), sow-lint self-test 11/11, analytics views 25/25, doc links 63 checked | — | closure
+2026-11-07 | gates | all WP-00 artifacts | harness-lint OK (16 checks), sow-lint OK (31 checks), sow-lint self-test 11/11, analytics views 25/25, doc links 138 checked | — | closure
 2026-11-07 | closure | .docs/product/evidence/WP-00-review.md, .docs/product/change-requests/CR-0002.md | independent review APPROVED; harness-lint OK; sow-lint OK | CR-0002 | WP-01
 
 ## Blockers
 
 - `blocked=false`
-- B-01 assigned by CR-0002: branch-protection configuration delivered; the repository now exists on `main`, but there is no GitHub remote yet. Application remains a deployment prerequisite performed with the documented `gh api` command once a remote exists.
-- B-02 assigned by CR-0002: AC7 is a cross-WP contract owned by WP-09/WP-15.
+- B-01 closed by CR-0003: branch protection is applied on the GitHub `main` branch with the 16 required contexts; verified with `gh api repos/massimobiagioli/ai-lab/branches/main/protection` (admin bypass enabled for the review merge workflow, no required PR reviews, merge commits allowed, force pushes/deletions blocked).
+- B-02 closed by the AC7 integration test (`crates/api/tests/separation_of_duties.rs`, asserting HTTP 422 `SEPARATION_OF_DUTIES`).
 - B-03 assigned by CR-0002: the live dashboard is WP-20 scope; the verified views and formulas are delivered.
 - B-04 resolved by `.docs/product/evidence/WP-00-review.md` (independent `APPROVED`).
 2026-11-07 | env-update | .git (operator first commit on main) | native hooks installed via scripts/hooks/install.sh; no remote | B-01 remains: branch protection needs a GitHub remote | WP-03
+
+2026-11-07 | review | .docs/sow/WP-00-GOVERNANCE-review-plan.md, CR-0003 | branch protection verified; doc links 138 | CR-0003 | QA re-review and merge
+
+2026-11-07 | review-fix | crates/api/tests/separation_of_duties.rs, .docs/product/evidence/WP-00-review.md, .docs/product/evidence/AIL-101-branch-protection.txt | cargo test -p ailab-api --test separation_of_duties (2 passed); QA CHANGES_REQUESTED resolved | — | QA re-review

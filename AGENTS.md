@@ -98,6 +98,7 @@ Every document under `.docs` is listed here. When a document is created, renamed
 | Delivery appendix | WBS, acceptance tests, ADRs, environment variables, docs manifest. | [`.docs/technical-specification/APPENDIX-D-DELIVERY.md`](./.docs/technical-specification/APPENDIX-D-DELIVERY.md) |
 | SOW index | Delivery index, status model, dependency graph, milestones. | [`.docs/sow/SOW.md`](./.docs/sow/SOW.md) |
 | WP-00 Governance | Program governance, Lean/Agile delivery, quality system. | [`.docs/sow/WP-00-GOVERNANCE.md`](./.docs/sow/WP-00-GOVERNANCE.md) |
+| WP-00 review plan | Governance review checklist and evidence. | [`.docs/sow/WP-00-GOVERNANCE-review-plan.md`](./.docs/sow/WP-00-GOVERNANCE-review-plan.md) |
 | WP-01 Architecture | Architecture and service topology. | [`.docs/sow/WP-01-ARCHITECTURE.md`](./.docs/sow/WP-01-ARCHITECTURE.md) |
 | WP-02 Repository/DevEx | Repository, toolchain and developer experience. | [`.docs/sow/WP-02-REPOSITORY-DEVEX.md`](./.docs/sow/WP-02-REPOSITORY-DEVEX.md) |
 | WP-03 Infrastructure | Docker and runtime platform. | [`.docs/sow/WP-03-INFRASTRUCTURE.md`](./.docs/sow/WP-03-INFRASTRUCTURE.md) |
