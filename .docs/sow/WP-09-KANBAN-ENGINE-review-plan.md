@@ -40,7 +40,7 @@
 - [x] AC2 every DoR/DoD check has an exact code and field — evidence: `dor_violations`/`dod_violations` + per-code tests; `DOR_STORY_INCOMPLETE`/`DOR_DEPENDENCY_OPEN` deferred to WP-10/WP-16 (story/dependency model).
 - [x] AC3 100 concurrent cards unique/contiguous — DEFERRED to WP-16 (DB sequence); WP-07 allocator delivered.
 - [x] AC4 two concurrent transitions → one success, one `VERSION_CONFLICT` — evidence: constraint suite + DB version guard; HTTP mapping WP-16.
-- [x] AC5 READY requires assignee/future due date/estimate/priority/story — evidence: `dor_violations`.
+- [x] AC5 READY requires assignee/future due date/estimate in {1,2,3,5,8}/priority/story — evidence: `dor_violations`; estimate 13 rejected with `DOR_ESTIMATE_INVALID`.
 - [x] AC6 DONE requires merge SHA, QA, CI, DoD — evidence: `dod_violations`.
 - [x] AC7 reviewer = assignee / merger = author rejected — evidence: `SEPARATION_OF_DUTIES` tests; merge policy in `qa.rs`.
 - [x] AC8 WIP limits enforced for DOING/REVIEW — evidence: `WIP_LIMIT_EXCEEDED`.
@@ -71,7 +71,8 @@
 ## 8. QA review
 
 - [ ] QA subagent verdict: `APPROVED`.
-- [ ] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 143, domain tests, clippy, per-code DoR/DoD).
+- [ ] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 143, 55 domain tests, clippy, per-code DoR/DoD).
+- [x] First QA pass returned `CHANGES_REQUESTED` for estimate 13 bypassing DoR; fixed by validating the allowed estimate set and adding a regression test, plus a REVIEW WIP test.
 
 ## 9. Deferred items and residual risks
 

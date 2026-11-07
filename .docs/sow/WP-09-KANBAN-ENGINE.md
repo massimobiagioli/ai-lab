@@ -19,7 +19,7 @@
 | 2026-11-07 | — | `ready` | Tech Lead | Initial SOW baseline |
 | 2026-11-07 | `ready` | `progress` | Dev (agent) | WP-06 and WP-07 done |
 | 2026-11-07 | `progress` | `done` | Dev (agent) | Card aggregate, 36-case matrix, DoR/DoD, WIP, SoD, ICEBOX and reopen delivered; API/DB/perf in WP-16/WP-21 |
-| 2026-11-07 | `done` | `done` | Tech Lead (agent) | WP review: review plan created, per-code DoR/DoD evaluators and matrix reproduced, QA verdict recorded |
+| 2026-11-07 | `done` | `done` | Tech Lead (agent) | WP review: QA first pass `CHANGES_REQUESTED`; estimate-set DoR fixed and REVIEW WIP test added, then re-reviewed |
 
 ---
 
@@ -321,3 +321,4 @@ Errors: `422 INVALID_TRANSITION`, `422 DOR_INCOMPLETE`, `422 DOD_INCOMPLETE`, `4
 2026-11-07 | T01 | crates/domain/src/kanban.rs | Card aggregate, 36-case matrix, DoR/DoD, WIP, separation, ICEBOX, reopen; 8 tests | — | T02
 2026-11-07 | T02 | .docs/product/kanban.md | 45 domain tests; matrix 12 allowed / 24 denied | API/DB/concurrency/perf deferred WP-16/WP-21 | WP-11
 2026-11-07 | review | .docs/sow/WP-09-KANBAN-ENGINE-review-plan.md, crates/domain/src/kanban.rs | per-code DoR (8) and DoD (9) evaluators; matrix 12/24; 54 domain tests; clippy | AC3/4 WP-16, AC10 WP-21 | QA review
+2026-11-07 | review-fix | crates/domain/src/kanban.rs | estimate set {1,2,3,5,8} enforced in DoR; REVIEW WIP test; 55 domain tests | QA first pass CHANGES_REQUESTED | re-review

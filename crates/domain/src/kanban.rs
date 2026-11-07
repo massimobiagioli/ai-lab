@@ -546,7 +546,10 @@ impl Card {
                 "the story still needs refinement",
             ));
         }
-        if self.estimate.is_none() {
+        if self
+            .estimate
+            .is_none_or(|estimate| !matches!(u8::from(estimate), 1 | 2 | 3 | 5 | 8))
+        {
             violations.push(RuleViolation::new(
                 "DOR_ESTIMATE_INVALID",
                 "estimate",
@@ -931,6 +934,33 @@ mod tests {
                 .iter()
                 .any(|violation| violation.code == "DOR_NEEDS_REFINEMENT")
         );
+
+        let mut oversized = Card::create(
+            CardId::generate(),
+            LabId::generate(),
+            ProjectId::generate(),
+            CardKey::new("AIL", 92).expect("key"),
+            "Estimate 13",
+            story(),
+            Priority::Must,
+            Money::from_microusd(5_000_000).expect("budget"),
+            CardSource::Human,
+            now(),
+        )
+        .expect("card");
+        oversized
+            .refine(
+                story(),
+                Estimate::new(13).expect("valid estimate"),
+                Priority::Must,
+            )
+            .expect("refine");
+        oversized
+            .assign(AgentId::generate(), now() + Duration::days(1))
+            .expect("assign");
+        assert!(oversized.dor_violations(&ctx).iter().any(|violation| {
+            violation.code == "DOR_ESTIMATE_INVALID" && violation.field == "estimate"
+        }));
     }
 
     #[test]
@@ -996,6 +1026,21 @@ mod tests {
         ctx.doing_count = 1;
         ctx.wip_limits.doing_per_agent = 1;
         let error = card.move_to(KanbanColumn::Doing, &ctx).expect_err("wip");
+        assert_eq!(error.code(), "WIP_LIMIT_EXCEEDED");
+    }
+
+    #[test]
+    fn review_wip_limit_blocks_transition() {
+        let (mut card, _, reviewer) = ready_card();
+        let mut ctx = TransitionContext::new(now(), Actor::human());
+        card.move_to(KanbanColumn::Doing, &ctx).expect("doing");
+        card.attach_pr(reviewer, "https://example.test/pr/1")
+            .expect("pr");
+        ctx.ci_green = true;
+        ctx.review_count = ctx.wip_limits.review_per_qa;
+        let error = card
+            .move_to(KanbanColumn::Review, &ctx)
+            .expect_err("review wip");
         assert_eq!(error.code(), "WIP_LIMIT_EXCEEDED");
     }
 
