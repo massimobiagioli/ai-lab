@@ -130,6 +130,9 @@ fi
 
 for f in "${WP_FILES[@]}"; do
   base="$(basename "$f")"
+  case "$base" in
+    *-review-plan.md) continue ;;
+  esac
   id="$(printf '%s' "$base" | sed -E 's/^(WP-[0-9]{2})-.*/\1/')"
   if [ "$id" = "$base" ]; then
     fail "invalid WP filename: $base"
