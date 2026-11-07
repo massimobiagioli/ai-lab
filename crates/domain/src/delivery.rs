@@ -367,6 +367,8 @@ pub struct PlanTask {
     pub deliverables: Vec<String>,
     /// Acceptance criteria.
     pub acceptance_criteria: Vec<String>,
+    /// SOW functional-requirement IDs this task covers.
+    pub covers: Vec<String>,
 }
 
 /// Plan lifecycle.
@@ -397,6 +399,8 @@ pub struct MaterializedCard {
     pub role: AgentRole,
     /// Dependencies.
     pub depends_on: Vec<String>,
+    /// SOW functional requirements covered.
+    pub covers: Vec<String>,
     /// SOW traceability.
     pub sow_id: SowId,
 }
@@ -547,6 +551,45 @@ impl Plan {
             .collect()
     }
 
+    /// Validate FR traceability: each task maps to exactly one known FR and
+    /// every FR is covered by at least one task.
+    pub fn validate_coverage(
+        &self,
+        functional_requirements: &BTreeSet<String>,
+    ) -> Result<(), DomainError> {
+        let mut covered = BTreeSet::new();
+        for task in &self.tasks {
+            if task.covers.len() != 1 {
+                return Err(DomainError::validation(
+                    "plan.task.covers",
+                    format!(
+                        "task {} must map to exactly one functional requirement",
+                        task.task_key
+                    ),
+                ));
+            }
+            let requirement = &task.covers[0];
+            if !functional_requirements.contains(requirement) {
+                return Err(DomainError::validation(
+                    "plan.task.covers",
+                    format!("task {} references unknown FR {requirement}", task.task_key),
+                ));
+            }
+            covered.insert(requirement.clone());
+        }
+        let missing: Vec<&str> = functional_requirements
+            .difference(&covered)
+            .map(String::as_str)
+            .collect();
+        if !missing.is_empty() {
+            return Err(DomainError::validation(
+                "plan.coverage",
+                format!("uncovered functional requirements: {}", missing.join(", ")),
+            ));
+        }
+        Ok(())
+    }
+
     /// Preview materialization without mutating the plan.
     pub fn preview(&self) -> Result<Vec<MaterializedCard>, DomainError> {
         let order = self.topological_order()?;
@@ -574,6 +617,7 @@ impl Plan {
                 estimate: task.estimate,
                 role: task.role,
                 depends_on: task.depends_on.clone(),
+                covers: task.covers.clone(),
                 sow_id: self.sow_id,
             });
         }
@@ -666,6 +710,7 @@ mod tests {
             depends_on: depends_on.into_iter().map(str::to_owned).collect(),
             deliverables: vec![format!(".docs/product/{key}.md")],
             acceptance_criteria: vec![format!("{key} works")],
+            covers: vec![],
         }
     }
 
@@ -764,5 +809,49 @@ mod tests {
         plan.approve().expect("approve");
         plan.mark_materialized().expect("materialized");
         assert_eq!(plan.status(), PlanStatus::Materialized);
+    }
+
+    #[test]
+    fn plan_validates_functional_requirement_coverage() {
+        let project = ProjectId::generate();
+        let sow = SowId::generate();
+        let requirements: BTreeSet<String> = ["FR-1".to_owned(), "FR-2".to_owned()].into();
+        let mut first = task("T1", vec![]);
+        first.covers = vec!["FR-1".to_owned()];
+        let mut second = task("T2", vec!["T1"]);
+        second.covers = vec!["FR-2".to_owned()];
+        let plan = Plan::create(
+            PlanId::generate(),
+            project,
+            sow,
+            "Covered",
+            vec![first, second],
+        )
+        .expect("plan");
+        plan.validate_coverage(&requirements).expect("covered");
+
+        let mut uncovered = task("T1", vec![]);
+        uncovered.covers = vec!["FR-1".to_owned()];
+        let plan = Plan::create(
+            PlanId::generate(),
+            project,
+            sow,
+            "Uncovered",
+            vec![uncovered],
+        )
+        .expect("plan");
+        assert!(plan.validate_coverage(&requirements).is_err());
+
+        let mut multiple = task("T1", vec![]);
+        multiple.covers = vec!["FR-1".to_owned(), "FR-2".to_owned()];
+        let plan = Plan::create(PlanId::generate(), project, sow, "Multiple", vec![multiple])
+            .expect("plan");
+        assert!(plan.validate_coverage(&requirements).is_err());
+
+        let mut unknown = task("T1", vec![]);
+        unknown.covers = vec!["FR-404".to_owned()];
+        let plan =
+            Plan::create(PlanId::generate(), project, sow, "Unknown", vec![unknown]).expect("plan");
+        assert!(plan.validate_coverage(&requirements).is_err());
     }
 }

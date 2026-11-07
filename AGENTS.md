@@ -118,6 +118,7 @@ Every document under `.docs` is listed here. When a document is created, renamed
 | WP-09 Kanban engine | Kanban state machine, DoR/DoD, invariants. | [`.docs/sow/WP-09-KANBAN-ENGINE.md`](./.docs/sow/WP-09-KANBAN-ENGINE.md) |
 | WP-09 review plan | Kanban engine review checklist and evidence. | [`.docs/sow/WP-09-KANBAN-ENGINE-review-plan.md`](./.docs/sow/WP-09-KANBAN-ENGINE-review-plan.md) |
 | WP-10 SOW and planning | Idea intake, SOW, WBS, materialization. | [`.docs/sow/WP-10-SOW-PLANNING.md`](./.docs/sow/WP-10-SOW-PLANNING.md) |
+| WP-10 review plan | SOW and planning review checklist and evidence. | [`.docs/sow/WP-10-SOW-PLANNING-review-plan.md`](./.docs/sow/WP-10-SOW-PLANNING-review-plan.md) |
 | WP-11 LLM platform | DeepSeek adapter, prompts, routing, budgets. | [`.docs/sow/WP-11-LLM-PLATFORM.md`](./.docs/sow/WP-11-LLM-PLATFORM.md) |
 | WP-12 SCM and GitHub | SCM port, GitHub adapter, webhooks, merge. | [`.docs/sow/WP-12-SCM-GITHUB.md`](./.docs/sow/WP-12-SCM-GITHUB.md) |
 | WP-13 Orchestration | Scheduler, leases, run pipeline, recovery. | [`.docs/sow/WP-13-ORCHESTRATION.md`](./.docs/sow/WP-13-ORCHESTRATION.md) |
