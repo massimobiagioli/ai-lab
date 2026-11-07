@@ -301,3 +301,4 @@ Exact order (from Appendix C.2):
 2026-11-07 | T02 | crates/llm/src/lib.rs | prompt assembler/hash/guard, routing, cost/budget, structured repair | — | T03
 2026-11-07 | T03 | .docs/product/llm.md, .docs/product/agents.md | doc link check | streaming/tools/wiremock/Redis/persistence deferred WP-16/WP-20 | WP-10
 2026-11-07 | review | .docs/sow/WP-11-LLM-PLATFORM-review-plan.md, crates/llm/src/lib.rs | determinism; retry backoff/Retry-After; breaker; budget; secret guard; 10 llm tests; clippy | streaming/wiremock follow-up; Redis/ledger WP-16/WP-20 | QA review
+2026-11-07 | review-fix | crates/llm/src/lib.rs, crates/llm/Cargo.toml, .docs/product/llm.md | 4 attempts at 1/2/4/8 s ±20%; async futures_timer backoff; Appendix C.2 section order; AIza/PEM guard | QA first pass CHANGES_REQUESTED | re-review

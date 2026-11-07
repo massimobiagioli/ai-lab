@@ -30,16 +30,19 @@ The route reason is part of the decision and is recorded by the caller (WP-16 pe
 
 ## 3. Prompt assembly
 
-The assembler renders, in this order:
+The assembler renders, in this order (Appendix C.2):
 
-1. `HARD RULES`
-2. `ROLE CHARTER`
-3. `CHARACTER` (≤ 600 characters)
-4. `UNTRUSTED CONTEXT` blocks wrapped as `<untrusted label="...">...</untrusted>`
-5. `TASK`
+1. `ROLE CHARTER`
+2. `CHARACTER` (≤ 600 characters)
+3. `CV SUMMARY`
+4. `HARD RULES`
+5. `TOOLS`
+6. `OUTPUT CONTRACT`
+7. `TASK PACKET`
+8. `UNTRUSTED CONTEXT` blocks wrapped as `<untrusted label="...">...</untrusted>`
 
 - Untrusted blocks escape a closing `</untrusted>` so content cannot break the wrapper.
-- A prompt containing a secret prefix (`sk-`, `ghp_`, `github_pat_`, `AKIA`, `xoxb-`, `AILAB_MASTER_KEY=`, `password=`) is rejected with `SecretDetected`.
+- A prompt containing a secret prefix (`sk-`, `ghp_`, `github_pat_`, `AKIA`, `AIza`, `xoxb-`), a PEM block, `AILAB_MASTER_KEY=` or `password=` is rejected with `SecretDetected`.
 - `prompt_hash` is the SHA-256 of the rendered system and user prompts; the same inputs produce the same hash.
 
 ## 4. Structured outputs
@@ -48,8 +51,8 @@ Structured calls are parsed into a typed value and validated. An invalid output 
 
 ## 5. Retries, backoff and circuit breaker
 
-- 429 and 5xx are retried up to 3 attempts; 401/403 are not retried.
-- Backoff is exponential (100 ms base, capped at 5 s).
+- 429 and 5xx are retried up to 4 attempts; 401/403 are not retried.
+- Backoff is exponential (1 s, 2 s, 4 s, 8 s) with ±20% jitter and honors `Retry-After`.
 - The circuit opens after 5 consecutive failures and half-opens after 60 s.
 - The adapter records success/failure in the breaker and exposes `health()`.
 

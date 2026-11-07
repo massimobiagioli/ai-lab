@@ -24,7 +24,7 @@
 
 - [x] `LlmProvider` port, types, errors — evidence: `lib.rs`.
 - [x] `DeepSeekProvider` complete/health over injectable transport — evidence: `DeepSeekProvider`, `HttpTransport`.
-- [x] Prompt assembler fixed order + SHA-256 `prompt_hash` — evidence: `PromptAssembler::assemble`.
+- [x] Prompt assembler normative order (role charter, character, CV, hard rules, tools, output contract, task, untrusted) + SHA-256 `prompt_hash` — evidence: `PromptAssembler::assemble`, test.
 - [x] Hard rules, role charter, 600-char cap — evidence: `new`/`assemble`, tests.
 - [x] Schema validation + exactly one repair — evidence: `complete_structured`, tests.
 - [x] Routing with a recorded reason — evidence: `route`, test; persistence WP-16.
@@ -37,9 +37,9 @@
 
 ## 4. Acceptance criteria
 
-- [x] AC1 same inputs → same `prompt_hash`; snapshots — evidence: `prompt_is_deterministic_and_wraps_untrusted_content`.
+- [x] AC1 same inputs → same `prompt_hash`; deterministic section order — evidence: `prompt_is_deterministic_and_wraps_untrusted_content` asserts order and hash; role/purpose snapshots remain a WP-11 follow-up.
 - [x] AC2 schema validation + exactly one repair then `InvalidOutput` — evidence: `structured_output_repairs_once`, `structured_output_fails_after_one_repair`.
-- [x] AC3 429/5xx/timeouts retry with backoff and `Retry-After`; 4xx auth no retry — evidence: `complete` applies `Retry-After` or exponential backoff before retrying; `auth_errors_do_not_retry`.
+- [x] AC3 429/5xx/timeouts retry with 4 attempts and 1/2/4/8 s ±20% backoff honoring `Retry-After`; 4xx auth no retry — evidence: `RetryPolicy`, `complete` with `futures_timer::Delay`; tests.
 - [x] AC4 breaker opens after 5 failures, half-open after 60 s — evidence: `CircuitBreaker`, test.
 - [x] AC5 micro-USD cost and budget hard stop — evidence: `ModelPrice::cost`, `Budget::charge`; DB/Redis ledger WP-16.
 - [x] AC6 Redis unavailable → DB ledger — DEFERRED to WP-16.
@@ -71,7 +71,8 @@
 ## 8. QA review
 
 - [ ] QA subagent verdict: `APPROVED`.
-- [ ] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 143, llm tests, clippy, retry/backoff, secret guard).
+- [ ] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 143, 10 llm tests, clippy, retry/backoff, section order, secret guard).
+- [x] First QA pass returned `CHANGES_REQUESTED` for the retry policy values, blocking sleep and prompt section order; fixed with 4 attempts at 1/2/4/8 s ±20% jitter via `futures_timer`, the Appendix C.2 section order, and updated tests/docs.
 
 ## 9. Deferred items and residual risks
 
