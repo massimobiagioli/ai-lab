@@ -228,7 +228,7 @@ Exact order (from Appendix C.2):
 - [x] Secret guard before the call; persistence/retention in WP-16.
 - [x] Health probe; metrics/traces in WP-20.
 - [x] Fake provider/transport and prompt determinism tests; wiremock in the WP-11 follow-up.
-- [x] `docs/agents.md` and `docs/llm.md` delivered.
+- [x] `.docs/product/agents.md` and `.docs/product/llm.md` delivered.
 
 ---
 
@@ -299,4 +299,4 @@ Exact order (from Appendix C.2):
 
 2026-11-07 | T01 | crates/llm/src/lib.rs | LlmProvider port, DeepSeek adapter, retries, breaker, health; 10 tests | — | T02
 2026-11-07 | T02 | crates/llm/src/lib.rs | prompt assembler/hash/guard, routing, cost/budget, structured repair | — | T03
-2026-11-07 | T03 | docs/llm.md, docs/agents.md | doc link check | streaming/tools/wiremock/Redis/persistence deferred WP-16/WP-20 | WP-10
+2026-11-07 | T03 | .docs/product/llm.md, .docs/product/agents.md | doc link check | streaming/tools/wiremock/Redis/persistence deferred WP-16/WP-20 | WP-10

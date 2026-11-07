@@ -213,7 +213,7 @@ Gate states are visible on the card and in the office ("awaiting operator"). The
 - [x] Rework loop limits + escalation.
 - [x] Review/merge APIs + events + audit.
 - [x] Policy test matrix + E2E review/merge.
-- [x] `docs/qa-merge.md` with policies, matrix, error codes.
+- [x] `.docs/product/qa-merge.md` with policies, matrix, error codes.
 
 ---
 
@@ -280,4 +280,4 @@ Gate states are visible on the card and in the office ("awaiting operator"). The
 ## Progress log
 
 2026-11-07 | T01 | crates/application/src/qa.rs | verdicts, separation, merge checks, autonomy; 4 tests | — | T02
-2026-11-07 | T02 | docs/qa.md | 13 application tests; clippy green | CI/API/E2E integration deferred WP-16/WP-21 | WP-17
+2026-11-07 | T02 | .docs/product/qa.md | 13 application tests; clippy green | CI/API/E2E integration deferred WP-16/WP-21 | WP-17

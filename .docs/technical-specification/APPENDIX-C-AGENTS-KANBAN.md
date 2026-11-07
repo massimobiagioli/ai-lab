@@ -29,7 +29,7 @@ Characters are **fictional visual/behavioral archetypes** used for the pixel off
 - `C-003`: Default team for a new lab: `veteran_lead` (Tech Lead), `systems_analyst` (Analyst), `scrappy_dev` (Dev), `pixel_artisan` (QA).
 - `C-004`: Character selection is validated by `character_id`; unknown IDs are rejected.
 - `C-005`: Speech style affects only phrasing. If a character's phrasing would conflict with a safety or role rule, the rule wins and the conflict is logged as `character_override`.
-- `C-006`: Every asset (sprite sheet, bitmap font, sound) MUST have a redistributable license recorded in `docs/office.md` (author, source, license, modifications). Assets from the reference product MUST NOT be copied. The asset linter fails the build if a manifest entry lacks license metadata.
+- `C-006`: Every asset (sprite sheet, bitmap font, sound) MUST have a redistributable license recorded in `.docs/product/office.md` (author, source, license, modifications). Assets from the reference product MUST NOT be copied. The asset linter fails the build if a manifest entry lacks license metadata.
 
 ---
 
@@ -516,7 +516,7 @@ Output card:
     "deliverables": [
       {"path": "crates/cli/src/commands/convert.rs", "definition_of_done": "command implemented and wired"},
       {"path": "crates/cli/tests/convert.rs", "definition_of_done": "integration tests for AC-1 and AC-2"},
-      {"path": "docs/commands/convert.md", "definition_of_done": "usage, flags, examples"}
+      {"path": ".docs/product/commands/convert.md", "definition_of_done": "usage, flags, examples"}
     ],
     "out_of_scope": ["streaming inputs larger than 2 GB", "nested JSON columns"],
     "risks": [{"risk": "type inference ambiguity for mixed columns", "mitigation": "document precedence and fall back to string with a warning"}],

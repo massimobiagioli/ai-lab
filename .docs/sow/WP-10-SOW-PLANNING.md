@@ -214,7 +214,7 @@ draft ──submit──► in_review ──approve──► approved
 - [x] `sow_id`/`task_key` carried by materialized cards; API in WP-16.
 - [x] Deferred to WP-16.
 - [x] Deferred to WP-21.
-- [x] `docs/sow.md` and `docs/planning.md` delivered.
+- [x] `.docs/product/sow.md` and `.docs/product/planning.md` delivered.
 
 ---
 
@@ -284,4 +284,4 @@ draft ──submit──► in_review ──approve──► approved
 
 2026-11-07 | T01 | crates/domain/src/delivery.rs | SOW sections, versions and lifecycle; 4 tests | — | T02
 2026-11-07 | T02 | crates/domain/src/delivery.rs | plan DAG validation, topological order, leaves and materialization preview; 49 domain tests | — | T03
-2026-11-07 | T03 | docs/sow.md, docs/planning.md | doc link check | idea intake/API/schema/E2E deferred WP-16/WP-21 | done
+2026-11-07 | T03 | .docs/product/sow.md, .docs/product/planning.md | doc link check | idea intake/API/schema/E2E deferred WP-16/WP-21 | done

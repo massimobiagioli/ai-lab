@@ -30,7 +30,7 @@ description: Use before declaring any task or work package done, or when changin
 3. Run contract and invariant suites:
    - `make openapi`
    - `make asyncapi`
-   - `schemathesis run docs/api/openapi.json`
+   - `schemathesis run .docs/product/api/openapi.json`
    - Kanban 36-case matrix
    - memory leakage fixture
 4. Run security gates:

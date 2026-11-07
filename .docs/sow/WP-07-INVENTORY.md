@@ -233,7 +233,7 @@ Payloads include IDs, changed fields and actor; no secrets, no key material.
 - [x] Agent and project events emitted; provider/model/SCM audit wiring in WP-16.
 - [x] Deferred to WP-16 with the API repositories.
 - [x] Domain tests green; API/security tests owned by WP-16.
-- [x] `docs/inventory.md` delivered.
+- [x] `.docs/product/inventory.md` delivered.
 
 ---
 
@@ -307,4 +307,4 @@ Payloads include IDs, changed fields and actor; no secrets, no key material.
 2026-11-07 | T01 | crates/domain/src/inventory.rs | Provider/Model/SCM/Agent/CV/Project aggregates; 26 domain tests | — | T02
 2026-11-07 | T02 | crates/domain/src/inventory.rs | one-Tech-Lead invariant, description bounds, CV append-only | — | T03
 2026-11-07 | T03 | crates/domain/src/inventory.rs | project card sequence, archive guard, key prefix validation | — | T04
-2026-11-07 | T04 | docs/inventory.md | doc link check | REST/OpenAPI/SQLx deferred to WP-16; GitHub verification WP-12; UI WP-19 | WP-08
+2026-11-07 | T04 | .docs/product/inventory.md | doc link check | REST/OpenAPI/SQLx deferred to WP-16; GitHub verification WP-12; UI WP-19 | WP-08

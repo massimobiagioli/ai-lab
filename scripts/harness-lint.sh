@@ -53,16 +53,23 @@ done
 [ "$skill_count" -ge 14 ] && pass "skill count >= 14 ($skill_count)" || fail "skill count < 14 ($skill_count)"
 
 # ---------------------------------------------------------------------------
-# 3. Documentation index: every .docs file except adr-*.md is in AGENTS.md
+# 3. Documentation index: harness docs are listed in AGENTS.md; product docs
+#    are indexed by .docs/product/README.md.
 # ---------------------------------------------------------------------------
 while IFS= read -r f; do
   case "$f" in
-    .docs/adr/adr-*.md) continue ;;
+    .docs/adr/adr-*.md|.docs/product/*) continue ;;
   esac
   if ! grep -Fq "$f" AGENTS.md; then
     fail "doc not indexed in AGENTS.md: $f"
   fi
 done < <(find .docs -type f \( -name '*.md' -o -name '*.sql' \) | sort)
+if [ ! -f .docs/product/README.md ]; then
+  fail "missing product documentation index: .docs/product/README.md"
+fi
+if ! grep -Fq '.docs/product/README.md' AGENTS.md; then
+  fail "product documentation index not listed in AGENTS.md"
+fi
 pass "documentation index checked"
 
 # ---------------------------------------------------------------------------

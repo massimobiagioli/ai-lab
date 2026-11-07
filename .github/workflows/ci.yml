@@ -12,7 +12,7 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-# Gate names are normative (docs/quality-gates.md §1, .github/required-checks.txt).
+# Gate names are normative (.docs/product/quality-gates.md §1, .github/required-checks.txt).
 # Jobs that need a toolchain that does not exist yet carry an explicit presence
 # guard. The guard activates the real command as soon as the manifest lands; it
 # is not a permanent bypass. WP-02 removes the guards when the workspace exists.
@@ -183,13 +183,13 @@ jobs:
       - uses: actions/checkout@v4
       - name: Contract drift
         run: |
-          if [ ! -f Makefile ] || [ ! -f docs/api/openapi.json ]; then
+          if [ ! -f Makefile ] || [ ! -f .docs/product/api/openapi.json ]; then
             echo "No API contracts yet (WP-16); openapi-compat is inert."
             exit 0
           fi
           make openapi
           make asyncapi
-          git diff --exit-code docs/api/openapi.json docs/api/asyncapi.json
+          git diff --exit-code .docs/product/api/openapi.json .docs/product/api/asyncapi.json
 
   security-secrets:
     runs-on: ubuntu-latest

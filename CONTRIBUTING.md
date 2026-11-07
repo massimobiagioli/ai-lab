@@ -51,7 +51,7 @@ Use `.github/pull_request_template.md`. Every PR links a card and a WP, lists ev
 
 ## 6. Quality gates
 
-See `docs/quality-gates.md`. A PR may merge only when every applicable gate is green. Coverage thresholds: backend line ≥ 80%, domain ≥ 90%, frontend ≥ 80%, new code ≥ 80%.
+See `.docs/product/quality-gates.md`. A PR may merge only when every applicable gate is green. Coverage thresholds: backend line ≥ 80%, domain ≥ 90%, frontend ≥ 80%, new code ≥ 80%.
 
 ## 7. Security
 
@@ -59,7 +59,7 @@ Never commit a secret. Use `.env` (gitignored) for local values. `gitleaks` runs
 
 ## 8. Documentation
 
-Documentation is part of the Definition of Done. Product docs live in `docs/`; the normative specification, SOW and ADRs live in `.docs/`. Update the relevant index in the same change.
+Documentation is part of the Definition of Done. Product docs live in `.docs/product/`; the normative specification, SOW and ADRs live in `.docs/`. Update the relevant index in the same change.
 
 ## 9. Toolchain notes
 

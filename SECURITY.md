@@ -26,4 +26,4 @@ The team acknowledges within 24 hours and provides a remediation plan within 72 
 
 ## Incident response
 
-P0 and P1 incidents follow `docs/failure-modes.md` and the runbooks in `docs/runbooks/`. A post-incident report is due within 48 hours.
+P0 and P1 incidents follow `.docs/product/failure-modes.md` and the runbooks in `.docs/product/runbooks/`. A post-incident report is due within 48 hours.

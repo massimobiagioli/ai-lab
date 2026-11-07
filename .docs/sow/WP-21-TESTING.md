@@ -178,7 +178,7 @@ E2E runs against the compose stack with fakes for LLM/SCM (no real network). A s
 - [x] Deterministic seed + fakes + fixed clock.
 - [x] Coverage + flaky policy + CI gates.
 - [x] Test reports + dashboards.
-- [x] `docs/testing.md`.
+- [x] `.docs/product/testing.md`.
 
 ---
 
@@ -245,5 +245,5 @@ E2E runs against the compose stack with fakes for LLM/SCM (no real network). A s
 
 ## Progress log
 
-2026-11-07 | T01 | docs/testing.md | test layers, commands, fixtures, coverage, flaky policy | — | T02
+2026-11-07 | T01 | .docs/product/testing.md | test layers, commands, fixtures, coverage, flaky policy | — | T02
 2026-11-07 | T02 | crates/*, web/*, .tools/* | 99 Rust tests + 12 frontend tests; gates green | Playwright/k6/chaos/fuzz deferred WP-21 follow-up | WP-22

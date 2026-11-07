@@ -172,7 +172,7 @@ pub trait ScmProvider: Send + Sync {
 - [x] Deferred to WP-13.
 - [x] Stable codes/statuses; Problem Details in WP-16.
 - [x] Fake transport and security tests; wiremock in the follow-up.
-- [x] `docs/github.md` delivered.
+- [x] `.docs/product/github.md` delivered.
 
 ---
 
@@ -243,4 +243,4 @@ pub trait ScmProvider: Send + Sync {
 
 2026-11-07 | T01 | crates/scm/src/lib.rs | port/types, GitHub adapter, PR conventions, checks/merge guards; 7 tests | — | T02
 2026-11-07 | T02 | crates/scm/src/lib.rs | HMAC webhook verification, replay/idempotency, token broker, rate-limit mapping | — | T03
-2026-11-07 | T03 | docs/github.md | doc link check | live E2E/wiremock/sync deferred WP-13/follow-up | WP-14
+2026-11-07 | T03 | .docs/product/github.md | doc link check | live E2E/wiremock/sync deferred WP-13/follow-up | WP-14

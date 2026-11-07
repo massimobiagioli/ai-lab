@@ -592,7 +592,7 @@ mod tests {
     fn story() -> CardStory {
         CardStory {
             acceptance_criteria: vec!["Given a card When moved Then it works".to_owned()],
-            deliverables: vec!["docs/kanban.md".to_owned()],
+            deliverables: vec![".docs/product/kanban.md".to_owned()],
             needs_refinement: false,
         }
     }

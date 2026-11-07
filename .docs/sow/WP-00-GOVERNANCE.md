@@ -222,30 +222,30 @@ sow-lint
 | Artifact | Path | Content |
 |---|---|---|
 | SOW linter | `scripts/sow-lint.sh` | Validates statuses, links, dependencies, checklists, progress logs |
-| WP template | `docs/templates/WP.md` | Exact structure of this file |
-| Card template | `docs/templates/card.md` | Canonical story + DoR/DoD checklist |
-| ADR template | `docs/templates/adr.md` | Decision record |
-| CR template | `docs/templates/change-request.md` | Approval matrix fields |
+| WP template | `.docs/product/templates/WP.md` | Exact structure of this file |
+| Card template | `.docs/product/templates/card.md` | Canonical story + DoR/DoD checklist |
+| ADR template | `.docs/product/templates/adr.md` | Decision record |
+| CR template | `.docs/product/templates/change-request.md` | Approval matrix fields |
 | PR template | `.github/pull_request_template.md` | Appendix C.4.1 + gates |
-| Milestone gate checklist | `docs/templates/milestone-gate.md` | Demo, evidence, docs, retro |
+| Milestone gate checklist | `.docs/product/templates/milestone-gate.md` | Demo, evidence, docs, retro |
 | Metrics views | `migrations/0002_analytics_views.sql` | Lead/cycle/throughput/WIP/blocked/cost |
-| Retro template | `docs/templates/retro.md` | 3 actions + owners + cards |
+| Retro template | `.docs/product/templates/retro.md` | 3 actions + owners + cards |
 
 ---
 
 ## 4. Deliverables (checklist)
 
-- [x] `docs/governance.md` describing Lean rules, Agile flow, roles, RACI, ceremonies and escalation, with measurable controls. Evidence: `docs/governance.md`.
-- [x] `docs/quality-gates.md` listing every required CI check, its owner, threshold and failure action. Evidence: `docs/quality-gates.md`, `.github/required-checks.txt`.
-- [x] `docs/status-model.md` defining `ready`/`progress`/`done`, blocked flag, transition rules and evidence requirements. Evidence: `docs/status-model.md`.
-- [x] `docs/metrics.md` with formulas, SQL sources, targets and dashboard mapping. Evidence: `docs/metrics.md`, `.tools/test-analytics-views.sh`.
-- [x] `docs/change-control.md` with CR form, approval matrix, emergency path and records location. Evidence: `docs/change-control.md`, `docs/change-requests/CR-0001.md`.
-- [x] `docs/templates/WP.md`, `card.md`, `adr.md`, `change-request.md`, `milestone-gate.md`, `retro.md`. Evidence: `docs/templates/`; used by `docs/change-requests/CR-0001.md` and `docs/backlog/AIL-101.md`.
+- [x] `.docs/product/governance.md` describing Lean rules, Agile flow, roles, RACI, ceremonies and escalation, with measurable controls. Evidence: `.docs/product/governance.md`.
+- [x] `.docs/product/quality-gates.md` listing every required CI check, its owner, threshold and failure action. Evidence: `.docs/product/quality-gates.md`, `.github/required-checks.txt`.
+- [x] `.docs/product/status-model.md` defining `ready`/`progress`/`done`, blocked flag, transition rules and evidence requirements. Evidence: `.docs/product/status-model.md`.
+- [x] `.docs/product/metrics.md` with formulas, SQL sources, targets and dashboard mapping. Evidence: `.docs/product/metrics.md`, `.tools/test-analytics-views.sh`.
+- [x] `.docs/product/change-control.md` with CR form, approval matrix, emergency path and records location. Evidence: `.docs/product/change-control.md`, `.docs/product/change-requests/CR-0001.md`.
+- [x] `.docs/product/templates/WP.md`, `card.md`, `adr.md`, `change-request.md`, `milestone-gate.md`, `retro.md`. Evidence: `.docs/product/templates/`; used by `.docs/product/change-requests/CR-0001.md` and `.docs/product/backlog/AIL-101.md`.
 - [x] `.github/pull_request_template.md` aligned with Appendix C.4.1 and the global gates. Evidence: `.github/pull_request_template.md`.
 - [x] `scripts/sow-lint.sh` + CI job `sow-lint` (fails on any violation in §3.6). Evidence: `.tools/sow-lint-self-test.sh` (11 cases), `.github/workflows/ci.yml`.
 - [x] `migrations/0002_analytics_views.sql` with the metric views; verified against seeded data. Evidence: `.tools/test-analytics-views.sh` (25 assertions on fixed fixtures).
-- [x] `docs/risk-register.md` (program + WP rollup), reviewed weekly. Evidence: `docs/risk-register.md`.
-- [x] Retrospective record for M0 with three owned actions. Evidence: `docs/retrospectives/M0-retro.md`, `docs/backlog/AIL-101.md`..`AIL-103.md`.
+- [x] `.docs/product/risk-register.md` (program + WP rollup), reviewed weekly. Evidence: `.docs/product/risk-register.md`.
+- [x] Retrospective record for M0 with three owned actions. Evidence: `.docs/product/retrospectives/M0-retro.md`, `.docs/product/backlog/AIL-101.md`..`AIL-103.md`.
 - [x] ADR-0001..0004 recorded (see WP-01 for the full ADR set). Evidence: `.docs/adr/adr-0001.md`..`adr-0004.md`, `.docs/adr/registry.md`.
 
 ---
@@ -282,9 +282,9 @@ sow-lint
 
 - [x] All deliverables checked and linked to evidence.
 - [x] `sow-lint` green on the full SOW. Evidence: `scripts/sow-lint.sh` exit 0; `.tools/sow-lint-self-test.sh` 11/11.
-- [x] Governance docs reviewed by Tech Lead and QA. Evidence: independent `APPROVED` review in `docs/evidence/WP-00-review.md`.
-- [x] Templates used in at least one real card and one real CR (`docs/change-requests/CR-0001.md`, `docs/backlog/AIL-101.md`..`AIL-103.md`).
-- [x] Metrics dashboard populated from the seed and reviewed in the weekly meeting. Assigned to WP-20 by CR-0002; WP-00 delivers the verified views and formulas (`migrations/0002_analytics_views.sql`, `docs/metrics.md`, 25 assertions).
+- [x] Governance docs reviewed by Tech Lead and QA. Evidence: independent `APPROVED` review in `.docs/product/evidence/WP-00-review.md`.
+- [x] Templates used in at least one real card and one real CR (`.docs/product/change-requests/CR-0001.md`, `.docs/product/backlog/AIL-101.md`..`AIL-103.md`).
+- [x] Metrics dashboard populated from the seed and reviewed in the weekly meeting. Assigned to WP-20 by CR-0002; WP-00 delivers the verified views and formulas (`migrations/0002_analytics_views.sql`, `.docs/product/metrics.md`, 25 assertions).
 - [x] No open P0/P1; no unresolved blocker. B-01..B-03 assigned by CR-0002; B-04 resolved by the independent review.
 - [x] Status updated to `done` with sign-off row (2026-11-07).
 
@@ -310,17 +310,17 @@ sow-lint
 
 ## Progress log
 
-2026-11-07 | T01 | docs/governance.md, docs/change-control.md, docs/change-requests/CR-0001.md, docs/change-requests/README.md | doc link check | CR-0001 (docs root convention) | T02
-2026-11-07 | T02 | docs/status-model.md | doc link check | — | T03
-2026-11-07 | T03 | docs/quality-gates.md, .github/required-checks.txt | sow-lint | — | T04
-2026-11-07 | T04 | docs/metrics.md, migrations/analytics_views.sql, .tools/test-analytics-views.sh, .tools/fixtures/analytics-seed.sql | .tools/test-analytics-views.sh (25 assertions) | — | T05
-2026-11-07 | T05 | docs/templates/WP.md, card.md, adr.md, change-request.md, milestone-gate.md, retro.md | doc link check | — | T06
+2026-11-07 | T01 | .docs/product/governance.md, .docs/product/change-control.md, .docs/product/change-requests/CR-0001.md, .docs/product/change-requests/README.md | doc link check | CR-0001 (docs root convention) | T02
+2026-11-07 | T02 | .docs/product/status-model.md | doc link check | — | T03
+2026-11-07 | T03 | .docs/product/quality-gates.md, .github/required-checks.txt | sow-lint | — | T04
+2026-11-07 | T04 | .docs/product/metrics.md, migrations/analytics_views.sql, .tools/test-analytics-views.sh, .tools/fixtures/analytics-seed.sql | .tools/test-analytics-views.sh (25 assertions) | — | T05
+2026-11-07 | T05 | .docs/product/templates/WP.md, card.md, adr.md, change-request.md, milestone-gate.md, retro.md | doc link check | — | T06
 2026-11-07 | T06 | scripts/sow-lint.sh, .tools/sow-lint-self-test.sh, .github/workflows/ci.yml | .tools/sow-lint-self-test.sh (11 cases) | — | T07
-2026-11-07 | T07 | .github/pull_request_template.md, .github/branch-protection.json, docs/governance.md | sow-lint (required checks) | — | T08
-2026-11-07 | T08 | docs/risk-register.md | doc link check | — | T09
-2026-11-07 | T09 | docs/retrospectives/M0-retro.md, docs/backlog/AIL-101.md, AIL-102.md, AIL-103.md, docs/backlog/README.md | doc link check | — | gates
+2026-11-07 | T07 | .github/pull_request_template.md, .github/branch-protection.json, .docs/product/governance.md | sow-lint (required checks) | — | T08
+2026-11-07 | T08 | .docs/product/risk-register.md | doc link check | — | T09
+2026-11-07 | T09 | .docs/product/retrospectives/M0-retro.md, .docs/product/backlog/AIL-101.md, AIL-102.md, AIL-103.md, .docs/product/backlog/README.md | doc link check | — | gates
 2026-11-07 | gates | all WP-00 artifacts | harness-lint OK (16 checks), sow-lint OK (31 checks), sow-lint self-test 11/11, analytics views 25/25, doc links 63 checked | — | closure
-2026-11-07 | closure | docs/evidence/WP-00-review.md, docs/change-requests/CR-0002.md | independent review APPROVED; harness-lint OK; sow-lint OK | CR-0002 | WP-01
+2026-11-07 | closure | .docs/product/evidence/WP-00-review.md, .docs/product/change-requests/CR-0002.md | independent review APPROVED; harness-lint OK; sow-lint OK | CR-0002 | WP-01
 
 ## Blockers
 
@@ -328,5 +328,5 @@ sow-lint
 - B-01 assigned by CR-0002: branch-protection configuration delivered; the repository now exists on `main`, but there is no GitHub remote yet. Application remains a deployment prerequisite performed with the documented `gh api` command once a remote exists.
 - B-02 assigned by CR-0002: AC7 is a cross-WP contract owned by WP-09/WP-15.
 - B-03 assigned by CR-0002: the live dashboard is WP-20 scope; the verified views and formulas are delivered.
-- B-04 resolved by `docs/evidence/WP-00-review.md` (independent `APPROVED`).
+- B-04 resolved by `.docs/product/evidence/WP-00-review.md` (independent `APPROVED`).
 2026-11-07 | env-update | .git (operator first commit on main) | native hooks installed via scripts/hooks/install.sh; no remote | B-01 remains: branch protection needs a GitHub remote | WP-03

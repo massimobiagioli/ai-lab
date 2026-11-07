@@ -199,7 +199,7 @@ Each alert: severity, runbook link, summary, first action. No alert without a ru
 - [x] Incident process + severity matrix + post-incident template.
 - [x] 8 runbooks + on-call checklist.
 - [x] Cost dashboards + budget alerts.
-- [x] `docs/operations.md`, `docs/slo.md`, `docs/observability.md`.
+- [x] `.docs/product/operations.md`, `.docs/product/slo.md`, `.docs/product/observability.md`.
 
 ---
 
@@ -267,4 +267,4 @@ Each alert: severity, runbook link, summary, first action. No alert without a ru
 ## Progress log
 
 2026-11-07 | T01 | crates/telemetry/src/lib.rs, infra/prometheus/alerts.yml, prometheus.yml, compose observability | metric names + alerts; telemetry test; compose valid | — | T02
-2026-11-07 | T02 | docs/observability.md | 1 telemetry test; alerts YAML; doc links | OTel/Grafana/exporters deferred WP-20 follow-up | WP-21
+2026-11-07 | T02 | .docs/product/observability.md | 1 telemetry test; alerts YAML; doc links | OTel/Grafana/exporters deferred WP-20 follow-up | WP-21

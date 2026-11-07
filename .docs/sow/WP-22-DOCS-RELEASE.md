@@ -56,24 +56,24 @@ Deliver the **release and handover package**: complete, current, link-checked do
 | # | Artifact | Path | Acceptance |
 |---|---|---|---|
 | 1 | README + quickstart | `README.md` | Clean clone → running ≤10 min; GIF |
-| 2 | Architecture (C4) | `docs/architecture.md` | Context/container/component + trust boundaries |
-| 3 | Domain model | `docs/domain-model.md` | Aggregates, invariants, events match code |
-| 4 | ADRs (≥22) | `docs/adr/*` | Each accepted with context/decision/consequences |
-| 5 | API reference | `docs/api/openapi.json` + rendered | Contract tests pass; examples valid |
-| 6 | Event reference | `docs/api/asyncapi.json` | All emitted events documented |
-| 7 | Database dictionary + ERD | `docs/database.md` | Every table/column/index explained |
-| 8 | Kanban semantics | `docs/kanban.md` | Matrix, DoR/DoD, examples |
-| 9 | Agents & prompts | `docs/agents.md` | Charters, roster, prompt order, guardrails |
-| 10 | Office architecture | `docs/office.md` | Engine, assets, licenses, perf budget |
-| 11 | Security | `docs/security.md` | Threat model, sandbox, exposure |
-| 12 | Operations | `docs/operations.md` | Install, backup, restore, upgrade, scale |
-| 13 | Runbooks (8) | `docs/runbooks/*` | Symptoms → remediation → rollback |
-| 14 | Testing | `docs/testing.md` | Commands, fixtures, seed, flaky policy |
-| 15 | Contributing | `docs/contributing.md` | Conventions, review checklist, DoD |
-| 16 | Diagrams source + SVG | `docs/diagrams/*` | Regenerable; reviewed |
+| 2 | Architecture (C4) | `.docs/product/architecture.md` | Context/container/component + trust boundaries |
+| 3 | Domain model | `.docs/product/domain-model.md` | Aggregates, invariants, events match code |
+| 4 | ADRs (≥22) | `.docs/adr/*` | Each accepted with context/decision/consequences |
+| 5 | API reference | `.docs/product/api/openapi.json` + rendered | Contract tests pass; examples valid |
+| 6 | Event reference | `.docs/product/api/asyncapi.json` | All emitted events documented |
+| 7 | Database dictionary + ERD | `.docs/product/database.md` | Every table/column/index explained |
+| 8 | Kanban semantics | `.docs/product/kanban.md` | Matrix, DoR/DoD, examples |
+| 9 | Agents & prompts | `.docs/product/agents.md` | Charters, roster, prompt order, guardrails |
+| 10 | Office architecture | `.docs/product/office.md` | Engine, assets, licenses, perf budget |
+| 11 | Security | `.docs/product/security.md` | Threat model, sandbox, exposure |
+| 12 | Operations | `.docs/product/operations.md` | Install, backup, restore, upgrade, scale |
+| 13 | Runbooks (8) | `.docs/product/runbooks/*` | Symptoms → remediation → rollback |
+| 14 | Testing | `.docs/product/testing.md` | Commands, fixtures, seed, flaky policy |
+| 15 | Contributing | `CONTRIBUTING.md` | Conventions, review checklist, DoD |
+| 16 | Diagrams source + SVG | `.docs/product/diagrams/*` | Regenerable; reviewed |
 | 17 | Changelog / SECURITY / LICENSE / CoC | repo root | SemVer, Apache-2.0, disclosure policy |
-| 18 | Demo script + media | `docs/demo-script.md`, `docs/media/*` | ≤5 min; captions |
-| 19 | Glossary | `docs/glossary.md` | Terms match domain |
+| 18 | Demo script + media | `.docs/product/demo-script.md`, `.docs/product/media/*` | ≤5 min; captions |
+| 19 | Glossary | `.docs/product/glossary.md` | Terms match domain |
 
 `DOC-GATE`: release blocked if any artifact is missing, the docs build fails, links are broken, or screenshots are stale.
 
@@ -127,8 +127,8 @@ The report is signed by Tech Lead and QA; the Human Operator accepts at mileston
 ### 3.5 Golden demo
 
 - `make seed-demo`, `make up`, open `http://localhost:8080`.
-- Script in `docs/demo-script.md` with timestamps and expected visuals (≤5 min).
-- Recorded at 1440p/60 FPS with cursor highlight and captions; stored in `docs/media/demo.mp4`.
+- Script in `.docs/product/demo-script.md` with timestamps and expected visuals (≤5 min).
+- Recorded at 1440p/60 FPS with cursor highlight and captions; stored in `.docs/product/media/demo.mp4`.
 - Demo must work offline from the deterministic seed (fakes for LLM/SCM) and optionally live.
 
 ### 3.6 Handover
@@ -228,5 +228,5 @@ The report is signed by Tech Lead and QA; the Human Operator accepts at mileston
 
 ## Progress log
 
-2026-11-07 | T01 | docs/demo-script.md, docs/glossary.md, docs/release-checklist.md, CHANGELOG.md | docs link check | — | T02
-2026-11-07 | T02 | docs/README.md, .docs/sow/SOW.md | 134 doc links; docs manifest current | SBOM/signing/live acceptance deferred WP-22 follow-up | WP-23
+2026-11-07 | T01 | .docs/product/demo-script.md, .docs/product/glossary.md, .docs/product/release-checklist.md, CHANGELOG.md | docs link check | — | T02
+2026-11-07 | T02 | .docs/product/README.md, .docs/sow/SOW.md | 134 doc links; docs manifest current | SBOM/signing/live acceptance deferred WP-22 follow-up | WP-23

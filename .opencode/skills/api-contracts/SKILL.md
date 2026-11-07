@@ -38,7 +38,7 @@ description: Use when changing REST endpoints, DTOs, OpenAPI, WebSocket events, 
 7. Run the contract suite:
    - `cargo nextest run -p ailab-api`
    - `npx --prefix web playwright test`
-   - `schemathesis run docs/api/openapi.json`
+   - `schemathesis run .docs/product/api/openapi.json`
 8. Update the error catalog and the event catalog if a new code or event was added.
 9. Record the change in the WP progress line and, if architectural, in an ADR.
 

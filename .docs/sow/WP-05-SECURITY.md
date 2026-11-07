@@ -236,8 +236,8 @@ Incident runbook: detect → contain (revoke token/rotate key/disable provider) 
 
 ## 4. Deliverables (checklist)
 
-- [x] `docs/security.md`: threat model, trust boundaries, exposure modes, controls, data classification, incident response.
-- [x] `docs/security/abuse-cases.md` with 28 abuse cases and controls.
+- [x] `.docs/product/security.md`: threat model, trust boundaries, exposure modes, controls, data classification, incident response.
+- [x] `.docs/product/security/abuse-cases.md` with 28 abuse cases and controls.
 - [x] Secret encryption module (AES-256-GCM, AAD, key versions) + tests; rotation job DB integration in WP-07.
 - [x] Master key handling and startup validation; non-loopback without token exits 78 (`ailab-api check-exposure`).
 - [x] Constant-time token compare and startup guard; HTTP middleware in WP-16; UI storage in WP-17.
@@ -325,16 +325,16 @@ Incident runbook: detect → contain (revoke token/rotate key/disable provider) 
 
 ## Progress log
 
-2026-11-07 | T01 | docs/security.md, docs/security/abuse-cases.md | 28 abuse cases; STRIDE and trust boundaries | — | T02
+2026-11-07 | T01 | .docs/product/security.md, .docs/product/security/abuse-cases.md | 28 abuse cases; STRIDE and trust boundaries | — | T02
 2026-11-07 | T02 | crates/infrastructure/src/crypto.rs | AES-256-GCM, AAD, key versions; crypto tests green | — | T03
 2026-11-07 | T03 | crates/infrastructure/src/exposure.rs, crates/api/src/main.rs | exit 78 without token; master key startup validation | — | T04
 2026-11-07 | T04 | exposure.rs | constant-time compare; API middleware owned by WP-16 | — | T05
 2026-11-07 | T05 | security_headers.rs, infra/nginx/nginx.conf | CSP and headers at the edge and in code | — | T06
 2026-11-07 | T06 | redact.rs | secret redaction tests; input validation owned by WP-16 | — | T07
-2026-11-07 | T07 | docs/security.md | prompt-injection policy; red-team fixtures owned by WP-11 | — | T08
-2026-11-07 | T08 | docs/contracts.md | webhook HMAC/replay contract; implementation owned by WP-12 | — | T09
+2026-11-07 | T07 | .docs/product/security.md | prompt-injection policy; red-team fixtures owned by WP-11 | — | T08
+2026-11-07 | T08 | .docs/product/contracts.md | webhook HMAC/replay contract; implementation owned by WP-12 | — | T09
 2026-11-07 | T09 | WP-14 contract | sandbox security requirements; escape suite owned by WP-14 | — | T10
 2026-11-07 | T10 | .github/workflows, .tools/test-supply-chain.sh | supply-chain gates green | — | T11
-2026-11-07 | T11 | docs/security/audit-matrix.md | 21 sensitive actions mapped | — | T12
-2026-11-07 | T12 | docs/security/asvs-l2.md, docs/runbooks/security-incident.md | ASVS checklist and incident runbook; M7 sign-off/tabletop pending | — | closure
+2026-11-07 | T11 | .docs/product/security/audit-matrix.md | 21 sensitive actions mapped | — | T12
+2026-11-07 | T12 | .docs/product/security/asvs-l2.md, .docs/product/runbooks/security-incident.md | ASVS checklist and incident runbook; M7 sign-off/tabletop pending | — | closure
 2026-11-07 | closure | crates/infrastructure/src/{crypto,exposure,redact,security_headers}.rs | cargo test 22/22; clippy green; doc links 115 | M7 sign-off/tabletop, WP-11/12/14/16 wiring | WP-06

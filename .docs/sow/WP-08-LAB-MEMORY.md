@@ -253,7 +253,7 @@ Payloads include scope IDs, kind, title, counts; never raw secret content.
 - [x] Compaction/retention policy implemented; jobs in WP-20/WP-23.
 - [x] Deferred to WP-16.
 - [x] Leakage and formula tests green; nDCG/perf harness in WP-21.
-- [x] `docs/memory.md` delivered.
+- [x] `.docs/product/memory.md` delivered.
 
 ---
 
@@ -327,4 +327,4 @@ Payloads include scope IDs, kind, title, counts; never raw secret content.
 2026-11-07 | T01 | crates/domain/src/lab.rs | lab settings, tech-lead invariant, archive; 4 tests | — | T02
 2026-11-07 | T02 | crates/domain/src/memory.rs | scopes, chunking, secret quarantine; 7 tests | — | T03
 2026-11-07 | T03 | crates/domain/src/memory.rs | hybrid formula, leakage, dedupe, compaction; 37 domain tests | — | T04
-2026-11-07 | T04 | docs/memory.md | doc link check | fastembed/SQL/API/Redis deferred WP-16/WP-21 | WP-09
+2026-11-07 | T04 | .docs/product/memory.md | doc link check | fastembed/SQL/API/Redis deferred WP-16/WP-21 | WP-09

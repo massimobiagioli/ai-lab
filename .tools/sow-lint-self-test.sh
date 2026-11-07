@@ -22,7 +22,7 @@ FAIL=0
 
 write_common() {
   local d="$1"
-  mkdir -p "$d/.docs/sow" "$d/.docs/adr" "$d/docs/change-requests" "$d/.github/workflows"
+  mkdir -p "$d/.docs/sow" "$d/.docs/adr" "$d/.docs/product/change-requests" "$d/.github/workflows"
   cat > "$d/.github/required-checks.txt" <<'EOF'
 fmt
 sow-lint
@@ -40,7 +40,7 @@ jobs:
     steps:
       - run: echo sow-lint
 EOF
-  cat > "$d/docs/change-requests/CR-0001.md" <<'EOF'
+  cat > "$d/.docs/product/change-requests/CR-0001.md" <<'EOF'
 # CR-0001 — Valid
 
 | Field | Value |
@@ -82,7 +82,7 @@ Tech Lead
 ## linked_adr
 —
 EOF
-  cat > "$d/docs/change-requests/README.md" <<'EOF'
+  cat > "$d/.docs/product/change-requests/README.md" <<'EOF'
 # CR register
 
 | CR | Title | Decision | Approver | Date | Linked ADR |
@@ -227,7 +227,7 @@ d="$TMP/stale-log"; write_valid "$d" progress progress; sed -i.bak 's/2026-11-07
 d="$TMP/broken-link"; write_valid "$d"; sed -i.bak 's|(./WP-01-TEST.md)|(./WP-01-MISSING.md)|' "$d/.docs/sow/SOW.md"; rm -f "$d/.docs/sow/SOW.md.bak"; run_case "broken index link" nonzero "$d"
 
 # 9. Incomplete CR.
-d="$TMP/bad-cr"; write_valid "$d"; sed -i.bak '/## impact_cost/,+2d' "$d/docs/change-requests/CR-0001.md"; rm -f "$d/docs/change-requests/CR-0001.md.bak"; run_case "incomplete CR" nonzero "$d"
+d="$TMP/bad-cr"; write_valid "$d"; sed -i.bak '/## impact_cost/,+2d' "$d/.docs/product/change-requests/CR-0001.md"; rm -f "$d/.docs/product/change-requests/CR-0001.md.bak"; run_case "incomplete CR" nonzero "$d"
 
 # 10. Required check missing from workflow.
 d="$TMP/missing-check"; write_valid "$d"; sed -i.bak '/^  sow-lint:/,+2d' "$d/.github/workflows/ci.yml"; rm -f "$d/.github/workflows/ci.yml.bak"; run_case "required check missing" nonzero "$d"

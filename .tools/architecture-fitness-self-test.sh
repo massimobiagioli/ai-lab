@@ -17,7 +17,7 @@ FAIL=0
 
 write_base() {
   local d="$1"
-  mkdir -p "$d/.tools/architecture" "$d/docs"
+  mkdir -p "$d/.tools/architecture" "$d/.docs/product"
   cat > "$d/.tools/architecture/contexts.tsv" <<'EOF'
 lab	Lab	labs
 inventory	Inventory	agents,projects
@@ -32,7 +32,7 @@ EOF
 crates/infrastructure/src/delivery	delivery
 crates/infrastructure/src/kanban	kanban
 EOF
-  cat > "$d/docs/service-catalog.md" <<'EOF'
+  cat > "$d/.docs/product/service-catalog.md" <<'EOF'
 # Catalog
 
 | Service | Owner |

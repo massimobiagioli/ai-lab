@@ -4,7 +4,7 @@
 /web/                 @frontend-owner
 /infra/               @platform-owner
 /migrations/          @data-owner
-/docs/                @analyst
+/.docs/product/                @analyst
 /.github/             @tech-lead
 /scripts/             @dev
 /.docs/               @tech-lead

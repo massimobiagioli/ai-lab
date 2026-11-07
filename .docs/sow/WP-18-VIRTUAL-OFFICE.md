@@ -248,7 +248,7 @@ WANDER           IDLE ◄──────────────────�
 - [x] Responsive behavior + reduced motion + screen-reader fallback.
 - [x] Performance instrumentation + FPS/heap telemetry.
 - [x] Unit/determinism/visual/FPS/a11y test suites.
-- [x] `docs/office.md` (engine, assets, adding characters, perf budget, licenses).
+- [x] `.docs/product/office.md` (engine, assets, adding characters, perf budget, licenses).
 
 ---
 
@@ -317,4 +317,4 @@ WANDER           IDLE ◄──────────────────�
 ## Progress log
 
 2026-11-07 | T01 | web/src/app/office/pathfinding.ts, agent-state.ts | deterministic A*, state/animation mapping; 6 office tests | — | T02
-2026-11-07 | T02 | docs/office.md | frontend lint/test/build green (10 tests) | sprite/canvas/interactions deferred WP-18 follow-up/WP-21 | WP-19
+2026-11-07 | T02 | .docs/product/office.md | frontend lint/test/build green (10 tests) | sprite/canvas/interactions deferred WP-18 follow-up/WP-21 | WP-19

@@ -135,7 +135,7 @@ Keep AI-Lab **healthy, secure, current and improving** after release: automated 
 
 ### 3.9 Support boundaries
 
-- Single-operator model; best-effort support; documented in `docs/operations.md`.
+- Single-operator model; best-effort support; documented in `.docs/product/operations.md`.
 - Known limitations and non-goals are explicit; requests outside scope require a CR.
 - No silent telemetry; all data local unless the operator exports it.
 
@@ -153,7 +153,7 @@ Keep AI-Lab **healthy, secure, current and improving** after release: automated 
 - [x] Weekly flow review + retrospective action tracking.
 - [x] Evolution/deprecation policy + contract migration guidance.
 - [x] Support/disclosure process.
-- [x] `docs/maintenance.md` + maintenance dashboard.
+- [x] `.docs/product/maintenance.md` + maintenance dashboard.
 
 ---
 
@@ -218,5 +218,5 @@ Keep AI-Lab **healthy, secure, current and improving** after release: automated 
 
 ## Progress log
 
-2026-11-07 | T01 | docs/maintenance.md | job catalog, dependency policy, CV reflection, memory hygiene | — | T02
+2026-11-07 | T01 | .docs/product/maintenance.md | job catalog, dependency policy, CV reflection, memory hygiene | — | T02
 2026-11-07 | T02 | .docs/sow/SOW.md | docs link check; all WPs done | scheduling/dry-run/tabletop deferred WP-23 follow-up | complete

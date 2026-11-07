@@ -199,7 +199,7 @@ web/e2e/                  # Playwright
 - [x] Accessibility utilities (focus trap, keyboard DnD, reduced motion).
 - [x] Telemetry + error reporting.
 - [x] Unit/component/E2E/visual/a11y test scaffolding.
-- [x] `docs/frontend.md` + `docs/design-system.md` + Storybook-like gallery (optional).
+- [x] `.docs/product/frontend.md` + `.docs/product/design-system.md` + Storybook-like gallery (optional).
 
 ---
 
@@ -268,4 +268,4 @@ web/e2e/                  # Playwright
 ## Progress log
 
 2026-11-07 | T01 | web/src/styles/_tokens.scss, web/src/styles.scss, web/src/app/shared/status-badge/* | Angular 22 tokens + badge; lint/test/build green (initial 217.98 kB) | — | T02
-2026-11-07 | T02 | docs/frontend.md | component test + a11y role | full kit/routes deferred WP-17 follow-up; office/pages WP-18/WP-19 | WP-18
+2026-11-07 | T02 | .docs/product/frontend.md | component test + a11y role | full kit/routes deferred WP-17 follow-up; office/pages WP-18/WP-19 | WP-18

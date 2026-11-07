@@ -313,12 +313,12 @@ mod contract_tests {
 
     #[test]
     fn openapi_and_asyncapi_contracts_are_valid() {
-        let openapi = read("docs/api/openapi.json");
+        let openapi = read(".docs/product/api/openapi.json");
         assert_eq!(openapi["openapi"], "3.1.0");
         assert!(openapi["paths"]["/cards/{id}/transition"]["post"].is_object());
         assert!(openapi["components"]["schemas"]["Problem"].is_object());
 
-        let asyncapi = read("docs/api/asyncapi.json");
+        let asyncapi = read(".docs/product/api/asyncapi.json");
         assert_eq!(asyncapi["asyncapi"], "3.0.0");
         assert!(asyncapi["channels"]["kanban.card.moved"].is_object());
         assert!(asyncapi["components"]["schemas"]["EventEnvelope"].is_object());

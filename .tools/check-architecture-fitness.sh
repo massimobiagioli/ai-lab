@@ -22,7 +22,7 @@ done
 CTX="$ROOT/.tools/architecture/contexts.tsv"
 DEPS="$ROOT/.tools/architecture/dependencies.tsv"
 PATHS="$ROOT/.tools/architecture/paths.tsv"
-CATALOG="$ROOT/docs/service-catalog.md"
+CATALOG="$ROOT/.docs/product/service-catalog.md"
 
 [ -f "$CTX" ] || { echo "architecture-fitness: missing $CTX" >&2; exit 2; }
 [ -f "$DEPS" ] || { echo "architecture-fitness: missing $DEPS" >&2; exit 2; }

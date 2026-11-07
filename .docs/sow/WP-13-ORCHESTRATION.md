@@ -283,7 +283,7 @@ Outputs are stored in `run_steps` (type `verification`) and attached to the PR b
 - [x] Escalation ladder + human intervention records.
 - [x] Run APIs + events + metrics/traces.
 - [x] Integration/chaos/idempotency test suites.
-- [x] `docs/orchestration.md` with state machines and failure matrix.
+- [x] `.docs/product/orchestration.md` with state machines and failure matrix.
 
 ---
 
@@ -355,4 +355,4 @@ Outputs are stored in `run_steps` (type `verification`) and attached to the PR b
 ## Progress log
 
 2026-11-07 | T01 | crates/orchestrator/src/orchestration.rs | eligibility, leases, run state, retries, budget, reconcile; 7 tests | — | T02
-2026-11-07 | T02 | docs/orchestration.md | 12 orchestrator tests; clippy green | Postgres leases/worker pipeline deferred WP-13 follow-up | WP-15
+2026-11-07 | T02 | .docs/product/orchestration.md | 12 orchestrator tests; clippy green | Postgres leases/worker pipeline deferred WP-13 follow-up | WP-15

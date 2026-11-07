@@ -322,18 +322,18 @@ A PR may merge only if all of the following are true:
 
 | Contract | Owner | Consumers | Canonical location |
 |---|---|---|---|
-| Domain model & invariants | WP-06 | All backend WPs | `crates/domain`, `docs/domain-model.md` |
+| Domain model & invariants | WP-06 | All backend WPs | `crates/domain`, `.docs/product/domain-model.md` |
 | Database schema & migrations | WP-04 | WP-06..16, WP-20, WP-21 | `migrations/`, `APPENDIX-A-DATABASE.sql` |
-| REST/AsyncAPI contracts | WP-16 | WP-17..20 | `docs/api/openapi.json`, `docs/api/asyncapi.json` |
-| Event catalog | WP-06/16 | WP-13, WP-17, WP-18 | `docs/api/asyncapi.json` |
-| Kanban state machine | WP-09 | WP-10, WP-13, WP-15, WP-19 | `docs/kanban.md`, `WP-09` |
-| LLM port & prompt assembly | WP-11 | WP-10, WP-13, WP-15 | `crates/llm`, `docs/agents.md` |
+| REST/AsyncAPI contracts | WP-16 | WP-17..20 | `.docs/product/api/openapi.json`, `.docs/product/api/asyncapi.json` |
+| Event catalog | WP-06/16 | WP-13, WP-17, WP-18 | `.docs/product/api/asyncapi.json` |
+| Kanban state machine | WP-09 | WP-10, WP-13, WP-15, WP-19 | `.docs/product/kanban.md`, `WP-09` |
+| LLM port & prompt assembly | WP-11 | WP-10, WP-13, WP-15 | `crates/llm`, `.docs/product/agents.md` |
 | SCM port | WP-12 | WP-13, WP-15 | `crates/scm` |
-| Tool policy & sandbox | WP-14 | WP-11, WP-13, WP-15 | `docs/security.md`, `WP-14` |
-| Security controls | WP-05 | All | `docs/security.md` |
+| Tool policy & sandbox | WP-14 | WP-11, WP-13, WP-15 | `.docs/product/security.md`, `WP-14` |
+| Security controls | WP-05 | All | `.docs/product/security.md` |
 | Design tokens & UI kit | WP-17 | WP-18, WP-19 | `web/src/styles`, `web/src/app/shared` |
-| Office event/animation mapping | WP-18 | WP-17, WP-19 | `docs/office.md`, `WP-18` |
-| Metrics & SLOs | WP-20 | All | `docs/operations.md`, dashboards |
+| Office event/animation mapping | WP-18 | WP-17, WP-19 | `.docs/product/office.md`, `WP-18` |
+| Metrics & SLOs | WP-20 | All | `.docs/product/operations.md`, dashboards |
 
 Any change to a contract requires the owner WP to bump its version and notify consuming WPs in the same PR.
 
@@ -344,7 +344,7 @@ Any change to a contract requires the owner WP to bump its version and notify co
 - **CC-01:** A change request (CR) is required for: scope change, new dependency, architecture change, contract break, status reopen, budget/autonomy change, milestone re-baseline.
 - **CC-02:** CR format: context, proposed change, impact (scope/schedule/cost/risk), alternatives, decision, approver, date.
 - **CC-03:** The Tech Lead approves CRs that do not change scope or budget. The Human Operator approves scope, budget, autonomy and exposure changes.
-- **CC-04:** Approved CRs are recorded in `docs/adr/` (if architectural) and in the WP status history. A CR never deletes history; it supersedes.
+- **CC-04:** Approved CRs are recorded in `.docs/adr/` (if architectural) and in the WP status history. A CR never deletes history; it supersedes.
 - **CC-05:** Emergency security fixes may bypass the normal pull order but MUST still pass security gates and be retro-documented within 24 h.
 
 ---

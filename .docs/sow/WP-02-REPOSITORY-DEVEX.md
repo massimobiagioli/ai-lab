@@ -117,7 +117,7 @@ ai-lab/
 │   ├── gen-asyncapi.sh
 │   ├── seed-demo.sh
 │   └── hooks/
-├── docs/
+├── .docs/product/
 │   ├── adr/
 │   ├── architecture.md
 │   ├── domain-model.md
@@ -136,7 +136,7 @@ ai-lab/
     └── ISSUE_TEMPLATE/
 ```
 
-**Rules:** no source file outside the layout above; `scripts/` contains only executable tooling; generated artifacts never committed except documented contract snapshots (`docs/api/*.json`) and lockfiles.
+**Rules:** no source file outside the layout above; `scripts/` contains only executable tooling; generated artifacts never committed except documented contract snapshots (`.docs/product/api/*.json`) and lockfiles.
 
 ### 3.2 Toolchain pinning
 
@@ -199,8 +199,8 @@ ai-lab/
 | `make doctor` | Verify Docker, ports, disk, tools, keys, connectivity | 30 s |
 | `make backup` | `pg_dump` + artifacts manifest | 5 min |
 | `make restore-drill` | Restore into a scratch DB and verify checksums | 15 min |
-| `make openapi` | Regenerate `docs/api/openapi.json` and client types | 60 s |
-| `make asyncapi` | Regenerate `docs/api/asyncapi.json` | 60 s |
+| `make openapi` | Regenerate `.docs/product/api/openapi.json` and client types | 60 s |
+| `make asyncapi` | Regenerate `.docs/product/api/asyncapi.json` | 60 s |
 | `make sbom` | Generate SBOMs for all images | 5 min |
 | `make sow-lint` | Validate SOW statuses/links/checklists | 5 s |
 | `make clean` | Remove build artifacts (no source) | 60 s |
@@ -261,7 +261,7 @@ CI rules: no secrets in logs; least-privilege `permissions:` per job; concurrenc
 - `CONTRIBUTING.md` includes: setup, branch/commit rules, PR checklist, review checklist, test commands, docs requirements, code style, security rules.
 - Review checklist: correctness, scope, tests, security, performance, docs, accessibility (UI), observability, rollback.
 - Every PR links a card and a WP; reviewer ≠ author; merger ≠ author.
-- CODEOWNERS: backend crates → backend owner; `web/` → frontend owner; `infra/` → platform owner; `docs/` → analyst; `migrations/` → data owner; security-sensitive paths → QA.
+- CODEOWNERS: backend crates → backend owner; `web/` → frontend owner; `infra/` → platform owner; `.docs/product/` → analyst; `migrations/` → data owner; security-sensitive paths → QA.
 
 ### 3.12 Performance of the developer loop
 
@@ -284,7 +284,7 @@ CI rules: no secrets in logs; least-privilege `permissions:` per job; concurrenc
 - [x] `.github/workflows/ci.yml` with all required jobs; branch protection documented (16 names match).
 - [x] `.github/workflows/images.yml`, `nightly.yml`, `release.yml` skeletons with the exact jobs.
 - [x] `renovate.json`, `deny.toml`, `.gitignore`, `.dockerignore`, `.editorconfig`, `.gitattributes`.
-- [x] `CODEOWNERS`, `CONTRIBUTING.md`, `docs/review-checklist.md`, PR template (WP-00 template).
+- [x] `CODEOWNERS`, `CONTRIBUTING.md`, `.docs/product/review-checklist.md`, PR template (WP-00 template).
 - [x] `.env.example` complete and consistent with Appendix D.4 (39/39 variables, placeholders only).
 - [x] `README.md` quickstart verified from a clean clone (`make setup && make check` exit 0 in 169 s).
 - [x] Contract generation scripts (`gen-openapi.sh`, `gen-asyncapi.sh`) and drift check in CI (generation owned by WP-16; job present).
@@ -327,7 +327,7 @@ CI rules: no secrets in logs; least-privilege `permissions:` per job; concurrenc
 - [x] Clean-clone bootstrap test recorded: `make setup && make check` exit 0 in 169 s (macOS, Docker 24.0.7, Compose 2.23.3, Rust 1.99.1, Node container 24.22). `make up` is deferred to WP-03.
 - [x] CI green on `main` with all required checks: local `make check` green, workflow and 16 required contexts validated; remote execution needs a GitHub remote (operator action).
 - [x] Hooks verified with a bad-commit test: bad subject exit 1, good subject exit 0, missing agent trailers exit 1; gitleaks private-key fixture exit 1.
-- [x] Contribution docs reviewed by Tech Lead: independent `APPROVED` review in `docs/evidence/WP-02-review.md`.
+- [x] Contribution docs reviewed by Tech Lead: independent `APPROVED` review in `.docs/product/evidence/WP-02-review.md`.
 - [x] Status `done` with sign-off (2026-11-07).
 
 ---
@@ -361,8 +361,8 @@ CI rules: no secrets in logs; least-privilege `permissions:` per job; concurrenc
 2026-11-07 | T06 | lefthook.yml, scripts/hooks/commit-msg.sh, pre-commit.sh, pre-push.sh, install.sh | commit-msg rejects bad subject; accepts conventional | — | T07
 2026-11-07 | T07 | .github/workflows/ci.yml, images.yml, nightly.yml, release.yml, .github/required-checks.txt | 16 required job names match | — | T08
 2026-11-07 | T08 | renovate.json, deny.toml, .gitignore, .dockerignore, .editorconfig, .gitattributes, .env.example | JSON/YAML parse OK; env covers Appendix D.4 | ADR-0024 (TS major blocked) | T09
-2026-11-07 | T09 | CODEOWNERS, CONTRIBUTING.md, docs/review-checklist.md, CHANGELOG.md, SECURITY.md, CODE_OF_CONDUCT.md, LICENSE | docs link check OK | — | T10
+2026-11-07 | T09 | CODEOWNERS, CONTRIBUTING.md, .docs/product/review-checklist.md, CHANGELOG.md, SECURITY.md, CODE_OF_CONDUCT.md, LICENSE | docs link check OK | — | T10
 2026-11-07 | T10 | clean-clone simulation | make setup + make check exit 0 in 169 s (macOS, Docker 24.0.7, Compose 2.23.3, Rust 1.99.1, Node container 24.22); frontend build 217.16 kB raw / 59.63 kB transfer; npm audit high gate exit 0 (15 moderate); gitleaks private-key fixture exit 1 | — | review
-2026-11-07 | review-fix | .tools/test-supply-chain.sh, .tools/fixtures/supply-chain/*, .github/ISSUE_TEMPLATE/*, docs/adr/README.md, web/angular.json, .github/workflows/ci.yml, Makefile | supply-chain 2/2 negative fixtures rejected; make check OK; frontend build OK | ADR-0024 | re-review
-2026-11-07 | closure | docs/evidence/WP-02-review.md | independent review APPROVED | AC1 WP-03, AC8 WP-16 | WP-03
+2026-11-07 | review-fix | .tools/test-supply-chain.sh, .tools/fixtures/supply-chain/*, .github/ISSUE_TEMPLATE/*, .docs/adr/README.md, web/angular.json, .github/workflows/ci.yml, Makefile | supply-chain 2/2 negative fixtures rejected; make check OK; frontend build OK | ADR-0024 | re-review
+2026-11-07 | closure | .docs/product/evidence/WP-02-review.md | independent review APPROVED | AC1 WP-03, AC8 WP-16 | WP-03
 2026-11-07 | tool-fix | scripts/sow-lint.sh | replaced recursive bash-3.2 cycle detection with an awk topological sort; 20/20 stable runs; self-test 11/11 | — | gates

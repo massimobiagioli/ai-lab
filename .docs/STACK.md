@@ -102,7 +102,7 @@ web/                       Angular application
 migrations/                sqlx migrations
 infra/                     Dockerfiles, Compose profiles, proxies, observability
 scripts/                   doctor, sow-lint, harness-lint, wait-for, generators
-docs/                      project documentation and ADRs
+.docs/product/                      project documentation and ADRs
 .opencode/                 skills and commands
 ```
 

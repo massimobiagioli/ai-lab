@@ -709,7 +709,7 @@ pub trait LlmProvider: Send + Sync {
 - `UX-024`: Device pixel ratio is respected by scaling the CSS size, never the internal buffer. No blurry upscaling.
 - `UX-025`: Memory: peak JS heap ≤ 150 MB; sprite atlas ≤ 8 MB compressed; no per-frame allocations in the hot loop (object pools for particles and bubbles).
 - `UX-026`: WebGL2 is an optional backend behind a capability flag; Canvas 2D is the reference and MUST be pixel-identical.
-`UX-027`: Asset provenance is mandatory. Every sprite sheet, font, sound and tileset MUST have a redistributable license recorded in `docs/office.md` (source URL, license, author). Assets from the reference product MUST NOT be copied. Original art is produced for AI-Lab or sourced from a permissively licensed pack (CC0 / OFL / commercial license with redistribution rights).
+`UX-027`: Asset provenance is mandatory. Every sprite sheet, font, sound and tileset MUST have a redistributable license recorded in `.docs/product/office.md` (source URL, license, author). Assets from the reference product MUST NOT be copied. Original art is produced for AI-Lab or sourced from a permissively licensed pack (CC0 / OFL / commercial license with redistribution rights).
 
 ### 11.6 Responsive behavior
 
@@ -1146,7 +1146,7 @@ ai-lab/
 │   │   └── docker-compose.observability.yml
 │   └── grafana/ prometheus/ otel/
 ├── migrations/                # sqlx
-├── docs/
+├── .docs/product/
 │   ├── adr/
 │   ├── diagrams/
 │   ├── runbooks/
@@ -1208,23 +1208,23 @@ AILAB_ALLOWED_ORIGINS=
 The implementation MUST produce and keep current the following. This is part of DoD for the relevant cards, not an afterthought.
 
 1. **README.md** — what it is, 5-minute quickstart, screenshots/GIF, architecture at a glance, links.
-2. **docs/architecture.md** — C4 context/container/component, data flow, trust boundaries.
-3. **docs/domain-model.md** — bounded contexts, aggregates, invariants, event flows.
-4. **docs/adr/NNNN-*.md** — one ADR per material decision, using the template in Appendix D.3. Minimum ADR set listed in Appendix D.3.
-5. **docs/api/openapi.json** + rendered reference; **docs/api/asyncapi.json** + event catalog.
-6. **docs/database.md** — ERD (Mermaid), table dictionary, migration policy, index rationale.
-7. **docs/kanban.md** — column semantics, transition matrix, DoR/DoD, examples.
-8. **docs/agents.md** — role charters, character roster, CV schema, prompt assembly, guardrails.
-9. **docs/office.md** — rendering architecture, asset pipeline, adding new sprites/characters, performance budget.
-10. **docs/security.md** — threat model, sandbox spec, secret handling, exposure modes.
-11. **docs/operations.md** — install, configure, backup/restore, upgrade, scaling, troubleshooting.
-12. **docs/runbooks/** — `provider-outage.md`, `db-restore.md`, `stuck-runs.md`, `budget-exhausted.md`, `github-rate-limit.md`, `disk-full.md`.
-13. **docs/testing.md** — how to run every suite, fixtures, deterministic seed, flaky policy.
-14. **docs/contributing.md** — conventions, commit style, review checklist, definition of done.
-15. **docs/diagrams/** — source files (Mermaid/Excalidraw) plus exported SVGs; diagrams are code-reviewed.
+2. **.docs/product/architecture.md** — C4 context/container/component, data flow, trust boundaries.
+3. **.docs/product/domain-model.md** — bounded contexts, aggregates, invariants, event flows.
+4. **.docs/adr/NNNN-*.md** — one ADR per material decision, using the template in Appendix D.3. Minimum ADR set listed in Appendix D.3.
+5. **.docs/product/api/openapi.json** + rendered reference; **.docs/product/api/asyncapi.json** + event catalog.
+6. **.docs/product/database.md** — ERD (Mermaid), table dictionary, migration policy, index rationale.
+7. **.docs/product/kanban.md** — column semantics, transition matrix, DoR/DoD, examples.
+8. **.docs/product/agents.md** — role charters, character roster, CV schema, prompt assembly, guardrails.
+9. **.docs/product/office.md** — rendering architecture, asset pipeline, adding new sprites/characters, performance budget.
+10. **.docs/product/security.md** — threat model, sandbox spec, secret handling, exposure modes.
+11. **.docs/product/operations.md** — install, configure, backup/restore, upgrade, scaling, troubleshooting.
+12. **.docs/product/runbooks/** — `provider-outage.md`, `db-restore.md`, `stuck-runs.md`, `budget-exhausted.md`, `github-rate-limit.md`, `disk-full.md`.
+13. **.docs/product/testing.md** — how to run every suite, fixtures, deterministic seed, flaky policy.
+14. **CONTRIBUTING.md** — conventions, commit style, review checklist, definition of done.
+15. **.docs/product/diagrams/** — source files (Mermaid/Excalidraw) plus exported SVGs; diagrams are code-reviewed.
 16. **CHANGELOG.md**, **SECURITY.md**, **CODE_OF_CONDUCT.md**, **LICENSE** (Apache-2.0).
-17. **docs/demo-script.md** — the 5-minute golden-path demo with expected timings.
-18. **docs/glossary.md** — domain vocabulary (Appendix D.5 as a starting point).
+17. **.docs/product/demo-script.md** — the 5-minute golden-path demo with expected timings.
+18. **.docs/product/glossary.md** — domain vocabulary (Appendix D.5 as a starting point).
 
 `DOC-001`: Every public function/type in Rust has rustdoc; every exported Angular component/service has TSDoc; every endpoint has an OpenAPI description and example.
 `DOC-002`: Docs are built in CI (`mdbook` or VitePress) and deployed as static artifacts. Broken links fail the build.

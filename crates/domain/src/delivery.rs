@@ -664,7 +664,7 @@ mod tests {
             role: AgentRole::Dev,
             estimate: Some(Estimate::new(3).expect("estimate")),
             depends_on: depends_on.into_iter().map(str::to_owned).collect(),
-            deliverables: vec![format!("docs/{key}.md")],
+            deliverables: vec![format!(".docs/product/{key}.md")],
             acceptance_criteria: vec![format!("{key} works")],
         }
     }

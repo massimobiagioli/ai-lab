@@ -195,7 +195,7 @@ Stores deduplicate by `event_id`/`seq`; no duplicate rows on reconnect.
 - [x] Loading/empty/error/degraded states for every screen.
 - [x] Responsive + a11y + reduced motion across all surfaces.
 - [x] E2E for journeys J1–J4 + visual screenshots.
-- [x] `docs/ui.md` with routes, states, and interaction rules.
+- [x] `.docs/product/ui.md` with routes, states, and interaction rules.
 
 ---
 
@@ -264,4 +264,4 @@ Stores deduplicate by `event_id`/`seq`; no duplicate rows on reconnect.
 ## Progress log
 
 2026-11-07 | T01 | web/src/app/dashboard/* | dashboard flow summary + health badge; 2 tests | — | T02
-2026-11-07 | T02 | docs/product-ui.md | frontend lint/test/build green (12 tests) | full pages/J1-J4 deferred WP-19 follow-up/WP-21 | WP-20
+2026-11-07 | T02 | .docs/product/product-ui.md | frontend lint/test/build green (12 tests) | full pages/J1-J4 deferred WP-19 follow-up/WP-21 | WP-20

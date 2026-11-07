@@ -226,7 +226,7 @@ Server → client:
 
 ## 4. Deliverables (checklist)
 
-- [x] Axum router deferred to the WP-16 follow-up; contract paths are in `docs/api/openapi.json`.
+- [x] Axum router deferred to the WP-16 follow-up; contract paths are in `.docs/product/api/openapi.json`.
 - [x] Origin/JSON guards delivered; full middleware ordering in the follow-up.
 - [x] DTO generation deferred to the follow-up; contract schemas are published.
 - [x] RFC 9457 mapping in `application::problem` and the OpenAPI `Problem` schema.
@@ -239,7 +239,7 @@ Server → client:
 - [x] Deterministic OpenAPI generation and drift check delivered; Swagger UI in the follow-up.
 - [x] Health probes delivered in WP-03; HTTP endpoints in the follow-up.
 - [x] Contract and WS tests green; performance suite in WP-21.
-- [x] `docs/api/README.md` and `docs/realtime.md` delivered.
+- [x] `.docs/product/api/README.md` and `.docs/product/realtime.md` delivered.
 
 ---
 
@@ -309,7 +309,7 @@ Server → client:
 ## Progress log
 
 2026-11-07 | T01 | crates/api/src/lib.rs | pagination, rate limits, origin/JSON guards, WS envelope, events_after; 5 tests | — | T02
-2026-11-07 | T02 | docs/api/openapi.source.json, asyncapi.source.json, scripts/gen-*.sh | deterministic OpenAPI/AsyncAPI generation; 6 API tests | — | T03
-2026-11-07 | T03 | docs/api/README.md | JSON contract + drift check | server/DTO/auth middleware deferred WP-16 follow-up | WP-13
+2026-11-07 | T02 | .docs/product/api/openapi.source.json, asyncapi.source.json, scripts/gen-*.sh | deterministic OpenAPI/AsyncAPI generation; 6 API tests | — | T03
+2026-11-07 | T03 | .docs/product/api/README.md | JSON contract + drift check | server/DTO/auth middleware deferred WP-16 follow-up | WP-13
 
 **Delivery note.** The contract layer is delivered: pagination, rate-limit policy, origin/JSON guards, WebSocket envelope, resumable `events_after`, deterministic OpenAPI/AsyncAPI contracts and drift checking. The axum server, DTO mapping and auth middleware are the WP-16 follow-up.

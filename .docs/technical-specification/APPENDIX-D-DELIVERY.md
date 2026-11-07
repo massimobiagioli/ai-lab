@@ -22,7 +22,7 @@ Each row becomes one or more Kanban cards. `Est` is Fibonacci story points. `Rol
 | M0-07 | Observability skeleton: tracing, OTel, Prometheus metrics, health endpoints | Dev | 3 | M0-03 | `/health/*`, dashboards config |
 | M0-08 | CI pipeline: fmt, clippy, tests, frontend lint/test/build, security scans | Dev | 3 | M0-01..07 | `.github/workflows/ci.yml` green |
 | M0-09 | `Makefile` + `scripts/doctor.sh` + README quickstart | Dev | 2 | M0-03 | `make up`, `make doctor` |
-| M0-10 | ADRs 0001–0008 | Analyst | 2 | — | `docs/adr/*` |
+| M0-10 | ADRs 0001–0008 | Analyst | 2 | — | `.docs/adr/*` |
 
 ### M1 — Inventory
 
@@ -113,7 +113,7 @@ Each row becomes one or more Kanban cards. `Est` is Fibonacci story points. `Rol
 
 | ID | Task | Role | Est | Depends on | Deliverables |
 |---|---|---|---|---|---|
-| M7-01 | Threat model review + fixes | QA | 5 | M5-11 | `docs/security.md` |
+| M7-01 | Threat model review + fixes | QA | 5 | M5-11 | `.docs/product/security.md` |
 | M7-02 | Sandbox escape tests + egress policy verification | QA | 5 | M5-04 | security test suite |
 | M7-03 | Load tests (k6) + performance tuning to budgets | Dev | 5 | M5-11 | results vs §17 |
 | M7-04 | Chaos: kill worker/DB/Redis; recovery verification | Dev | 5 | M5-06 | chaos report |
@@ -129,7 +129,7 @@ Each row becomes one or more Kanban cards. `Est` is Fibonacci story points. `Rol
 |---|---|---|---|---|---|
 | M8-01 | Deterministic demo seed (`make seed-demo`) | Dev | 3 | M5-11 | 4 agents, 12 cards, 30 events |
 | M8-02 | Polish pass: transitions, sounds, micro-interactions | Dev | 5 | M3-10 | final UX |
-| M8-03 | Demo script + recording + screenshots/GIFs | Analyst | 2 | M8-01 | `docs/demo-script.md` |
+| M8-03 | Demo script + recording + screenshots/GIFs | Analyst | 2 | M8-01 | `.docs/product/demo-script.md` |
 | M8-04 | Release notes, versioning, images, compose `1.0.0` | Dev | 2 | all | tag + artifacts |
 | M8-05 | Golden-path acceptance run (AC-001..015) | QA | 3 | all | signed acceptance report |
 
@@ -176,7 +176,7 @@ Every acceptance test is automated unless marked *(manual)*. Test IDs are stable
 
 ## D.3 ADR minimum set
 
-Each ADR follows: **Context → Decision → Consequences → Alternatives → Status**. Store in `docs/adr/NNNN-kebab-title.md`.
+Each ADR follows: **Context → Decision → Consequences → Alternatives → Status**. Store in `.docs/adr/NNNN-kebab-title.md`.
 
 | ADR | Title | Decision |
 |---|---|---|
@@ -258,24 +258,24 @@ Each ADR follows: **Context → Decision → Consequences → Alternatives → S
 | Artifact | Path | Owner | Acceptance |
 |---|---|---|---|
 | README + quickstart | `README.md` | Dev | Fresh clone → running in ≤10 min; GIF embedded |
-| Architecture (C4 + flows) | `docs/architecture.md` | Analyst | Context/container/component + trust boundaries |
-| Domain model | `docs/domain-model.md` | Analyst | Aggregates, invariants, events match code |
-| API reference | `docs/api/openapi.json` + rendered | Dev | Contract tests pass; examples valid |
-| Event reference | `docs/api/asyncapi.json` | Dev | All emitted events documented |
-| Database dictionary + ERD | `docs/database.md` | Dev | Every table/column/index explained |
-| Kanban semantics | `docs/kanban.md` | Analyst | Matrix + DoR/DoD + examples |
-| Agents & prompts | `docs/agents.md` | Analyst | Charters, roster, prompt order, guardrails |
-| Office architecture | `docs/office.md` | Dev | Engine, assets, adding sprites, perf budget |
-| Security | `docs/security.md` | QA | Threat model, sandbox, exposure modes |
-| Operations | `docs/operations.md` | Dev | Install, backup, restore, upgrade, scale |
-| Runbooks (6) | `docs/runbooks/*` | Dev | Each has symptoms, diagnosis, action, rollback |
-| Testing | `docs/testing.md` | QA | Commands, fixtures, seed, flaky policy |
-| Contributing | `docs/contributing.md` | Dev | Conventions, review checklist, DoD |
-| ADRs (≥22) | `docs/adr/*` | All | Each decision recorded and linked |
-| Diagrams source + SVG | `docs/diagrams/*` | Analyst | Regenerable; reviewed |
+| Architecture (C4 + flows) | `.docs/product/architecture.md` | Analyst | Context/container/component + trust boundaries |
+| Domain model | `.docs/product/domain-model.md` | Analyst | Aggregates, invariants, events match code |
+| API reference | `.docs/product/api/openapi.json` + rendered | Dev | Contract tests pass; examples valid |
+| Event reference | `.docs/product/api/asyncapi.json` | Dev | All emitted events documented |
+| Database dictionary + ERD | `.docs/product/database.md` | Dev | Every table/column/index explained |
+| Kanban semantics | `.docs/product/kanban.md` | Analyst | Matrix + DoR/DoD + examples |
+| Agents & prompts | `.docs/product/agents.md` | Analyst | Charters, roster, prompt order, guardrails |
+| Office architecture | `.docs/product/office.md` | Dev | Engine, assets, adding sprites, perf budget |
+| Security | `.docs/product/security.md` | QA | Threat model, sandbox, exposure modes |
+| Operations | `.docs/product/operations.md` | Dev | Install, backup, restore, upgrade, scale |
+| Runbooks (6) | `.docs/product/runbooks/*` | Dev | Each has symptoms, diagnosis, action, rollback |
+| Testing | `.docs/product/testing.md` | QA | Commands, fixtures, seed, flaky policy |
+| Contributing | `CONTRIBUTING.md` | Dev | Conventions, review checklist, DoD |
+| ADRs (≥22) | `.docs/adr/*` | All | Each decision recorded and linked |
+| Diagrams source + SVG | `.docs/product/diagrams/*` | Analyst | Regenerable; reviewed |
 | CHANGELOG / SECURITY / LICENSE | repo root | Dev | SemVer, Apache-2.0, disclosure policy |
-| Demo script | `docs/demo-script.md` | Analyst | ≤5 min, timings, expected visuals |
-| Glossary | `docs/glossary.md` | Analyst | Terms match domain language |
+| Demo script | `.docs/product/demo-script.md` | Analyst | ≤5 min, timings, expected visuals |
+| Glossary | `.docs/product/glossary.md` | Analyst | Terms match domain language |
 
 `DOC-GATE`: Release is blocked if any artifact is missing, the docs build fails, links are broken, or screenshots do not match the current UI.
 
@@ -302,7 +302,7 @@ Each ADR follows: **Context → Decision → Consequences → Alternatives → S
 | 4:40 | Toggle reduced motion | Animation stops; states remain readable; a11y list available |
 | 4:55 | End | Dashboard reflects updated KPIs and activity feed |
 
-**Recording:** 1440p, 60 FPS, cursor highlighted, captions. Stored in `docs/media/demo.mp4` and linked from README.
+**Recording:** 1440p, 60 FPS, cursor highlighted, captions. Stored in `.docs/product/media/demo.mp4` and linked from README.
 
 ---
 

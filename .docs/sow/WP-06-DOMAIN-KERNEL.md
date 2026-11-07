@@ -224,7 +224,7 @@ pub trait Repository<A: Aggregate>: Send + Sync {
 - [x] Conventions documented; middleware helper lands with WP-16/WP-20.
 - [x] `testkit` fakes, golden fixtures, fake repository and property tests.
 - [x] Fitness tests (`.tools/check-crate-dependencies.sh`, architecture fitness, golden catalog).
-- [x] `docs/domain-model.md` kernel section and `docs/eventing.md`.
+- [x] `.docs/product/domain-model.md` kernel section and `.docs/product/eventing.md`.
 
 ---
 
@@ -300,5 +300,5 @@ pub trait Repository<A: Aggregate>: Send + Sync {
 2026-11-07 | T07 | crates/application/src/secret.rs, crates/infrastructure/src/redact.rs | no-leak tests | — | T08
 2026-11-07 | T08 | crates/application/src/config.rs | invalid config names the variable; unknown warnings | — | T09
 2026-11-07 | T09 | crates/testkit/src/{fakes,repository}.rs | fakes and fake repository tests | — | T10
-2026-11-07 | T10 | .tools/check-crate-dependencies.sh, docs/eventing.md, docs/domain-model.md | fitness OK; doc links 116 | — | closure
-2026-11-07 | closure | crates/*, docs/* | cargo test/clippy green; crate fitness OK | Postgres outbox/relay WP-13; logging middleware WP-16/WP-20 | WP-07
+2026-11-07 | T10 | .tools/check-crate-dependencies.sh, .docs/product/eventing.md, .docs/product/domain-model.md | fitness OK; doc links 116 | — | closure
+2026-11-07 | closure | crates/*, .docs/product/* | cargo test/clippy green; crate fitness OK | Postgres outbox/relay WP-13; logging middleware WP-16/WP-20 | WP-07

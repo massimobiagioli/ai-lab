@@ -28,7 +28,7 @@ migrations/        schema and analytics views
 infra/             Docker, Compose, proxies and observability (WP-03/WP-20)
 scripts/           doctor, wait-for, sow-lint, hooks, generators
 .tools/            reusable checkers and fixtures (registered in AGENTS.md)
-docs/              product documentation (architecture, governance, templates)
+.docs/product/              product documentation (architecture, governance, templates)
 .docs/             specification, SOW, work packages, ADRs, constitution, stack
 .opencode/         skills and commands used by implementing agents
 .github/           CI workflows, required checks and PR template

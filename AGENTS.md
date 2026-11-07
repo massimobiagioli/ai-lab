@@ -121,9 +121,9 @@ Every document under `.docs` is listed here. When a document is created, renamed
 | WP-21 Testing | Test strategy, suites, fixtures, gates. | [`.docs/sow/WP-21-TESTING.md`](./.docs/sow/WP-21-TESTING.md) |
 | WP-22 Docs and release | Documentation, release, acceptance, handover. | [`.docs/sow/WP-22-DOCS-RELEASE.md`](./.docs/sow/WP-22-DOCS-RELEASE.md) |
 | WP-23 Maintenance | Maintenance jobs, dependency updates, memory hygiene. | [`.docs/sow/WP-23-MAINTENANCE.md`](./.docs/sow/WP-23-MAINTENANCE.md) |
-| Product documentation index | Gateway to product documentation, governance pages, templates, CRs and backlog cards. | [`docs/README.md`](./docs/README.md) |
+| Product documentation index | Gateway to product documentation, governance pages, templates, CRs and backlog cards. | [`.docs/product/README.md`](./.docs/product/README.md) |
 
-The ADR registry is the only index for ADR files. Every accepted ADR is linked from it.
+Product documentation under `.docs/product/` is indexed by `.docs/product/README.md`; individual product files are not listed here. The ADR registry is the only index for ADR files. Every accepted ADR is linked from it.
 
 ---
 
@@ -163,7 +163,7 @@ A task or work package is not done until all applicable gates pass:
 9. `npm --prefix web run build`.
 10. `npx --prefix web playwright test`.
 11. `make openapi` and `make asyncapi` with no drift.
-12. `schemathesis run docs/api/openapi.json`.
+12. `schemathesis run .docs/product/api/openapi.json`.
 13. `gitleaks detect --source . --no-git`.
 14. `cargo deny check`.
 15. `npm --prefix web audit --audit-level=high`.
@@ -195,7 +195,7 @@ Use the `quality-gates` skill for the exact commands and evidence rules.
 | `sow-lint` | [`scripts/sow-lint.sh`](./scripts/sow-lint.sh) | Validate WP statuses, index agreement, template structure, dependencies, progress logs, SOW links, CRs and required CI checks. | `scripts/sow-lint.sh [--root DIR]` |
 | `sow-lint-self-test` | [`.tools/sow-lint-self-test.sh`](./.tools/sow-lint-self-test.sh) | Exercise `sow-lint` against disposable valid and invalid SOW trees. | `.tools/sow-lint-self-test.sh` |
 | `test-analytics-views` | [`.tools/test-analytics-views.sh`](./.tools/test-analytics-views.sh) | Apply the schema and analytics views on a disposable PostgreSQL + pgvector container and assert 25 fixture values. | `.tools/test-analytics-views.sh` |
-| `check-doc-links` | [`.tools/check-doc-links.sh`](./.tools/check-doc-links.sh) | Resolve relative Markdown links under `docs/` and `.docs/`. | `.tools/check-doc-links.sh [--root DIR]` |
+| `check-doc-links` | [`.tools/check-doc-links.sh`](./.tools/check-doc-links.sh) | Resolve relative Markdown links under `.docs/product/` and `.docs/`. | `.tools/check-doc-links.sh [--root DIR]` |
 | `check-architecture-fitness` | [`.tools/check-architecture-fitness.sh`](./.tools/check-architecture-fitness.sh) | Validate context ownership, dependency acyclicity, cross-context table access and Compose catalog coverage. | `.tools/check-architecture-fitness.sh [--root DIR]` |
 | `architecture-fitness-self-test` | [`.tools/architecture-fitness-self-test.sh`](./.tools/architecture-fitness-self-test.sh) | Exercise the architecture fitness check against disposable roots. | `.tools/architecture-fitness-self-test.sh` |
 | `check-crate-dependencies` | [`.tools/check-crate-dependencies.sh`](./.tools/check-crate-dependencies.sh) | Validate crate direction, acyclicity, `#![forbid(unsafe_code)]` and the no-unwrap gate. | `.tools/check-crate-dependencies.sh` |
@@ -203,8 +203,8 @@ Use the `quality-gates` skill for the exact commands and evidence rules.
 | `run-web` | [`scripts/run-web.sh`](./scripts/run-web.sh) | Run a command in `web/` with host npm or the pinned Node container. | `scripts/run-web.sh npm run lint` |
 | `wait-for` | [`scripts/wait-for.sh`](./scripts/wait-for.sh) | Wait for a TCP host and port. | `scripts/wait-for.sh HOST PORT [TIMEOUT]` |
 | `install-hooks` | [`scripts/hooks/install.sh`](./scripts/hooks/install.sh) | Install lefthook or native git hooks. | `scripts/hooks/install.sh` |
-| `gen-openapi` | [`scripts/gen-openapi.sh`](./scripts/gen-openapi.sh) | Generate `docs/api/openapi.json` (WP-16). | `scripts/gen-openapi.sh` |
-| `gen-asyncapi` | [`scripts/gen-asyncapi.sh`](./scripts/gen-asyncapi.sh) | Generate `docs/api/asyncapi.json` (WP-16). | `scripts/gen-asyncapi.sh` |
+| `gen-openapi` | [`scripts/gen-openapi.sh`](./scripts/gen-openapi.sh) | Generate `.docs/product/api/openapi.json` (WP-16). | `scripts/gen-openapi.sh` |
+| `gen-asyncapi` | [`scripts/gen-asyncapi.sh`](./scripts/gen-asyncapi.sh) | Generate `.docs/product/api/asyncapi.json` (WP-16). | `scripts/gen-asyncapi.sh` |
 | `seed-demo` | [`scripts/seed-demo.sh`](./scripts/seed-demo.sh) | Seed the deterministic demo dataset (WP-04). | `scripts/seed-demo.sh` |
 | `test-supply-chain` | [`.tools/test-supply-chain.sh`](./.tools/test-supply-chain.sh) | Negative fixtures: vulnerable npm dependency and disallowed Cargo license must be rejected. | `.tools/test-supply-chain.sh` |
 | `test-migrations` | [`.tools/test-migrations.sh`](./.tools/test-migrations.sh) | Diff the versioned migrations against Appendix A on a disposable PostgreSQL container. | `.tools/test-migrations.sh` |

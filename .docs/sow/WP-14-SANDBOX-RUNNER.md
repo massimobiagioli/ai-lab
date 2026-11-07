@@ -277,4 +277,4 @@ Evaluation order for every call:
 
 2026-11-07 | T01 | crates/orchestrator/src/sandbox.rs | spec/isolation/egress/lifecycle; 5 tests | — | T02
 2026-11-07 | T02 | crates/orchestrator/src/sandbox.rs | role tool policy, forbidden commands, protected paths | — | T03
-2026-11-07 | T03 | docs/sandbox.md, docs/tools.md | doc link check | runner service/escape suite deferred WP-14 follow-up | WP-16
+2026-11-07 | T03 | .docs/product/sandbox.md, .docs/product/tools.md | doc link check | runner service/escape suite deferred WP-14 follow-up | WP-16

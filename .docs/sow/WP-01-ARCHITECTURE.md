@@ -239,16 +239,16 @@ Each ADR follows the template in WP-00 and is stored under `.docs/adr/` (CR-0001
 
 ## 4. Deliverables (checklist)
 
-- [x] `docs/architecture.md` with C4 L1/L2/L3 diagrams (Mermaid source + SVG), trust boundaries and data flows.
-- [x] `docs/domain-model.md` with bounded contexts, aggregates, invariants and event flows.
-- [x] `docs/service-catalog.md` with responsibilities, scaling, data ownership, failure behavior and SLOs.
-- [x] `docs/contracts.md` with the communication matrix and runner control-plane API.
-- [x] `docs/data-ownership.md` with the ownership matrix and forbidden-access rules.
-- [x] `docs/failure-modes.md` with the failure matrix and recovery procedures.
-- [x] `docs/diagrams/context.mmd`, `containers.mmd`, `components-backend.mmd`, `components-frontend.mmd` + exports (4 SVGs, fresher than sources).
+- [x] `.docs/product/architecture.md` with C4 L1/L2/L3 diagrams (Mermaid source + SVG), trust boundaries and data flows.
+- [x] `.docs/product/domain-model.md` with bounded contexts, aggregates, invariants and event flows.
+- [x] `.docs/product/service-catalog.md` with responsibilities, scaling, data ownership, failure behavior and SLOs.
+- [x] `.docs/product/contracts.md` with the communication matrix and runner control-plane API.
+- [x] `.docs/product/data-ownership.md` with the ownership matrix and forbidden-access rules.
+- [x] `.docs/product/failure-modes.md` with the failure matrix and recovery procedures.
+- [x] `.docs/product/diagrams/context.mmd`, `containers.mmd`, `components-backend.mmd`, `components-frontend.mmd` + exports (4 SVGs, fresher than sources).
 - [x] ADR-0001 … ADR-0023 committed and linked from the architecture doc.
 - [x] Contract tests: `.tools/check-architecture-fitness.sh` enforces ownership, acyclicity and cross-context table access; self-test 13/13; wired in CI.
-- [x] Architecture review record signed by Tech Lead and QA: `docs/evidence/WP-01-review.md` (independent `APPROVED`).
+- [x] Architecture review record signed by Tech Lead and QA: `.docs/product/evidence/WP-01-review.md` (independent `APPROVED`).
 
 ---
 
@@ -273,7 +273,7 @@ Each ADR follows the template in WP-00 and is stored under `.docs/adr/` (CR-0001
 2. A static fitness test fails if a repository in context A references a table owned by context B (except through an approved read view).
 3. The service catalog covers every container in `docker compose config`, with scaling and failure behavior.
 4. The runner API contract is implemented by WP-14 and consumed by WP-13 without drift (contract test).
-5. Every ADR listed in §3.12 exists, follows the template, and is linked from `docs/architecture.md`.
+5. Every ADR listed in §3.12 exists, follows the template, and is linked from `.docs/product/architecture.md`.
 6. The failure-mode matrix is exercised by at least one chaos test per row owned by WP-21.
 7. C4 diagrams build from source and are embedded in the docs; no stale exported image.
 
@@ -282,7 +282,7 @@ Each ADR follows the template in WP-00 and is stored under `.docs/adr/` (CR-0001
 ## 7. WP Definition of Done
 
 - [x] All deliverables checked with evidence links.
-- [x] Architecture review signed by Tech Lead and QA (`docs/evidence/WP-01-review.md`, independent `APPROVED`).
+- [x] Architecture review signed by Tech Lead and QA (`.docs/product/evidence/WP-01-review.md`, independent `APPROVED`).
 - [x] Fitness tests green in CI (`.tools/check-architecture-fitness.sh` in `docs-build` and `rust-integration`; self-test 13/13).
 - [x] ADRs accepted (ADR-0001..0023 registered).
 - [x] No unreconciled contract drift with WP-04, WP-12, WP-13, WP-14, WP-16: this document set is the canonical source they consume; compatibility tests land with those WPs.
@@ -311,14 +311,14 @@ Each ADR follows the template in WP-00 and is stored under `.docs/adr/` (CR-0001
 
 ## Progress log
 
-2026-11-07 | T01 | docs/diagrams/context.mmd, containers.mmd, components-backend.mmd, components-frontend.mmd + .svg | mermaid-cli render (4 SVGs) | — | T02
-2026-11-07 | T02 | docs/domain-model.md | doc link check | — | T03
-2026-11-07 | T03 | docs/service-catalog.md | doc link check | — | T04
-2026-11-07 | T04 | docs/data-ownership.md, .tools/architecture/contexts.tsv, dependencies.tsv | .tools/check-architecture-fitness.sh | — | T05
-2026-11-07 | T05 | docs/contracts.md | doc link check | — | T06
-2026-11-07 | T06 | docs/architecture.md (ADR index) | harness-lint + ADR registry | — | T07
+2026-11-07 | T01 | .docs/product/diagrams/context.mmd, containers.mmd, components-backend.mmd, components-frontend.mmd + .svg | mermaid-cli render (4 SVGs) | — | T02
+2026-11-07 | T02 | .docs/product/domain-model.md | doc link check | — | T03
+2026-11-07 | T03 | .docs/product/service-catalog.md | doc link check | — | T04
+2026-11-07 | T04 | .docs/product/data-ownership.md, .tools/architecture/contexts.tsv, dependencies.tsv | .tools/check-architecture-fitness.sh | — | T05
+2026-11-07 | T05 | .docs/product/contracts.md | doc link check | — | T06
+2026-11-07 | T06 | .docs/product/architecture.md (ADR index) | harness-lint + ADR registry | — | T07
 2026-11-07 | T07 | .tools/check-architecture-fitness.sh, .tools/architecture-fitness-self-test.sh | self-test 7/7; real check 4/4 | — | T08
-2026-11-07 | T08 | docs/architecture.md review surface | pending independent review | — | review
-2026-11-07 | review-fix | docs/domain-model.md, docs/architecture.md, docs/data-ownership.md, .tools/check-architecture-fitness.sh, .tools/architecture/paths.tsv, .docs/adr/adr-0023.md | fitness self-test 13/13; harness/sow/doc links green | ADR-0023 | final review
-2026-11-07 | T08 | docs/evidence/WP-01-review.md | independent review APPROVED | — | closure
+2026-11-07 | T08 | .docs/product/architecture.md review surface | pending independent review | — | review
+2026-11-07 | review-fix | .docs/product/domain-model.md, .docs/product/architecture.md, .docs/product/data-ownership.md, .tools/check-architecture-fitness.sh, .tools/architecture/paths.tsv, .docs/adr/adr-0023.md | fitness self-test 13/13; harness/sow/doc links green | ADR-0023 | final review
+2026-11-07 | T08 | .docs/product/evidence/WP-01-review.md | independent review APPROVED | — | closure
 2026-11-07 | closure | all WP-01 artifacts | harness OK (16), sow OK (31), doc links 106, fitness 4/4 | AC3/AC4/AC6 downstream by WP-03/13/14/21 | WP-02

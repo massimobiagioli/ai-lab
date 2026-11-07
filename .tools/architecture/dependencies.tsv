@@ -1,5 +1,5 @@
 # Compile-time context dependencies. Event subscriptions are asynchronous and
-# are not compile dependencies; they are documented in docs/domain-model.md.
+# are not compile dependencies; they are documented in .docs/product/domain-model.md.
 lab	inventory
 kanban	inventory
 delivery	inventory

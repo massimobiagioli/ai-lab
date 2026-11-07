@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Check relative Markdown links under docs/ and .docs/.
+# Check relative Markdown links under .docs/product/ and .docs/.
 #
 # Usage: .tools/check-doc-links.sh [--root DIR]
 # Exit: 0 all relative links resolve, 1 a link is broken, 2 environment error.
@@ -35,7 +35,7 @@ while IFS= read -r f; do
       FAILED=1
     fi
   done < <(grep -oE '\]\([^)]+\)' "$f" 2>/dev/null | sed -E 's/^\]\((.*)\)$/\1/')
-done < <(find "$ROOT/docs" "$ROOT/.docs" -type f -name '*.md' 2>/dev/null | sort)
+done < <(find "$ROOT/.docs" -type f -name '*.md' 2>/dev/null | sort)
 
 echo
 if [ "$FAILED" -ne 0 ]; then

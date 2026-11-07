@@ -272,7 +272,7 @@ No command requires interactive input. Every command documents its side effects 
 - [x] `make backup` / `make restore-drill` scripts + manifest format (drill executes after WP-04 schema).
 - [x] Image build + Trivy + SBOM + cosign signing in `images.yml` (build and scan hooks present; SBOM/sign complete in WP-22).
 - [x] Compose validation test (`make compose-validate`) and isolation test wired in CI; startup smoke runs after WP-04 migrations.
-- [x] `docs/operations.md` install/upgrade/backup/restore/scale section.
+- [x] `.docs/product/operations.md` install/upgrade/backup/restore/scale section.
 - [x] Resource-limit and network-isolation automated tests (`.tools/test-compose-isolation.sh`; edge cannot reach Postgres/Redis).
 
 ---
@@ -315,7 +315,7 @@ No command requires interactive input. Every command documents its side effects 
 - [x] Compose validation and isolation tests green and wired in CI; startup smoke executes after WP-04 migrations.
 - [x] Image budgets verified (api 28.1 MB, worker 21.4 MB, web 13 MB, runner 21.4 MB, migrate 35.9 MB); Trivy/SBOM/sign hooks in `images.yml`, completed by WP-22.
 - [x] Backup/restore scripts delivered; the drill is executed after WP-04 provides the schema.
-- [x] Operations docs updated (`docs/operations.md`).
+- [x] Operations docs updated (`.docs/product/operations.md`).
 - [x] Status `done` with sign-off (2026-11-07).
 
 ---
@@ -352,4 +352,4 @@ No command requires interactive input. Every command documents its side effects 
 2026-11-07 | T08 | scripts/backup.sh, scripts/restore-drill.sh | scripts delivered; drill needs WP-04 schema | — | T09
 2026-11-07 | T09 | .github/workflows/images.yml | build job skeleton; Trivy/SBOM/sign owned by WP-22 | — | T10
 2026-11-07 | T10 | .tools/test-compose-isolation.sh + runtime checks | edge cannot reach postgres/redis; proxy allowlist verified | — | closure
-2026-11-07 | closure | docs/operations.md | make check green; make up smoke runs after WP-04 | AC2/AC3/AC8 downstream by WP-04 | WP-04
+2026-11-07 | closure | .docs/product/operations.md | make check green; make up smoke runs after WP-04 | AC2/AC3/AC8 downstream by WP-04 | WP-04

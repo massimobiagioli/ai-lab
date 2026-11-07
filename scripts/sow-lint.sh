@@ -32,10 +32,10 @@ fi
 
 SOW_DIR="$ROOT/.docs/sow"
 SOW_FILE="$SOW_DIR/SOW.md"
-CR_DIR="$ROOT/docs/change-requests"
+CR_DIR="$ROOT/.docs/product/change-requests"
 REQ_FILE="$ROOT/.github/required-checks.txt"
 WF_FILE="$ROOT/.github/workflows/ci.yml"
-GATES_DOC="$ROOT/docs/quality-gates.md"
+GATES_DOC="$ROOT/.docs/product/quality-gates.md"
 
 for p in "$SOW_DIR" "$SOW_FILE"; do
   [ -e "$p" ] || { echo "sow-lint: missing $p" >&2; exit 2; }
@@ -328,7 +328,7 @@ else
       fail "workflow is missing job '$name'"
     fi
     if [ -f "$GATES_DOC" ] && ! grep -qF "\`$name\`" "$GATES_DOC"; then
-      fail "docs/quality-gates.md is missing check '$name'"
+      fail ".docs/product/quality-gates.md is missing check '$name'"
     fi
   done < "$REQ_FILE"
 fi

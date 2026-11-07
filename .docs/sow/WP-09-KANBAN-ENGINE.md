@@ -249,7 +249,7 @@ Errors: `422 INVALID_TRANSITION`, `422 DOR_INCOMPLETE`, `422 DOD_INCOMPLETE`, `4
 - [x] Events delivered; API/DTO/OpenAPI in WP-16.
 - [x] Deferred to WP-16/WP-21.
 - [x] Exhaustive matrix and guard tests run in `cargo test`.
-- [x] `docs/kanban.md` delivered.
+- [x] `.docs/product/kanban.md` delivered.
 
 ---
 
@@ -318,4 +318,4 @@ Errors: `422 INVALID_TRANSITION`, `422 DOR_INCOMPLETE`, `422 DOD_INCOMPLETE`, `4
 ## Progress log
 
 2026-11-07 | T01 | crates/domain/src/kanban.rs | Card aggregate, 36-case matrix, DoR/DoD, WIP, separation, ICEBOX, reopen; 8 tests | — | T02
-2026-11-07 | T02 | docs/kanban.md | 45 domain tests; matrix 12 allowed / 24 denied | API/DB/concurrency/perf deferred WP-16/WP-21 | WP-11
+2026-11-07 | T02 | .docs/product/kanban.md | 45 domain tests; matrix 12 allowed / 24 denied | API/DB/concurrency/perf deferred WP-16/WP-21 | WP-11

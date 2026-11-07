@@ -1,7 +1,7 @@
 -- ============================================================================
 -- AI-Lab — Read-only analytics views
 -- Owner: WP-00 (definitions), WP-04 (schema lifecycle), WP-20 (dashboards)
--- Source of truth: .docs/sow/WP-00-GOVERNANCE.md §3.7, docs/metrics.md
+-- Source of truth: .docs/sow/WP-00-GOVERNANCE.md §3.7, .docs/product/metrics.md
 --
 -- These views are read-only projections. They never write and never own data.
 -- They are safe to drop and recreate because nothing persists a dependency on

@@ -306,7 +306,7 @@ Output: JSON report stored in `artifacts/integrity/YYYYMMDD.json` + metric; P1 i
 - [x] Integrity SQL and live checker delivered; scheduling and metric land with WP-20.
 - [x] Backup/restore scripts and manifest format; drill executed successfully.
 - [x] Retention rules documented; SQL jobs wired to `maintenance_jobs` in WP-20/WP-23.
-- [x] `docs/database.md` with ERD (Mermaid), table dictionary, index rationale and migration policy.
+- [x] `.docs/product/database.md` with ERD (Mermaid), table dictionary, index rationale and migration policy.
 - [x] Data-ownership fitness test green (`.tools/check-architecture-fitness.sh`).
 - [x] Constraint, concurrency and migration suites green; performance suite owned by WP-21.
 
@@ -352,7 +352,7 @@ Output: JSON report stored in `artifacts/integrity/YYYYMMDD.json` + metric; P1 i
 - [x] All deliverables checked with evidence.
 - [x] Schema-diff, constraint, concurrency, migration and integrity suites green; performance suite in WP-21.
 - [x] Backup/restore drill recorded.
-- [x] `docs/database.md` complete and link-checked.
+- [x] `.docs/product/database.md` complete and link-checked.
 - [x] No high/critical findings from the SQL review and constraint tests.
 - [x] Status `done` with sign-off (2026-11-07).
 
@@ -392,5 +392,5 @@ Output: JSON report stored in `artifacts/integrity/YYYYMMDD.json` + metric; P1 i
 2026-11-07 | T10 | scripts/data-integrity.sql, scripts/integrity-check.sh | detects injected card projection mismatch | — | T11
 2026-11-07 | T11 | scripts/backup.sh, scripts/restore-drill.sh | backup + restore drill OK | — | T12
 2026-11-07 | T12 | retention/compaction jobs | deferred to WP-20/WP-23 | — | T13
-2026-11-07 | T13 | docs/database.md | doc link check | — | closure
-2026-11-07 | closure | docs/database.md, migrations/*, scripts/* | make up healthy; seed/integrity/backup/restore verified | repositories/.sqlx → WP-06; HNSW → WP-08; perf → WP-21; retention → WP-20/WP-23 | WP-05
+2026-11-07 | T13 | .docs/product/database.md | doc link check | — | closure
+2026-11-07 | closure | .docs/product/database.md, migrations/*, scripts/* | make up healthy; seed/integrity/backup/restore verified | repositories/.sqlx → WP-06; HNSW → WP-08; perf → WP-21; retention → WP-20/WP-23 | WP-05

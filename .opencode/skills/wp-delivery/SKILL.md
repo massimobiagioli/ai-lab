@@ -56,7 +56,7 @@ Do not use this skill for a one-off explanation or for product code unrelated to
 - [ ] Deliverables updated individually.
 - [ ] Progress log appended.
 - [ ] ADR created and registered if needed.
-- [ ] `AGENTS.md` indexes updated if docs/skills changed.
+- [ ] `AGENTS.md` indexes updated if .docs/product/skills changed.
 - [ ] `scripts/harness-lint.sh` green.
 - [ ] Quality gates green.
 - [ ] Final report produced.
