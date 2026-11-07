@@ -314,7 +314,7 @@ fn validate_scope(
 /// True when the text contains a known secret shape.
 #[must_use]
 pub fn contains_secret(text: &str) -> bool {
-    const PREFIXES: &[&str] = &["sk-", "ghp_", "github_pat_", "AKIA", "xoxb-"];
+    const PREFIXES: &[&str] = &["sk-", "ghp_", "github_pat_", "AKIA", "AIza", "xoxb-"];
     text.split_whitespace().any(|token| {
         PREFIXES.iter().any(|prefix| token.starts_with(prefix))
             || token.contains("AILAB_MASTER_KEY=")
