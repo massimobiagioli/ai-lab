@@ -25,7 +25,7 @@ description: Use before declaring any task or work package done, or when changin
    - `scripts/harness-lint.sh`
 2. Run the relevant suites:
    - `cargo nextest run --workspace`
-   - `npm --prefix web test -- --run`
+   - `npm --prefix web test`
    - `npx --prefix web playwright test`
 3. Run contract and invariant suites:
    - `make openapi`

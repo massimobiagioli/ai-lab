@@ -227,7 +227,7 @@ The user writes intent in natural language. The **Tech Lead** agent converts it 
 | Telemetry | opentelemetry + tracing | 0.33.x / latest stable |
 | Container API | bollard | latest stable |
 | Frontend framework | Angular | **22.2.x** |
-| Language | TypeScript | **7.0.x** |
+| Language | TypeScript | **6.0.x** (ADR-0024; Angular 22.2 peer range `>=6.0 <6.1`) |
 | Build | Angular CLI / esbuild | 22.2.x |
 | State | Angular Signals + RxJS interop | as shipped |
 | Rendering | Canvas 2D (primary), WebGL2 (optional acceleration) | native |

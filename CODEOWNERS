@@ -8,3 +8,7 @@
 /.github/             @tech-lead
 /scripts/             @dev
 /.docs/               @tech-lead
+/SECURITY.md          @qa
+/deny.toml            @qa
+/crates/application/src/qa.rs   @qa
+/crates/domain/src/error.rs     @qa

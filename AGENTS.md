@@ -162,7 +162,7 @@ A task or work package is not done until all applicable gates pass:
 5. `cargo clippy --workspace --all-targets -- -D warnings`.
 6. `cargo nextest run --workspace`.
 7. `npm --prefix web run lint`.
-8. `npm --prefix web test -- --run`.
+8. `npm --prefix web test`.
 9. `npm --prefix web run build`.
 10. `npx --prefix web playwright test`.
 11. `make openapi` and `make asyncapi` with no drift.

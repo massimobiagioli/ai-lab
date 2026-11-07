@@ -26,7 +26,7 @@ The review was iterative: the first pass returned `CHANGES_REQUESTED` for two bl
 ## Blocking defects found and resolved
 
 1. No negative supply-chain fixture. Resolved with `.tools/fixtures/supply-chain/` and `.tools/test-supply-chain.sh`; both gates reject the fixtures.
-2. Layout drift: missing `.github/ISSUE_TEMPLATE/` and `.docs/adr/`. Resolved with issue templates and a `.docs/adr/README.md` pointer to the canonical `.docs/adr/` registry (no duplication).
+2. Layout drift: missing `.github/ISSUE_TEMPLATE/` and `.docs/adr/`. Resolved with issue templates; the canonical ADR registry is `.docs/adr/registry.md` (per CR-0001).
 
 ## Verification commands
 

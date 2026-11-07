@@ -72,14 +72,17 @@
 ## 8. QA review
 
 - [ ] QA subagent verdict: `APPROVED`.
-- [ ] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 140, `make check`, supply-chain 2/2, hooks, openapi determinism).
+- [ ] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 141, `make check`, supply-chain 2/2, hooks, openapi determinism).
+- [x] First QA pass returned `CHANGES_REQUESTED` for a broken `frontend-unit` command (`-- --run` is invalid for `ng test`) and the uncorrected TypeScript pin; both fixed (CI/quality-gates corrected, CR-0005 amends spec §5.1) and sent for re-review.
 
 ## 9. Deferred items and residual risks
 
 - [x] AC1 `make up` end-to-end — owner: Dev, WP-03, Compose delivered.
 - [x] AC8 server-side OpenAPI/AsyncAPI generation — owner: Dev, WP-16, deterministic copy in place.
+- [x] Coverage enforcement (backend/domain/frontend) — owner: QA, WP-21; the gate table is normative, enforcement tracked there.
 - [x] No unexplained deferral remains.
 
 ## 10. Decisions
 
 - [x] CR-0004 adds `AILAB_RUNNER_TOKEN` to Appendix D.4 (linked ADR-0023).
+- [x] CR-0005 aligns specification §5.1 TypeScript pin to 6.0.x (linked ADR-0024).
