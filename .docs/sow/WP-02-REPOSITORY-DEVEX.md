@@ -19,6 +19,7 @@
 | 2026-11-07 | — | `ready` | Tech Lead | Initial SOW baseline |
 | 2026-11-07 | `ready` | `progress` | Dev (agent) | WP-00 and WP-01 done; T01 started |
 | 2026-11-07 | `progress` | `done` | Dev (agent) | All deliverables verified; independent review APPROVED; AC1 and AC8 downstream verification owned by WP-03 and WP-16 |
+| 2026-11-07 | `done` | `done` | Tech Lead (agent) | WP review: review plan created, gates reproduced, CR-0004 adds AILAB_RUNNER_TOKEN; QA verdict recorded in the review plan |
 
 ---
 
@@ -277,7 +278,7 @@ CI rules: no secrets in logs; least-privilege `permissions:` per job; concurrenc
 - [x] Monorepo skeleton with every directory and placeholder crate/app (12 crates, Angular app, infra and docs directories).
 - [x] `rust-toolchain.toml`, `.tool-versions`, `Cargo.toml` workspace with lints and profiles (Rust 1.99.1, edition 2024, clippy `-D warnings` green).
 - [x] `web/` Angular 22.2 workspace, strict TypeScript 6.0 (ADR-0024), ESLint/Prettier, budgets (`npm run lint`, `npm run build`, `npm test` green).
-- [x] `Makefile` with all §3.5 targets, each idempotent and non-interactive (`make help` lists 35 targets).
+- [x] `Makefile` with all §3.5 targets, each idempotent and non-interactive (`make help` lists 41 targets).
 - [x] `scripts/doctor.sh` validating Docker/Compose/ports/disk/tools/keys/connectivity (`make doctor` OK, 4 environment warnings).
 - [x] `scripts/sow-lint.sh` validating SOW statuses, links, dependencies and checklists (WP-00; self-test 11/11).
 - [x] `lefthook.yml` with pre-commit, commit-msg and pre-push hooks (`scripts/hooks/*`; bad-subject and missing-trailer tests).
@@ -285,7 +286,7 @@ CI rules: no secrets in logs; least-privilege `permissions:` per job; concurrenc
 - [x] `.github/workflows/images.yml`, `nightly.yml`, `release.yml` skeletons with the exact jobs.
 - [x] `renovate.json`, `deny.toml`, `.gitignore`, `.dockerignore`, `.editorconfig`, `.gitattributes`.
 - [x] `CODEOWNERS`, `CONTRIBUTING.md`, `.docs/product/review-checklist.md`, PR template (WP-00 template).
-- [x] `.env.example` complete and consistent with Appendix D.4 (39/39 variables, placeholders only).
+- [x] `.env.example` complete and consistent with Appendix D.4 (40/40 variables including `AILAB_RUNNER_TOKEN` per CR-0004, placeholders only).
 - [x] `README.md` quickstart verified from a clean clone (`make setup && make check` exit 0 in 169 s).
 - [x] Contract generation scripts (`gen-openapi.sh`, `gen-asyncapi.sh`) and drift check in CI (generation owned by WP-16; job present).
 
@@ -366,3 +367,4 @@ CI rules: no secrets in logs; least-privilege `permissions:` per job; concurrenc
 2026-11-07 | review-fix | .tools/test-supply-chain.sh, .tools/fixtures/supply-chain/*, .github/ISSUE_TEMPLATE/*, .docs/adr/README.md, web/angular.json, .github/workflows/ci.yml, Makefile | supply-chain 2/2 negative fixtures rejected; make check OK; frontend build OK | ADR-0024 | re-review
 2026-11-07 | closure | .docs/product/evidence/WP-02-review.md | independent review APPROVED | AC1 WP-03, AC8 WP-16 | WP-03
 2026-11-07 | tool-fix | scripts/sow-lint.sh | replaced recursive bash-3.2 cycle detection with an awk topological sort; 20/20 stable runs; self-test 11/11 | — | gates
+2026-11-07 | review | .docs/sow/WP-02-REPOSITORY-DEVEX-review-plan.md, CR-0004 | make check OK; supply-chain 2/2; hooks reject bad input; openapi deterministic; env 40/40 | CR-0004 | QA review
