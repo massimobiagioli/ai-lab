@@ -16,7 +16,7 @@
 
 ## 2. Specification conformance
 
-- [x] Specification §18 (developer experience), §20 (repository) and Appendix D.4 (environment variables) — evidence: `Makefile`, `rust-toolchain.toml`, `.tool-versions`, `.env.example`, `APPENDIX-D` §D.4.
+- [x] Specification §13, §20 (repository), §21 and §5 (stack) and Appendix D.4 (environment variables) — evidence: `Makefile`, `rust-toolchain.toml`, `.tool-versions`, `.env.example`, `APPENDIX-D` §D.4.
 - [x] Appendix C.4 PR template and WP-00 §3.8 required checks — evidence: `.github/pull_request_template.md`, `.github/required-checks.txt`, `ci.yml`.
 
 ## 3. Deliverables

@@ -234,7 +234,7 @@ ai-lab/
 
 | Workflow | Trigger | Jobs | Required |
 |---|---|---|---|
-| `ci.yml` | PR, push to `main` | `fmt`, `clippy`, `rust-unit`, `rust-integration`, `frontend-lint`, `frontend-unit`, `frontend-build`, `e2e`, `a11y`, `visual`, `openapi-compat`, `security-secrets`, `security-deps`, `docs-build`, `sow-lint` | Yes |
+| `ci.yml` | PR, push to `main` | `fmt`, `clippy`, `rust-unit`, `rust-integration`, `frontend-lint`, `frontend-unit`, `frontend-build`, `e2e`, `a11y`, `visual`, `openapi-compat`, `security-secrets`, `security-deps`, `security-image`, `docs-build`, `sow-lint` | Yes |
 | `images.yml` | tag, manual | build api/worker/web/runner, Trivy scan, SBOM, sign (cosign keyless) | Release gate |
 | `nightly.yml` | cron 02:00 UTC | load (k6), chaos, fuzz, soak, dependency audit | Advisory → blocks release |
 | `release.yml` | tag `v*` | changelog, images, docs deploy, GitHub release | Release gate |
@@ -363,7 +363,7 @@ CI rules: no secrets in logs; least-privilege `permissions:` per job; concurrenc
 2026-11-07 | T08 | renovate.json, deny.toml, .gitignore, .dockerignore, .editorconfig, .gitattributes, .env.example | JSON/YAML parse OK; env covers Appendix D.4 | ADR-0024 (TS major blocked) | T09
 2026-11-07 | T09 | CODEOWNERS, CONTRIBUTING.md, .docs/product/review-checklist.md, CHANGELOG.md, SECURITY.md, CODE_OF_CONDUCT.md, LICENSE | docs link check OK | — | T10
 2026-11-07 | T10 | clean-clone simulation | make setup + make check exit 0 in 169 s (macOS, Docker 24.0.7, Compose 2.23.3, Rust 1.99.1, Node container 24.22); frontend build 217.16 kB raw / 59.63 kB transfer; npm audit high gate exit 0 (15 moderate); gitleaks private-key fixture exit 1 | — | review
-2026-11-07 | review-fix | .tools/test-supply-chain.sh, .tools/fixtures/supply-chain/*, .github/ISSUE_TEMPLATE/*, .docs/adr/README.md, web/angular.json, .github/workflows/ci.yml, Makefile | supply-chain 2/2 negative fixtures rejected; make check OK; frontend build OK | ADR-0024 | re-review
+2026-11-07 | review-fix | .tools/test-supply-chain.sh, .tools/fixtures/supply-chain/*, .github/ISSUE_TEMPLATE/*, .docs/adr/registry.md, web/angular.json, .github/workflows/ci.yml, Makefile | supply-chain 2/2 negative fixtures rejected; make check OK; frontend build OK | ADR-0024 | re-review
 2026-11-07 | closure | .docs/product/evidence/WP-02-review.md | independent review APPROVED | AC1 WP-03, AC8 WP-16 | WP-03
 2026-11-07 | tool-fix | scripts/sow-lint.sh | replaced recursive bash-3.2 cycle detection with an awk topological sort; 20/20 stable runs; self-test 11/11 | — | gates
 2026-11-07 | review | .docs/sow/WP-02-REPOSITORY-DEVEX-review-plan.md, CR-0004 | make check OK; supply-chain 2/2; hooks reject bad input; openapi deterministic; env 40/40 | CR-0004 | QA review

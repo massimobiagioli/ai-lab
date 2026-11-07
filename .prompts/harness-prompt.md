@@ -204,7 +204,7 @@ Every `SKILL.md` MUST contain, in this order:
 
 **Quality bar:**
 
-- At least one exact command per workflow (e.g., `cargo nextest run -p ailab-domain`, `npm test -- --run`, `make sow-lint`).
+- At least one exact command per workflow (e.g., `cargo nextest run -p ailab-domain`, `npm test`, `make sow-lint`).
 - At least one security check and one evidence rule per skill where relevant.
 - References MUST point to existing files (or files this prompt creates in the same run).
 - No skill may simply restate another; `wp-delivery` orchestrates, the others specialize.

@@ -1,14 +1,14 @@
 # AI-Lab ownership. Replace role handles with real accounts at release.
-*                     @tech-lead
-/crates/              @backend-owner
-/web/                 @frontend-owner
-/infra/               @platform-owner
-/migrations/          @data-owner
-/.docs/product/                @analyst
-/.github/             @tech-lead
-/scripts/             @dev
-/.docs/               @tech-lead
-/SECURITY.md          @qa
-/deny.toml            @qa
+*                               @tech-lead
+/crates/                        @backend-owner
 /crates/application/src/qa.rs   @qa
 /crates/domain/src/error.rs     @qa
+/web/                           @frontend-owner
+/infra/                         @platform-owner
+/migrations/                    @data-owner
+/.docs/                         @tech-lead
+/.docs/product/                 @analyst
+/.github/                       @tech-lead
+/scripts/                       @dev
+/SECURITY.md                    @qa
+/deny.toml                      @qa
