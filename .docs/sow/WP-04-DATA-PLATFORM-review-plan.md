@@ -40,7 +40,7 @@
 ## 4. Acceptance criteria
 
 - [x] AC1 `make migrate` on empty DB matches Appendix A — evidence: `.tools/test-migrations.sh`.
-- [x] AC2 every CHECK/UNIQUE/FK has a negative test — evidence: `.tools/test-constraints.sh` 8 cases.
+- [x] AC2 every CHECK/UNIQUE/FK has a negative test — PARTIAL: `.tools/test-constraints.sh` now has 18 negatives covering every constraint family and the core aggregates (key_prefix, description length, memory scope, domain_events seq, duplicate keys, FK, vector dimension); exhaustive per-constraint coverage (~145 objects) is a follow-up owned by WP-21.
 - [x] AC3 two concurrent moves → one success, one `VERSION_CONFLICT` — evidence: constraint suite optimistic-concurrency case.
 - [x] AC4 two workers cannot lease the same card — DEFERRED to WP-06/WP-13 (lease allocator); schema `SKIP LOCKED` constraints in place.
 - [x] AC5 HNSW scoped retrieval / no cross-scope leakage — DEFERRED to WP-08 (retrieval function and eval).
@@ -77,7 +77,11 @@
 ## 8. QA review
 
 - [ ] QA subagent verdict: `APPROVED`.
-- [ ] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 142, schema diff, constraints 8/8, analytics 25/25, integrity, backup/restore).
+- [ ] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 143, schema diff, constraints 18/18, analytics 25/25, integrity, backup/restore).
+- [x] First QA pass returned `CHANGES_REQUESTED` for three blocking defects:
+  - B1 constraint coverage: expanded from 7 to 18 negatives across every family; exhaustive per-object coverage still open (owner WP-21).
+  - B2 restore drill: rewritten to verify the manifest SHA-256, per-table content checksums, integrity checks, RTO and to drop the scratch database.
+  - B3 least privilege: `infra/postgres/init-roles.sh` creates `ailab_migrate`, `ailab_app` and `ailab_readonly`; the migrate service uses `ailab_migrate`, the app uses `ailab_app` (CR-0007).
 
 ## 9. Deferred items and residual risks
 
@@ -85,8 +89,10 @@
 - [x] AC5/AC6 retrieval and hybrid score — owner: Dev, WP-08.
 - [x] AC10 query budgets — owner: QA, WP-21.
 - [x] Retention jobs — owner: Dev, WP-20/WP-23.
-- [x] No unexplained deferral remains.
+- [ ] B1 exhaustive per-constraint negative coverage — owner: QA, WP-21; 18 family/core cases delivered.
+- [ ] No unexplained deferral remains.
 
 ## 10. Decisions
 
 - [x] ADR-0003 PostgreSQL as the sole system of record — recorded.
+- [x] CR-0007 adds the least-privilege database role passwords to the environment contract.

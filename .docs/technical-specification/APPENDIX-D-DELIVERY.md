@@ -213,6 +213,9 @@ Each ADR follows: **Context → Decision → Consequences → Alternatives → S
 | `AILAB_BIND` | no | `127.0.0.1` | Bind address; non-loopback requires token |
 | `AILAB_PORT` | no | `8080` | HTTP port (web proxy) |
 | `AILAB_DATABASE_URL` | **yes** | — | `postgres://user:pass@host:5432/ailab` |
+| `AILAB_APP_DB_PASSWORD` | no | `ailab_app` | Password for the application role (CR-0007) |
+| `AILAB_MIGRATE_DB_PASSWORD` | no | `ailab_migrate` | Password for the migration role (CR-0007) |
+| `AILAB_READONLY_DB_PASSWORD` | no | `ailab_readonly` | Password for the read-only role (CR-0007) |
 | `AILAB_REDIS_URL` | **yes** | — | `redis://host:6379/0` |
 | `AILAB_MASTER_KEY` | **yes** | — | base64 32 bytes; AES-256-GCM |
 | `AILAB_API_TOKEN` | conditional | — | Required if non-loopback; ≥32 bytes |
