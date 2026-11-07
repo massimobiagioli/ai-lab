@@ -19,7 +19,7 @@
 | 2026-11-07 | — | `ready` | Tech Lead | Initial SOW baseline |
 | 2026-11-07 | `ready` | `progress` | Dev (agent) | WP-01 and WP-03 done |
 | 2026-11-07 | `progress` | `done` | Dev (agent) | Schema, migrations, seeds, integrity, Redis keys and backups delivered; repositories co-delivered in WP-06, HNSW in WP-08, retention in WP-20/WP-23, perf in WP-21 |
-| 2026-11-07 | `done` | `done` | Tech Lead (agent) | WP review: review plan created; QA first pass `CHANGES_REQUESTED`; restore drill and least-privilege roles fixed, constraint coverage expanded; exhaustive constraint coverage remains with WP-21 |
+| 2026-11-07 | `done` | `done` | Tech Lead (agent) | WP review: QA `APPROVED` (`.docs/product/evidence/WP-04-review.md`); restore drill, least-privilege roles and constraint coverage fixed; exhaustive constraint coverage deferred to WP-21 |
 
 ---
 
@@ -397,3 +397,4 @@ Output: JSON report stored in `artifacts/integrity/YYYYMMDD.json` + metric; P1 i
 2026-11-07 | closure | .docs/product/database.md, migrations/*, scripts/* | make up healthy; seed/integrity/backup/restore verified | repositories/.sqlx → WP-06; HNSW → WP-08; perf → WP-21; retention → WP-20/WP-23 | WP-05
 2026-11-07 | review | .docs/sow/WP-04-DATA-PLATFORM-review-plan.md | schema diff OK; constraints 8/8; analytics 25/25; seed + integrity OK; backup/restore drill OK | AC4 WP-06/13, AC5/6 WP-08, AC10 WP-21 | QA review
 2026-11-07 | review-fix | .tools/test-constraints.sh, scripts/restore-drill.sh, infra/postgres/init-roles.sh, infra/compose/docker-compose.yml, CR-0007 | constraints 18/18; restore drill verifies checksums + integrity + RTO; least-privilege roles wired; QA first pass CHANGES_REQUESTED, exhaustive constraint coverage deferred to WP-21 | CR-0007 | re-review
+2026-11-07 | re-review | .docs/product/evidence/WP-04-review.md, migrations/0003_grants.sql | fresh-container role boot verified; migrations 1-3 as ailab_migrate; app/readonly separation; QA APPROVED | CR-0007 | merge
