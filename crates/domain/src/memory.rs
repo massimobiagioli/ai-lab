@@ -49,6 +49,10 @@ pub enum MemoryKind {
     Policy,
     /// Skill.
     Skill,
+    /// Compacted episode summary.
+    EpisodeSummary,
+    /// Review record.
+    Review,
 }
 
 /// Target embedding dimension.
@@ -314,7 +318,7 @@ fn validate_scope(
 /// True when the text contains a known secret shape.
 #[must_use]
 pub fn contains_secret(text: &str) -> bool {
-    const PREFIXES: &[&str] = &["sk-", "ghp_", "github_pat_", "AKIA", "xoxb-"];
+    const PREFIXES: &[&str] = &["sk-", "ghp_", "github_pat_", "AKIA", "AIza", "xoxb-"];
     text.split_whitespace().any(|token| {
         PREFIXES.iter().any(|prefix| token.starts_with(prefix))
             || token.contains("AILAB_MASTER_KEY=")
@@ -611,6 +615,10 @@ mod tests {
         )
         .expect_err("quarantined");
         assert_eq!(error.code(), "MEMORY_QUARANTINED");
+        assert!(contains_secret("key AIzaSyExampleToken"));
+        assert!(contains_secret("token sk-example"));
+        assert!(contains_secret("-----BEGIN RSA PRIVATE KEY-----"));
+        assert!(!contains_secret("card AIL-42 moved to READY"));
     }
 
     #[test]

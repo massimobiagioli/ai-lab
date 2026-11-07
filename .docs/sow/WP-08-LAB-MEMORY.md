@@ -19,6 +19,7 @@
 | 2026-11-07 | — | `ready` | Tech Lead | Initial SOW baseline |
 | 2026-11-07 | `ready` | `progress` | Dev (agent) | WP-04, WP-06 and WP-07 done |
 | 2026-11-07 | `progress` | `done` | Dev (agent) | Lab aggregate, scoped memory, chunking, quarantine, hybrid scoring and compaction delivered; runtime adapters in WP-16/WP-21 |
+| 2026-11-07 | `done` | `done` | Tech Lead (agent) | WP review: QA `APPROVED` (`.docs/product/evidence/WP-08-review.md`); full lab-settings schema and ranges delivered |
 
 ---
 
@@ -328,3 +329,6 @@ Payloads include scope IDs, kind, title, counts; never raw secret content.
 2026-11-07 | T02 | crates/domain/src/memory.rs | scopes, chunking, secret quarantine; 7 tests | — | T03
 2026-11-07 | T03 | crates/domain/src/memory.rs | hybrid formula, leakage, dedupe, compaction; 37 domain tests | — | T04
 2026-11-07 | T04 | .docs/product/memory.md | doc link check | fastembed/SQL/API/Redis deferred WP-16/WP-21 | WP-09
+2026-11-07 | review | .docs/sow/WP-08-LAB-MEMORY-review-plan.md | chunking/quarantine/scope/formula/compaction tests; clippy; harness/sow | AC4/8/11 WP-16, AC10 WP-21 | QA review
+2026-11-07 | review-fix | crates/domain/src/lab.rs, crates/domain/src/memory.rs, .docs/product/memory.md | full settings schema + upper bounds; AIza secret prefix; 52 domain tests green | QA first pass CHANGES_REQUESTED | re-review
+2026-11-07 | re-review | .docs/product/evidence/WP-08-review.md | QA APPROVED; boundary 32/32; memory invariants 22/22 | AC4/8/11 WP-16, AC10 WP-21 | merge
