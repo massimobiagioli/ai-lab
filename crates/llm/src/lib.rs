@@ -700,12 +700,14 @@ where
     T: DeserializeOwned + Validate,
 {
     let first = provider.complete(request).await?;
-    if let Ok(value) = parse_structured::<T>(&first.content) {
-        return Ok((value, first));
-    }
+    let error = match parse_structured::<T>(&first.content) {
+        Ok(value) => return Ok((value, first)),
+        Err(error) => error,
+    };
     let mut repair = request.clone();
+    let previous: String = first.content.chars().take(8_192).collect();
     repair.user = format!(
-        "{}\n\nYour previous output was invalid. Return only valid JSON matching the schema.",
+        "{}\n\nYour previous output was invalid: {error}\n\nPrevious output (truncated to 8 KB):\n{previous}\n\nReturn only valid JSON matching the schema.",
         repair.user
     );
     let second = provider.complete(&repair).await?;
@@ -719,7 +721,9 @@ where
 {
     let value: T = serde_json::from_str(content)
         .map_err(|error| LlmError::InvalidOutput(error.to_string()))?;
-    value.validate()?;
+    value
+        .validate()
+        .map_err(|error| LlmError::InvalidOutput(error.to_string()))?;
     Ok(value)
 }
 
@@ -1009,6 +1013,23 @@ mod tests {
             responses: Mutex::new(VecDeque::from(vec![
                 Ok(response("not json")),
                 Ok(response("still not json")),
+            ])),
+            calls: AtomicUsize::new(0),
+        };
+        assert!(matches!(
+            futures::executor::block_on(complete_structured::<DraftCard>(&provider, &request())),
+            Err(LlmError::InvalidOutput(_))
+        ));
+        assert_eq!(provider.calls.load(Ordering::SeqCst), 2);
+    }
+
+    #[test]
+    fn structured_semantic_failure_repairs_once_then_invalid_output() {
+        let invalid = "{\"title\":\"\",\"acceptance_criteria\":[],\"deliverables\":[],\"estimate\":4,\"priority\":\"nope\"}";
+        let provider = FakeProvider {
+            responses: Mutex::new(VecDeque::from(vec![
+                Ok(response(invalid)),
+                Ok(response(invalid)),
             ])),
             calls: AtomicUsize::new(0),
         };
