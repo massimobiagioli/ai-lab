@@ -27,14 +27,14 @@ A plan is rejected when:
 ## 3. Materialization
 
 - `preview` returns a deterministic list of `MaterializedCard` for the **leaves** (tasks no other task depends on), in topological order.
-- Each card carries the story (acceptance criteria + deliverables), estimate, role, dependencies, `task_key` and `sow_id` for traceability.
+- Each task maps to exactly one functional requirement (`covers`); `Plan::validate_coverage` rejects unknown, missing or uncovered FRs. Each preview card carries the story, estimate, role, dependencies, `task_key`, `covers` and `sow_id` for traceability.
 - `mark_materialized` requires an approved plan and moves it to `Materialized`.
 - The application creates the actual cards with `Project::next_card_seq`; rerunning the preview is idempotent because it performs no writes.
 - `auto_ready=false` creates `TODO` cards; `auto_ready=true` is allowed only when every DoR check passes (WP-16).
 
 ## 4. Tests
 
-`cargo test -p ailab-domain` covers cycle, unknown dependency and duplicate-key rejection, topological order, leaf selection, traceability and the approve/materialize lifecycle.
+`cargo test -p ailab-domain` covers cycle, unknown dependency and duplicate-key rejection, topological order, leaf selection, FR coverage, traceability and the approve/materialize lifecycle.
 
 ## 5. Deferred to consumer WPs
 

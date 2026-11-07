@@ -19,6 +19,7 @@
 | 2026-11-07 | — | `ready` | Tech Lead | Initial SOW baseline |
 | 2026-11-07 | `ready` | `progress` | Dev (agent) | WP-08, WP-09 and WP-11 done |
 | 2026-11-07 | `progress` | `done` | Dev (agent) | SOW lifecycle and acyclic plan materialization delivered; idea intake/API/E2E owned by WP-16/WP-21 |
+| 2026-11-07 | `done` | `done` | Tech Lead (agent) | WP review: QA `APPROVED` (`.docs/product/evidence/WP-10-review.md`); SOW semantic validation, FR coverage and lifecycle delivered |
 
 ---
 
@@ -285,3 +286,6 @@ draft ──submit──► in_review ──approve──► approved
 2026-11-07 | T01 | crates/domain/src/delivery.rs | SOW sections, versions and lifecycle; 4 tests | — | T02
 2026-11-07 | T02 | crates/domain/src/delivery.rs | plan DAG validation, topological order, leaves and materialization preview; 49 domain tests | — | T03
 2026-11-07 | T03 | .docs/product/sow.md, .docs/product/planning.md | doc link check | idea intake/API/schema/E2E deferred WP-16/WP-21 | done
+2026-11-07 | review | .docs/sow/WP-10-SOW-PLANNING-review-plan.md, crates/domain/src/delivery.rs | SOW lifecycle; DAG cycle/dangling/duplicate; FR coverage; 56 domain tests; clippy | AC1/2/8/9 WP-11/16, AC7 WP-16, AC10 WP-22 | QA review
+2026-11-07 | review-fix | crates/domain/src/delivery.rs, .docs/product/sow.md | semantic validation (summary, FR/NFR presence/duplicates, structured requirements); reason-guarded reject to draft; version-guarded supersede; 59 domain tests | QA first pass CHANGES_REQUESTED | re-review
+2026-11-07 | re-review | .docs/product/evidence/WP-10-review.md | QA APPROVED; semantic/lifecycle/FR-coverage tests | AC1/2/8/9 WP-11/16, AC7 WP-16, AC10 WP-22 | merge
