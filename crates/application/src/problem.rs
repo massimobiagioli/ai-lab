@@ -42,6 +42,15 @@ impl From<DomainError> for ProblemDetails {
                 field: (*field).to_owned(),
                 message: message.clone(),
             }],
+            DomainError::Violation {
+                code: violation_code,
+                field,
+                message,
+            } => vec![Violation {
+                rule: (*violation_code).to_owned(),
+                field: (*field).to_owned(),
+                message: message.clone(),
+            }],
             _ => Vec::new(),
         };
         Self {
@@ -62,7 +71,8 @@ fn title_for(code: &str) -> &'static str {
         "VERSION_CONFLICT" => "Version conflict",
         "SEPARATION_OF_DUTIES" => "Separation of duties violated",
         "NOT_FOUND" => "Not found",
-        _ => "Conflict",
+        "CONFLICT" => "Conflict",
+        _ => "Rule violation",
     }
 }
 

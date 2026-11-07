@@ -111,6 +111,16 @@ pub struct TransitionContext {
     pub qa_approved: bool,
     /// `DoD` complete.
     pub dod_complete: bool,
+    /// Every acceptance criterion has evidence.
+    pub ac_evidence_complete: bool,
+    /// Test evidence is present.
+    pub tests_complete: bool,
+    /// Required docs are updated.
+    pub docs_complete: bool,
+    /// A P0/P1 defect is open.
+    pub p0p1_open: bool,
+    /// The final summary/decisions log is present.
+    pub log_complete: bool,
     /// Run cancelled.
     pub run_cancelled: bool,
     /// Reason for a guarded move.
@@ -134,10 +144,40 @@ impl TransitionContext {
             ci_green: false,
             qa_approved: false,
             dod_complete: false,
+            ac_evidence_complete: false,
+            tests_complete: false,
+            docs_complete: false,
+            p0p1_open: false,
+            log_complete: false,
             run_cancelled: false,
             reason: None,
             resolution: None,
         }
+    }
+}
+
+/// One DoR/DoD rule violation with a stable code and field.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RuleViolation {
+    /// Stable machine code.
+    pub code: &'static str,
+    /// Field that failed.
+    pub field: &'static str,
+    /// Human-readable message.
+    pub message: &'static str,
+}
+
+impl RuleViolation {
+    const fn new(code: &'static str, field: &'static str, message: &'static str) -> Self {
+        Self {
+            code,
+            field,
+            message,
+        }
+    }
+
+    fn to_error(self) -> DomainError {
+        DomainError::violation(self.code, self.field, self.message)
     }
 }
 
@@ -475,21 +515,76 @@ impl Card {
     }
 
     fn guard_dor(&self, ctx: &TransitionContext) -> Result<(), DomainError> {
-        if self.story.needs_refinement
-            || self.story.acceptance_criteria.is_empty()
-            || self.story.deliverables.is_empty()
-            || self.estimate.is_none()
-            || self.priority == Priority::Wont
-            || self.assignee_id.is_none()
-            || self.due_date.is_none_or(|due| due <= ctx.now)
-            || self.budget == Money::ZERO
-        {
-            return Err(DomainError::validation(
-                "card.dor",
-                "definition of ready is incomplete",
+        self.dor_violations(ctx)
+            .first()
+            .copied()
+            .map_or(Ok(()), |violation| Err(violation.to_error()))
+    }
+
+    /// Evaluate every Definition-of-Ready rule and return all violations.
+    #[must_use]
+    pub fn dor_violations(&self, ctx: &TransitionContext) -> Vec<RuleViolation> {
+        let mut violations = Vec::new();
+        if self.story.acceptance_criteria.is_empty() {
+            violations.push(RuleViolation::new(
+                "DOR_AC_MISSING",
+                "story.acceptance_criteria",
+                "at least one acceptance criterion is required",
             ));
         }
-        Ok(())
+        if self.story.deliverables.is_empty() {
+            violations.push(RuleViolation::new(
+                "DOR_DELIVERABLE_MISSING",
+                "story.deliverables",
+                "at least one deliverable is required",
+            ));
+        }
+        if self.story.needs_refinement {
+            violations.push(RuleViolation::new(
+                "DOR_NEEDS_REFINEMENT",
+                "needs_refinement",
+                "the story still needs refinement",
+            ));
+        }
+        if self
+            .estimate
+            .is_none_or(|estimate| !matches!(u8::from(estimate), 1 | 2 | 3 | 5 | 8))
+        {
+            violations.push(RuleViolation::new(
+                "DOR_ESTIMATE_INVALID",
+                "estimate",
+                "an estimate from the allowed set is required",
+            ));
+        }
+        if self.priority == Priority::Wont {
+            violations.push(RuleViolation::new(
+                "DOR_PRIORITY_INVALID",
+                "priority",
+                "a wont-priority card cannot be ready",
+            ));
+        }
+        if self.assignee_id.is_none() {
+            violations.push(RuleViolation::new(
+                "DOR_ASSIGNEE_MISSING",
+                "assignee_id",
+                "an assignee is required",
+            ));
+        }
+        if self.due_date.is_none_or(|due| due <= ctx.now) {
+            violations.push(RuleViolation::new(
+                "DOR_DUE_DATE_INVALID",
+                "due_date",
+                "a future due date is required",
+            ));
+        }
+        if self.budget == Money::ZERO {
+            violations.push(RuleViolation::new(
+                "DOR_BUDGET_INVALID",
+                "budget_microusd",
+                "the card budget must be positive",
+            ));
+        }
+        violations
     }
 
     fn guard_doing(&self, ctx: &TransitionContext) -> Result<(), DomainError> {
@@ -528,24 +623,85 @@ impl Card {
     }
 
     fn guard_done(&self, ctx: &TransitionContext) -> Result<(), DomainError> {
-        let Some(reviewer) = self.reviewer_id else {
-            return Err(DomainError::validation("card.reviewer", "required"));
-        };
-        if self.assignee_id == Some(reviewer) {
+        if let Some(reviewer) = self.reviewer_id
+            && self.assignee_id == Some(reviewer)
+        {
             return Err(DomainError::SeparationOfDuties);
         }
-        if self.pr_url.is_none()
-            || self.merge_sha.is_none()
-            || !ctx.qa_approved
-            || !ctx.ci_green
-            || !ctx.dod_complete
-        {
-            return Err(DomainError::validation(
-                "card.dod",
-                "QA approval, merge SHA, green CI and DoD are required",
+        self.dod_violations(ctx)
+            .first()
+            .copied()
+            .map_or(Ok(()), |violation| Err(violation.to_error()))
+    }
+
+    /// Evaluate every Definition-of-Done rule and return all violations.
+    #[must_use]
+    pub fn dod_violations(&self, ctx: &TransitionContext) -> Vec<RuleViolation> {
+        let mut violations = Vec::new();
+        if self.reviewer_id.is_none() || self.assignee_id == self.reviewer_id {
+            violations.push(RuleViolation::new(
+                "DOD_REVIEWER_CONFLICT",
+                "reviewer_id",
+                "a reviewer distinct from the assignee is required",
             ));
         }
-        Ok(())
+        if self.merge_sha.is_none() {
+            violations.push(RuleViolation::new(
+                "DOD_MERGE_MISSING",
+                "merge_sha",
+                "the merge SHA is required",
+            ));
+        }
+        if !ctx.ci_green {
+            violations.push(RuleViolation::new(
+                "DOD_CI_NOT_GREEN",
+                "ci",
+                "CI must be green",
+            ));
+        }
+        if !ctx.qa_approved {
+            violations.push(RuleViolation::new(
+                "DOD_QA_NOT_APPROVED",
+                "qa",
+                "QA must approve the card",
+            ));
+        }
+        if !ctx.ac_evidence_complete {
+            violations.push(RuleViolation::new(
+                "DOD_AC_EVIDENCE_MISSING",
+                "evidence",
+                "every acceptance criterion needs evidence",
+            ));
+        }
+        if !ctx.tests_complete {
+            violations.push(RuleViolation::new(
+                "DOD_TESTS_MISSING",
+                "tests",
+                "test evidence is required",
+            ));
+        }
+        if !ctx.docs_complete {
+            violations.push(RuleViolation::new(
+                "DOD_DOCS_MISSING",
+                "docs",
+                "required documentation must be updated",
+            ));
+        }
+        if ctx.p0p1_open {
+            violations.push(RuleViolation::new(
+                "DOD_DEFECT_OPEN",
+                "defects",
+                "no P0/P1 defect may be open",
+            ));
+        }
+        if !ctx.log_complete {
+            violations.push(RuleViolation::new(
+                "DOD_LOG_MISSING",
+                "log",
+                "the card log needs a final summary and decisions",
+            ));
+        }
+        violations
     }
 
     /// Reopen a done card as a new card in `TODO` with a parent link.
@@ -641,6 +797,10 @@ mod tests {
         card.merge("sha-1").expect("merge");
         ctx.qa_approved = true;
         ctx.dod_complete = true;
+        ctx.ac_evidence_complete = true;
+        ctx.tests_complete = true;
+        ctx.docs_complete = true;
+        ctx.log_complete = true;
         card.move_to(KanbanColumn::Done, &ctx).expect("done");
         card
     }
@@ -711,8 +871,143 @@ mod tests {
         card.merge("sha-1").expect("merge");
         ctx.qa_approved = true;
         ctx.dod_complete = true;
+        ctx.ac_evidence_complete = true;
+        ctx.tests_complete = true;
+        ctx.docs_complete = true;
+        ctx.log_complete = true;
         card.move_to(KanbanColumn::Done, &ctx).expect("done");
         assert_eq!(card.column(), KanbanColumn::Done);
+    }
+
+    #[test]
+    fn dor_violations_use_exact_codes_and_fields() {
+        let ctx = TransitionContext::new(now(), Actor::human());
+        let card = Card::create(
+            CardId::generate(),
+            LabId::generate(),
+            ProjectId::generate(),
+            CardKey::new("AIL", 90).expect("key"),
+            "Empty story",
+            CardStory::default(),
+            Priority::Wont,
+            Money::ZERO,
+            CardSource::Human,
+            now(),
+        )
+        .expect("card");
+        let violations = card.dor_violations(&ctx);
+        for (code, field) in [
+            ("DOR_AC_MISSING", "story.acceptance_criteria"),
+            ("DOR_DELIVERABLE_MISSING", "story.deliverables"),
+            ("DOR_ESTIMATE_INVALID", "estimate"),
+            ("DOR_PRIORITY_INVALID", "priority"),
+            ("DOR_ASSIGNEE_MISSING", "assignee_id"),
+            ("DOR_DUE_DATE_INVALID", "due_date"),
+            ("DOR_BUDGET_INVALID", "budget_microusd"),
+        ] {
+            assert!(
+                violations
+                    .iter()
+                    .any(|violation| violation.code == code && violation.field == field),
+                "missing {code} on {field}"
+            );
+        }
+        let refined_story = CardStory {
+            needs_refinement: true,
+            ..story()
+        };
+        let card = Card::create(
+            CardId::generate(),
+            LabId::generate(),
+            ProjectId::generate(),
+            CardKey::new("AIL", 91).expect("key"),
+            "Needs refinement",
+            refined_story,
+            Priority::Must,
+            Money::from_microusd(1).expect("budget"),
+            CardSource::Human,
+            now(),
+        )
+        .expect("card");
+        assert!(
+            card.dor_violations(&ctx)
+                .iter()
+                .any(|violation| violation.code == "DOR_NEEDS_REFINEMENT")
+        );
+
+        let mut oversized = Card::create(
+            CardId::generate(),
+            LabId::generate(),
+            ProjectId::generate(),
+            CardKey::new("AIL", 92).expect("key"),
+            "Estimate 13",
+            story(),
+            Priority::Must,
+            Money::from_microusd(5_000_000).expect("budget"),
+            CardSource::Human,
+            now(),
+        )
+        .expect("card");
+        oversized
+            .refine(
+                story(),
+                Estimate::new(13).expect("valid estimate"),
+                Priority::Must,
+            )
+            .expect("refine");
+        oversized
+            .assign(AgentId::generate(), now() + Duration::days(1))
+            .expect("assign");
+        assert!(oversized.dor_violations(&ctx).iter().any(|violation| {
+            violation.code == "DOR_ESTIMATE_INVALID" && violation.field == "estimate"
+        }));
+    }
+
+    #[test]
+    fn dod_violations_use_exact_codes_and_fields() {
+        let (mut subject, _assignee, reviewer) = ready_card();
+        let mut ctx = TransitionContext::new(now(), Actor::human());
+        subject.move_to(KanbanColumn::Doing, &ctx).expect("doing");
+        subject
+            .attach_pr(reviewer, "https://example.test/pr/1")
+            .expect("pr");
+        let codes: Vec<&str> = subject
+            .dod_violations(&ctx)
+            .iter()
+            .map(|violation| violation.code)
+            .collect();
+        for code in [
+            "DOD_MERGE_MISSING",
+            "DOD_CI_NOT_GREEN",
+            "DOD_QA_NOT_APPROVED",
+            "DOD_AC_EVIDENCE_MISSING",
+            "DOD_TESTS_MISSING",
+            "DOD_DOCS_MISSING",
+            "DOD_LOG_MISSING",
+        ] {
+            assert!(codes.contains(&code), "missing {code}");
+        }
+        let unassigned = card();
+        assert!(
+            unassigned
+                .dod_violations(&ctx)
+                .iter()
+                .any(|violation| violation.code == "DOD_REVIEWER_CONFLICT")
+        );
+        ctx.ci_green = true;
+        ctx.qa_approved = true;
+        ctx.ac_evidence_complete = true;
+        ctx.tests_complete = true;
+        ctx.docs_complete = true;
+        ctx.log_complete = true;
+        ctx.p0p1_open = true;
+        subject.merge("sha-1").expect("merge");
+        assert!(
+            subject
+                .dod_violations(&ctx)
+                .iter()
+                .any(|violation| violation.code == "DOD_DEFECT_OPEN")
+        );
     }
 
     #[test]
@@ -731,6 +1026,21 @@ mod tests {
         ctx.doing_count = 1;
         ctx.wip_limits.doing_per_agent = 1;
         let error = card.move_to(KanbanColumn::Doing, &ctx).expect_err("wip");
+        assert_eq!(error.code(), "WIP_LIMIT_EXCEEDED");
+    }
+
+    #[test]
+    fn review_wip_limit_blocks_transition() {
+        let (mut card, _, reviewer) = ready_card();
+        let mut ctx = TransitionContext::new(now(), Actor::human());
+        card.move_to(KanbanColumn::Doing, &ctx).expect("doing");
+        card.attach_pr(reviewer, "https://example.test/pr/1")
+            .expect("pr");
+        ctx.ci_green = true;
+        ctx.review_count = ctx.wip_limits.review_per_qa;
+        let error = card
+            .move_to(KanbanColumn::Review, &ctx)
+            .expect_err("review wip");
         assert_eq!(error.code(), "WIP_LIMIT_EXCEEDED");
     }
 
