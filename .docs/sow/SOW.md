@@ -201,7 +201,7 @@ All WPs start as **ready**. Estimates are relative story points (Fibonacci). `M`
 | [WP-10](./WP-10-SOW-PLANNING.md) | SOW & Planning Engine | **done** | Dev | M4 | 21 | WP-08, WP-09, WP-11 | Idea intake, SOW generation/approval, WBS DAG, materialization |
 | [WP-11](./WP-11-LLM-PLATFORM.md) | LLM Platform & Prompt Engineering | **done** | Dev | M0/M5 | 21 | WP-04, WP-05, WP-06 | DeepSeek adapter, routing, prompt assembly, structured outputs, budgets, guardrails |
 | [WP-12](./WP-12-SCM-GITHUB.md) | SCM & GitHub Integration | **done** | Dev | M5 | 13 | WP-05, WP-07 | ScmProvider port, GitHub adapter, branches, PRs, checks, reviews, webhooks |
-| [WP-13](./WP-13-ORCHESTRATION.md) | Orchestration, Scheduler & Run Pipeline | **done** | Dev | M5 | 34 | WP-09, WP-10, WP-11, WP-12, WP-14 | Scheduler, leases, heartbeats, retries, run pipeline, escalation, recovery |
+| [WP-13](./WP-13-ORCHESTRATION.md) | Orchestration, Scheduler & Run Pipeline | **progress** | Dev | M5 | 34 | WP-09, WP-10, WP-11, WP-12, WP-14 | Scheduler, leases, heartbeats, retries, run pipeline, escalation, recovery |
 | [WP-14](./WP-14-SANDBOX-RUNNER.md) | Sandbox Runner & Tool Policy | **done** | Dev | M5 | 21 | WP-05, WP-06, WP-12 | Ephemeral containers, tool registry, allowlists, egress policy, resource limits |
 | [WP-15](./WP-15-QA-MERGE.md) | QA, Review, Merge & Autonomy Policy | **done** | QA | M5 | 13 | WP-09, WP-12, WP-13 | Verification matrix, review verdicts, separation of duties, merge policy, A0–A3 |
 | [WP-16](./WP-16-API-REALTIME.md) | API & Realtime Contracts | **done** | Dev | M2/M5 | 21 | WP-06, WP-09 | REST, OpenAPI, WebSocket hub, event backfill, rate limits, Problem Details |

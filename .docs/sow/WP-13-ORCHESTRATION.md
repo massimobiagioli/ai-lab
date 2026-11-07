@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | WP ID | `WP-13` |
-| Status | **done** |
+| Status | **progress** |
 | Owner | Dev |
 | Milestone | M5 |
 | Estimate | 34 points |
@@ -19,6 +19,7 @@
 | 2026-11-07 | — | `ready` | Tech Lead | Initial SOW baseline |
 | 2026-11-07 | `ready` | `progress` | Dev (agent) | WP-09/10/11/12/14 done |
 | 2026-11-07 | `progress` | `done` | Dev (agent) | Eligibility, leases, run state machine, retries, budget and recovery delivered; Postgres worker pipeline in the WP-13 follow-up |
+| 2026-11-07 | `done` | `progress` | Tech Lead (agent) | WP review (CR-0008): only the scheduler/lease/state/retry/budget subset exists; pipeline, agent loop, verification, PR/handoff, telemetry and E2E are missing, so the `done` claim is not evidence-backed |
 
 ---
 
@@ -356,3 +357,4 @@ Outputs are stored in `run_steps` (type `verification`) and attached to the PR b
 
 2026-11-07 | T01 | crates/orchestrator/src/orchestration.rs | eligibility, leases, run state, retries, budget, reconcile; 7 tests | — | T02
 2026-11-07 | T02 | .docs/product/orchestration.md | 12 orchestrator tests; clippy green | Postgres leases/worker pipeline deferred WP-13 follow-up | WP-15
+2026-11-07 | review | .docs/sow/WP-13-ORCHESTRATION-review-plan.md | 12 orchestrator tests; scheduler/lease/state/retry/budget/reconcile only | BLOCKED: pipeline, agent loop, verification, PR/handoff, telemetry, E2E (CR-0008) | WP-13 follow-up

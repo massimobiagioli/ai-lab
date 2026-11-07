@@ -11,6 +11,7 @@ This directory is the canonical record of AI-Lab change requests. Each CR is a s
 | [CR-0005](./CR-0005.md) | Set the TypeScript pin to 6.0.x in specification §5.1 | approved | Tech Lead | 2026-11-07 | ADR-0024 |
 | [CR-0006](./CR-0006.md) | Add AILAB_RUNNER_URL and AILAB_RUNNER_BIND to Appendix D.4 | approved | Tech Lead | 2026-11-07 | ADR-0023 |
 | [CR-0007](./CR-0007.md) | Add the least-privilege database role passwords to Appendix D.4 | approved | Tech Lead | 2026-11-07 | ADR-0003 |
+| [CR-0008](./CR-0008.md) | Reopen WP-13 to deliver the missing orchestration pipeline | approved | Tech Lead | 2026-11-07 | — |
 
 Rules:
 
