@@ -108,13 +108,31 @@ pub struct Provider {
     key: EncryptedKey,
     status: ProviderStatus,
     rate_limit_rpm: u32,
+    rate_limit_tpm: u32,
     timeout_ms: u32,
     version: Version,
 }
 
+/// Hosts a v1 provider may reach. Adding a provider kind requires an ADR and a
+/// new entry here plus an adapter.
+const ALLOWED_PROVIDER_HOSTS: &[&str] = &["api.deepseek.com"];
+
+fn provider_host(url: &str) -> Option<&str> {
+    let rest = url.strip_prefix("https://")?;
+    let authority = rest.split(['/', '?', '#']).next()?;
+    if authority.is_empty() || authority.contains('@') {
+        return None;
+    }
+    let host = authority.split(':').next()?;
+    if host.is_empty() {
+        return None;
+    }
+    Some(host)
+}
+
 impl Provider {
     /// Create a provider with a validated name, HTTPS base URL and key blob.
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments, clippy::similar_names)]
     pub fn create(
         id: ProviderId,
         workspace_id: WorkspaceId,
@@ -123,13 +141,14 @@ impl Provider {
         base_url: impl Into<String>,
         key: EncryptedKey,
         rate_limit_rpm: u32,
+        rate_limit_tpm: u32,
         timeout_ms: u32,
     ) -> Result<Self, DomainError> {
         let name = name.into();
-        if name.trim().is_empty() {
+        if !(2..=64).contains(&name.chars().count()) {
             return Err(DomainError::validation(
                 "provider.name",
-                "must not be empty",
+                "must be 2-64 characters",
             ));
         }
         let base_url = base_url.into();
@@ -139,10 +158,25 @@ impl Provider {
                 "must use HTTPS and an allowlisted host",
             ));
         }
-        if rate_limit_rpm == 0 || timeout_ms == 0 {
+        let host = provider_host(&base_url).ok_or_else(|| {
+            DomainError::validation("provider.base_url", "must be a valid HTTPS URL")
+        })?;
+        if !ALLOWED_PROVIDER_HOSTS.contains(&host) {
+            return Err(DomainError::validation(
+                "provider.base_url",
+                "must be on the provider allowlist",
+            ));
+        }
+        if rate_limit_rpm == 0 || rate_limit_tpm == 0 {
             return Err(DomainError::validation(
                 "provider.limits",
-                "rate limit and timeout must be positive",
+                "rate limits must be positive",
+            ));
+        }
+        if !(1000..=600_000).contains(&timeout_ms) {
+            return Err(DomainError::validation(
+                "provider.timeout_ms",
+                "must be 1000-600000",
             ));
         }
         Ok(Self {
@@ -154,6 +188,7 @@ impl Provider {
             key,
             status: ProviderStatus::Active,
             rate_limit_rpm,
+            rate_limit_tpm,
             timeout_ms,
             version: Version::ONE,
         })
@@ -187,6 +222,12 @@ impl Provider {
     #[must_use]
     pub const fn rate_limit_rpm(&self) -> u32 {
         self.rate_limit_rpm
+    }
+
+    /// Tokens-per-minute limit.
+    #[must_use]
+    pub const fn rate_limit_tpm(&self) -> u32 {
+        self.rate_limit_tpm
     }
 
     /// Request timeout in milliseconds.
@@ -935,6 +976,7 @@ mod tests {
             "https://api.deepseek.com",
             key(),
             60,
+            120_000,
             5_000,
         )
         .expect("valid provider");
@@ -957,7 +999,52 @@ mod tests {
                 "http://insecure.example",
                 key(),
                 60,
+                120_000,
                 5_000
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn provider_rejects_non_allowlisted_and_invalid_fields() {
+        let workspace = WorkspaceId::generate();
+        let cases = [
+            ("https://169.254.169.254/latest", 60, 120_000, 5_000),
+            ("https://api.deepseek.com.evil.test", 60, 120_000, 5_000),
+            ("https://user@api.deepseek.com", 60, 120_000, 5_000),
+            ("https://api.deepseek.com", 0, 120_000, 5_000),
+            ("https://api.deepseek.com", 60, 0, 5_000),
+            ("https://api.deepseek.com", 60, 120_000, 500),
+        ];
+        for (url, rpm, tpm, timeout) in cases {
+            assert!(
+                Provider::create(
+                    ProviderId::generate(),
+                    workspace,
+                    "DeepSeek",
+                    ProviderKind::DeepSeek,
+                    url,
+                    key(),
+                    rpm,
+                    tpm,
+                    timeout,
+                )
+                .is_err(),
+                "expected rejection for {url} {rpm} {tpm} {timeout}"
+            );
+        }
+        assert!(
+            Provider::create(
+                ProviderId::generate(),
+                workspace,
+                "x",
+                ProviderKind::DeepSeek,
+                "https://api.deepseek.com",
+                key(),
+                60,
+                120_000,
+                5_000,
             )
             .is_err()
         );
