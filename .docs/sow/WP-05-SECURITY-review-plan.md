@@ -85,6 +85,7 @@
   - Redactor bypassed secrets in JSON, URLs, sensitive headers, JWTs and PEM blocks. Resolved with a regex-based redactor covering all of them, with regression tests.
   - Security headers were incomplete/weakened. Resolved: `style-src 'self'`, `connect-src 'self'`, `form-action 'self'`, `Referrer-Policy: no-referrer`, `Permissions-Policy`, COOP, CORP and `Cache-Control: no-store`, in both `security_headers.rs` and nginx.
   - The ASVS V5 output-encoding/CSP row moved from `partial` to `met`.
+- [x] Second QA pass returned `CHANGES_REQUESTED` for JSON-serialized `cookie`/`set-cookie`/`authorization` (Basic) leaks and the outdated CSP text in `security.md`; both fixed with regression tests and the doc updated.
 
 ## 9. Deferred items and residual risks
 

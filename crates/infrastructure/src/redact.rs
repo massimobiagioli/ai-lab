@@ -22,6 +22,9 @@ static BEARER: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?i)\bBearer\s+[A-Za-z0-9._~+/=-]+").expect("valid bearer regex")
 });
 
+static BASIC: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?i)\bBasic\s+[A-Za-z0-9+/=]+").expect("valid basic regex"));
+
 static JWT: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b").expect("valid JWT regex")
 });
@@ -31,9 +34,16 @@ static PREFIX: LazyLock<Regex> = LazyLock::new(|| {
         .expect("valid prefix regex")
 });
 
+static JSON_KEY_VALUE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(
+        r#"(?i)("(?:api[_-]?key|password|passwd|secret|token|access[_-]?token|refresh[_-]?token|session[_-]?id|session|master[_-]?key|private[_-]?key|authorization|cookie|set-cookie|set_cookie|credentials|auth)"\s*:\s*")[^"]*(")"#,
+    )
+    .expect("valid JSON key/value regex")
+});
+
 static KEY_VALUE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"(?i)("?(?:api[_-]?key|password|passwd|secret|token|access[_-]?token|refresh[_-]?token|session[_-]?id|session|master[_-]?key|private[_-]?key|authorization)"?\s*[:=]\s*"?)([^"\s,;&}]+)"#,
+        r#"(?i)("?(?:api[_-]?key|password|passwd|secret|token|access[_-]?token|refresh[_-]?token|session[_-]?id|session|master[_-]?key|private[_-]?key|authorization|cookie|set-cookie|set_cookie|credentials|auth)"?\s*[:=]\s*"?)([^"\s,;&}]+)"#,
     )
     .expect("valid key/value regex")
 });
@@ -48,8 +58,14 @@ pub fn redact(input: &str) -> String {
         })
         .into_owned();
     let value = BEARER.replace_all(&value, "Bearer [REDACTED]").into_owned();
+    let value = BASIC.replace_all(&value, "Basic [REDACTED]").into_owned();
     let value = JWT.replace_all(&value, "[REDACTED]").into_owned();
     let value = PREFIX.replace_all(&value, "[REDACTED]").into_owned();
+    let value = JSON_KEY_VALUE
+        .replace_all(&value, |caps: &regex::Captures<'_>| {
+            format!("{}[REDACTED]{}", &caps[1], &caps[2])
+        })
+        .into_owned();
     KEY_VALUE
         .replace_all(&value, |caps: &regex::Captures<'_>| {
             format!("{}[REDACTED]", &caps[1])
@@ -107,6 +123,26 @@ mod tests {
         );
         assert_eq!(redact("Cookie: session=abcd1234"), "Cookie: [REDACTED]");
         assert_eq!(redact("Set-Cookie: sid=abcd1234"), "Set-Cookie: [REDACTED]");
+        assert_eq!(
+            redact("Authorization: Basic dXNlcjpwYXNz"),
+            "Authorization: [REDACTED]"
+        );
+    }
+
+    #[test]
+    fn redacts_json_serialized_headers() {
+        assert_eq!(
+            redact(r#"{"cookie":"sid=abcd1234"}"#),
+            r#"{"cookie":"[REDACTED]"}"#
+        );
+        assert_eq!(
+            redact(r#"{"set-cookie":"sid=abcd1234; HttpOnly"}"#),
+            r#"{"set-cookie":"[REDACTED]"}"#
+        );
+        assert_eq!(
+            redact(r#"{"authorization":"Basic dXNlcjpwYXNz"}"#),
+            r#"{"authorization":"[REDACTED]"}"#
+        );
     }
 
     #[test]

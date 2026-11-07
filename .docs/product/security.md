@@ -64,7 +64,7 @@ Rules:
 - **Stored shape:** `*_ciphertext`, `*_nonce`, `key_version`, `*_last4`. Only `last4` is readable.
 - **Rotation:** envelope encryption with `key_version`; the rotation job re-encrypts in batches, verifies decrypt and retires the old version. The job and DB integration land with WP-07; the primitive is delivered.
 - **Token generation:** 32 bytes from the OS CSPRNG, base64url, displayed once; idempotency keys are stored hashed; runner tokens are per-run and short-lived.
-- **Redaction:** `crates/infrastructure/src/redact.rs` removes provider, SCM, cloud, bearer, master-key and password shapes from log lines. Prompt and memory redaction is extended by WP-11.
+- **Redaction:** `crates/infrastructure/src/redact.rs` removes provider, SCM, cloud, bearer/basic, JWT and PEM private-key shapes, sensitive header values and secret `key=value`/JSON pairs (including JSON-serialized `authorization`, `cookie` and `set-cookie`) from log lines. Prompt and memory redaction is extended by WP-11.
 
 ## 5. Authentication and authorization
 
@@ -76,8 +76,8 @@ Rules:
 
 ## 6. Web security
 
-- CSP: `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ws: wss:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'`.
-- Headers: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, HSTS in TLS mode.
+- CSP: `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'`.
+- Headers: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()`, `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-origin`, `Cache-Control: no-store` on secret/audit responses, HSTS in TLS mode.
 - Nginx applies the headers today; the API middleware reuses `security_headers.rs` from WP-16.
 - CORS is disabled by default; an exact-match allowlist is available for advanced deployments.
 - Input validation at the boundary, deny-unknown-fields on writes, output encoding, no `eval`, no inline scripts.
