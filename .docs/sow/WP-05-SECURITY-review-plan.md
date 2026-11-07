@@ -44,7 +44,7 @@
 - [x] AC2 provider key never returned/logged — DEFERRED to WP-07 (write-only DTOs) and WP-11 (outputs); redaction primitive and tests delivered.
 - [x] AC3 AES-256-GCM ciphertext bound via AAD; tampering fails — evidence: `crypto.rs` `wrong_aad_fails_authentication`, `tampered_ciphertext_fails`.
 - [x] AC4 key rotation re-encrypts all secrets — DEFERRED to WP-07 (rotation job); primitive versioned ciphertext delivered.
-- [x] AC5 CSP/security headers on every response — evidence: `security_headers.rs` + nginx; API middleware WP-16.
+- [x] AC5 CSP/security headers on every response — evidence: `security_headers.rs` + nginx (no inline/eval, `form-action`, `connect-src 'self'`, Permissions-Policy, COOP/CORP, `no-store`); API middleware WP-16.
 - [x] AC6 cross-scope memory retrieval returns zero forbidden chunks — DEFERRED to WP-08 (SQL scope filter + eval).
 - [x] AC7 prompt-injection fixtures cannot bypass — DEFERRED to WP-11 (red-team fixtures).
 - [x] AC8 invalid webhook signature 401, duplicate once, replay rejected — DEFERRED to WP-12.
@@ -81,6 +81,10 @@
 
 - [ ] QA subagent verdict: `APPROVED`.
 - [ ] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 143, crypto/exposure/redact/headers tests, exit-78 matrix, supply-chain 2/2).
+- [x] First QA pass returned `CHANGES_REQUESTED` for two blocking defects:
+  - Redactor bypassed secrets in JSON, URLs, sensitive headers, JWTs and PEM blocks. Resolved with a regex-based redactor covering all of them, with regression tests.
+  - Security headers were incomplete/weakened. Resolved: `style-src 'self'`, `connect-src 'self'`, `form-action 'self'`, `Referrer-Policy: no-referrer`, `Permissions-Policy`, COOP, CORP and `Cache-Control: no-store`, in both `security_headers.rs` and nginx.
+  - The ASVS V5 output-encoding/CSP row moved from `partial` to `met`.
 
 ## 9. Deferred items and residual risks
 
