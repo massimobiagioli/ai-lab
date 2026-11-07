@@ -7,7 +7,7 @@
 | Review branch | `review/wp-10-sow-planning` |
 | Reviewer | Chief Software Engineer (agent) |
 | QA reviewer | qa-review-agent (independent subagent) |
-| Status | `in_review` |
+| Status | `approved` |
 
 ## 1. Contract completeness
 
@@ -67,8 +67,8 @@
 
 ## 8. QA review
 
-- [ ] QA subagent verdict: `APPROVED`.
-- [ ] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 143, 59 domain tests, clippy, FR coverage).
+- [x] QA subagent verdict: `APPROVED`.
+- [x] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 143, 59 domain tests, clippy, FR coverage, semantic/lifecycle tests).
 - [x] First QA pass returned `CHANGES_REQUESTED` for incomplete SOW semantic validation and the reject/supersede lifecycle; fixed with text-level invariants, a structured-requirement validator, reason-guarded reject (back to draft), version-guarded supersede, and lifecycle/immutability tests.
 
 ## 9. Deferred items and residual risks
