@@ -148,16 +148,18 @@ pass "cross-context table references checked"
 # ---------------------------------------------------------------------------
 # 4. Compose services appear in the catalog.
 # ---------------------------------------------------------------------------
-COMPOSE=""
-for candidate in "$ROOT/compose.yaml" "$ROOT/compose.yml" "$ROOT/docker-compose.yml" "$ROOT/docker-compose.yaml"; do
-  [ -f "$candidate" ] && COMPOSE="$candidate" && break
+COMPOSE_FILES=()
+for candidate in "$ROOT/compose.yaml" "$ROOT/compose.yml" "$ROOT/docker-compose.yml" "$ROOT/docker-compose.yaml" "$ROOT"/infra/compose/docker-compose*.yml "$ROOT"/infra/compose/docker-compose*.yaml; do
+  [ -f "$candidate" ] && COMPOSE_FILES+=("$candidate")
 done
-if [ -n "$COMPOSE" ]; then
+if [ "${#COMPOSE_FILES[@]}" -gt 0 ]; then
   [ -f "$CATALOG" ] || fail "compose exists but $CATALOG is missing"
-  while IFS= read -r svc; do
-    [ -z "$svc" ] && continue
-    grep -qF "\`$svc\`" "$CATALOG" || fail "compose service '$svc' is missing from the service catalog"
-  done < <(awk '/^services:/{f=1;next} /^[^[:space:]]/{f=0} f && /^  [a-zA-Z0-9_.-]+:/{gsub(/^  /,""); sub(/:.*/,""); print}' "$COMPOSE")
+  for compose in "${COMPOSE_FILES[@]}"; do
+    while IFS= read -r svc; do
+      [ -z "$svc" ] && continue
+      grep -qF "\`$svc\`" "$CATALOG" || fail "compose service '$svc' ($compose) is missing from the service catalog"
+    done < <(awk '/^services:/{f=1;next} /^[^[:space:]]/{f=0} f && /^  [a-zA-Z0-9_.-]+:/{gsub(/^  /,""); sub(/:.*/,""); print}' "$compose")
+  done
 fi
 pass "compose coverage checked"
 

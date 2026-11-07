@@ -250,7 +250,9 @@ jobs:
       - name: Documentation link check
         run: .tools/check-doc-links.sh
       - name: Architecture fitness
-        run: .tools/check-architecture-fitness.sh
+        run: |
+          .tools/check-architecture-fitness.sh
+          .tools/architecture-fitness-self-test.sh
       - name: Crate fitness
         run: .tools/check-crate-dependencies.sh
       - name: Compose validation
