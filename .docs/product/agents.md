@@ -21,7 +21,7 @@ The full charters, prompt contracts and the 10-character roster are in Appendix 
 
 ## Prompt assembly
 
-The LLM platform injects the hard rules, the role charter, the character (≤600 chars), wrapped untrusted context and the task, in that order. `prompt_hash` makes the assembly deterministic and snapshot-testable. See `.docs/product/llm.md`.
+The LLM platform injects, in this order: the role charter, the character (≤600 chars), the CV summary, the hard rules, the tool contract, the output contract, the task packet and the wrapped untrusted context. `prompt_hash` makes the assembly deterministic and snapshot-testable. See `.docs/product/llm.md`.
 
 ## Routing and guardrails
 

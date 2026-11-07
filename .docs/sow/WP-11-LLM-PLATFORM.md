@@ -300,3 +300,7 @@ Exact order (from Appendix C.2):
 2026-11-07 | T01 | crates/llm/src/lib.rs | LlmProvider port, DeepSeek adapter, retries, breaker, health; 10 tests | — | T02
 2026-11-07 | T02 | crates/llm/src/lib.rs | prompt assembler/hash/guard, routing, cost/budget, structured repair | — | T03
 2026-11-07 | T03 | .docs/product/llm.md, .docs/product/agents.md | doc link check | streaming/tools/wiremock/Redis/persistence deferred WP-16/WP-20 | WP-10
+2026-11-07 | review | .docs/sow/WP-11-LLM-PLATFORM-review-plan.md, crates/llm/src/lib.rs | determinism; retry backoff/Retry-After; breaker; budget; secret guard; 10 llm tests; clippy | streaming/wiremock follow-up; Redis/ledger WP-16/WP-20 | QA review
+2026-11-07 | review-fix | crates/llm/src/lib.rs, crates/llm/Cargo.toml, .docs/product/llm.md | 4 attempts at 1/2/4/8 s ±20%; async futures_timer backoff; Appendix C.2 section order; AIza/PEM guard | QA first pass CHANGES_REQUESTED | re-review
+2026-11-07 | review-fix | crates/llm/src/lib.rs, .docs/product/agents.md | semantic failures return InvalidOutput; repair includes error + 8 KB previous output; agents.md order fixed; 11 llm tests | QA second pass CHANGES_REQUESTED | re-review
+2026-11-07 | re-review | .docs/product/evidence/WP-11-review.md | QA APPROVED; 11 llm tests; semantic repair; section order | streaming/wiremock follow-up; Redis/ledger WP-16/WP-20 | merge
