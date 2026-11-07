@@ -39,6 +39,16 @@ pub enum DomainError {
         /// Human-readable message.
         message: String,
     },
+    /// A rule violation with a stable code and the field that failed.
+    #[error("{message}")]
+    Violation {
+        /// Stable code.
+        code: &'static str,
+        /// Field that failed.
+        field: &'static str,
+        /// Human-readable message.
+        message: String,
+    },
 }
 
 impl DomainError {
@@ -52,7 +62,7 @@ impl DomainError {
             Self::SeparationOfDuties => "SEPARATION_OF_DUTIES",
             Self::NotFound => "NOT_FOUND",
             Self::Conflict(_) => "CONFLICT",
-            Self::Policy { code, .. } => code,
+            Self::Policy { code, .. } | Self::Violation { code, .. } => code,
         }
     }
 
@@ -63,7 +73,8 @@ impl DomainError {
             Self::Validation { .. }
             | Self::InvalidTransition
             | Self::SeparationOfDuties
-            | Self::Policy { .. } => 422,
+            | Self::Policy { .. }
+            | Self::Violation { .. } => 422,
             Self::VersionConflict { .. } | Self::Conflict(_) => 409,
             Self::NotFound => 404,
         }
@@ -83,6 +94,16 @@ impl DomainError {
     pub fn policy(code: &'static str, message: impl Into<String>) -> Self {
         Self::Policy {
             code,
+            message: message.into(),
+        }
+    }
+
+    /// Constructor for a code+field rule violation.
+    #[must_use]
+    pub fn violation(code: &'static str, field: &'static str, message: impl Into<String>) -> Self {
+        Self::Violation {
+            code,
+            field,
             message: message.into(),
         }
     }

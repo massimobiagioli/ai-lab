@@ -46,8 +46,10 @@ Error codes: `INVALID_TRANSITION` (422), `VALIDATION_FAILED` (422), `SEPARATION_
 
 ## 3. Definition of Ready / Done
 
-- **DoR:** canonical story, ≥1 acceptance criterion, ≥1 deliverable, estimate in {1,2,3,5,8}, priority not `wont`, assignee, future due date, budget > 0, no refinement flag.
-- **DoD:** QA approval, reviewer ≠ author, green CI, merged PR with merge SHA, story deliverables complete, no P0/P1.
+The engine evaluates every rule and reports stable code + field violations.
+
+- **DoR codes:** `DOR_AC_MISSING` (`story.acceptance_criteria`), `DOR_DELIVERABLE_MISSING` (`story.deliverables`), `DOR_NEEDS_REFINEMENT` (`needs_refinement`), `DOR_ESTIMATE_INVALID` (`estimate`), `DOR_PRIORITY_INVALID` (`priority`), `DOR_ASSIGNEE_MISSING` (`assignee_id`), `DOR_DUE_DATE_INVALID` (`due_date`), `DOR_BUDGET_INVALID` (`budget_microusd`). `DOR_STORY_INCOMPLETE` and `DOR_DEPENDENCY_OPEN` depend on the story/dependency model owned by WP-10/WP-16.
+- **DoD codes:** `DOD_REVIEWER_CONFLICT` (`reviewer_id`), `DOD_MERGE_MISSING` (`merge_sha`), `DOD_CI_NOT_GREEN` (`ci`), `DOD_QA_NOT_APPROVED` (`qa`), `DOD_AC_EVIDENCE_MISSING` (`evidence`), `DOD_TESTS_MISSING` (`tests`), `DOD_DOCS_MISSING` (`docs`), `DOD_DEFECT_OPEN` (`defects`), `DOD_LOG_MISSING` (`log`).
 
 ## 4. Events and immutability
 
