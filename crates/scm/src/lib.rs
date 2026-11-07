@@ -426,11 +426,9 @@ impl WebhookVerifier {
         let mut mac = Hmac::<Sha256>::new_from_slice(self.secret.expose().as_bytes())
             .map_err(|_| ScmError::InvalidSignature)?;
         mac.update(body);
-        let expected = mac.finalize().into_bytes();
         let provided_bytes = hex_decode(provided).ok_or(ScmError::InvalidSignature)?;
-        if expected.as_slice() != provided_bytes.as_slice() {
-            return Err(ScmError::InvalidSignature);
-        }
+        mac.verify_slice(&provided_bytes)
+            .map_err(|_| ScmError::InvalidSignature)?;
         {
             let mut seen = self
                 .seen
@@ -593,10 +591,20 @@ impl GitHubClient {
 #[async_trait]
 impl ScmProvider for GitHubClient {
     async fn verify_credential(&self, repo: &RepoRef) -> Result<CredentialStatus, ScmError> {
-        let response = self
+        let response = match self
             .send(self.request(Method::Get, &format!("/repos/{}", repo.full_name()), None))
-            .await?;
-        let scopes = response
+            .await
+        {
+            Ok(response) => response,
+            Err(ScmError::Forbidden(_) | ScmError::NotFound) => {
+                return Ok(CredentialStatus {
+                    state: CredentialState::Expired,
+                    scopes: Vec::new(),
+                });
+            }
+            Err(error) => return Err(error),
+        };
+        let scopes: Vec<String> = response
             .headers
             .get("x-oauth-scopes")
             .map(|value| {
@@ -607,10 +615,18 @@ impl ScmProvider for GitHubClient {
                     .collect()
             })
             .unwrap_or_default();
-        Ok(CredentialStatus {
-            state: CredentialState::Active,
-            scopes,
-        })
+        // Fine-grained PATs report no classic scopes; a present header without
+        // `repo`/`public_repo` means a classic PAT lacks the required scope.
+        let state = if scopes.is_empty()
+            || scopes
+                .iter()
+                .any(|scope| scope == "repo" || scope == "public_repo")
+        {
+            CredentialState::Active
+        } else {
+            CredentialState::Expired
+        };
+        Ok(CredentialStatus { state, scopes })
     }
 
     async fn create_branch(
@@ -843,7 +859,7 @@ impl TokenBroker {
     /// Issue a short-lived token for a run.
     pub fn issue(&self, run_id: &str, repo: RepoRef, now: DateTime<Utc>, ttl_s: i64) -> RepoToken {
         let token = RepoToken {
-            token: Secret::new(format!("ailab-sandbox-{run_id}")),
+            token: Secret::new(format!("ailab-sandbox-{}", uuid::Uuid::new_v4())),
             expires_at: now + chrono::Duration::seconds(ttl_s),
             repo,
         };
@@ -1095,5 +1111,45 @@ mod tests {
         assert!(broker.get("run-1", now).is_some());
         broker.revoke("run-1");
         assert!(broker.get("run-1", now).is_none());
+    }
+
+    #[test]
+    fn token_broker_tokens_are_unpredictable() {
+        let broker = TokenBroker::default();
+        let now = Utc::now();
+        let first = broker.issue("run-1", repo(), now, 300);
+        let second = broker.issue("run-1", repo(), now, 300);
+        assert_ne!(first.token.expose(), second.token.expose());
+        assert!(!first.token.expose().contains("run-1"));
+        assert!(
+            broker
+                .get("run-1", now + chrono::Duration::seconds(301))
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn credential_verification_reports_missing_scopes() {
+        let (client, _) = client(vec![
+            HttpResponse {
+                status: 200,
+                body: "{}".to_owned(),
+                headers: BTreeMap::from([("x-oauth-scopes".to_owned(), "repo".to_owned())]),
+            },
+            HttpResponse {
+                status: 200,
+                body: "{}".to_owned(),
+                headers: BTreeMap::from([("x-oauth-scopes".to_owned(), "read:user".to_owned())]),
+            },
+            response(403, "forbidden"),
+        ]);
+        let repo = repo();
+        let active = futures::executor::block_on(client.verify_credential(&repo)).expect("active");
+        assert_eq!(active.state, CredentialState::Active);
+        let scoped = futures::executor::block_on(client.verify_credential(&repo)).expect("scoped");
+        assert_eq!(scoped.state, CredentialState::Expired);
+        let expired =
+            futures::executor::block_on(client.verify_credential(&repo)).expect("expired");
+        assert_eq!(expired.state, CredentialState::Expired);
     }
 }
