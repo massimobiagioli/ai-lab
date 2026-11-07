@@ -325,7 +325,7 @@ CI rules: no secrets in logs; least-privilege `permissions:` per job; concurrenc
 
 - [x] All deliverables checked with evidence.
 - [x] Clean-clone bootstrap test recorded: `make setup && make check` exit 0 in 169 s (macOS, Docker 24.0.7, Compose 2.23.3, Rust 1.99.1, Node container 24.22). `make up` is deferred to WP-03.
-- [x] CI green on `main` with all required checks: local `make check` green, workflow and 16 required contexts validated; the remote `origin` exists and branch protection is applied with the 16 contexts (CR-0003).
+- [x] CI green on `main` with all required checks: local `make check` green; remote CI run `42409540109` on `review/wp-02-repository-devex` reports all 16 required checks passing; branch protection applied with the 16 contexts (CR-0003).
 - [x] Hooks verified with a bad-commit test: bad subject exit 1, good subject exit 0, missing agent trailers exit 1; gitleaks private-key fixture exit 1.
 - [x] Contribution docs reviewed by Tech Lead: independent `APPROVED` review in `.docs/product/evidence/WP-02-review.md`.
 - [x] Status `done` with sign-off (2026-11-07).

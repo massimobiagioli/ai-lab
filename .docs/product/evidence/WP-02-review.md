@@ -47,6 +47,16 @@ The review was iterative: the first pass returned `CHANGES_REQUESTED` for two bl
 
 The reviewer re-ran the gates and found one contract inconsistency: `.env.example` carried `AILAB_RUNNER_TOKEN` required by ADR-0023, while Appendix D.4 (declared complete) omitted it and the WP claimed 39/39 variables. Resolved with CR-0004, which adds the variable to Appendix D.4; the WP and this evidence now record 40/40. The `make help` target count was also refreshed from 35 to 41. No blocking defect remained.
 
+## Review round 3 (WP review, 2026-11-07)
+
+The reviewer reproduced the required CI jobs on a pull request and found three real gate defects; all were fixed:
+
+1. `aquasecurity/trivy-action@0.28.0` referenced a deleted `setup-trivy` tag. Fixed by pinning `v0.36.0` in `ci.yml` and `images.yml`; `security-image` passes.
+2. `cargo deny check` failed because path dependencies were treated as wildcards and `allow-wildcard-paths` does not apply to public crates. Fixed by marking the workspace crates `publish = false`; `security-deps` passes.
+3. The negative supply-chain test required the pinned Node image without pulling it. Fixed with an on-demand `docker pull`; `security-deps` passes.
+
+Remote evidence: CI run `42409540109` on `review/wp-02-repository-devex` → all 16 required checks pass. `make check`, `cargo deny check`, `.tools/test-supply-chain.sh` and `npm test` reproduce green locally.
+
 ## Reviewer statement
 
-WP-02 artifacts satisfy the repository and developer-experience contract. AC1 and AC8 are downstream WP responsibilities documented without fake gates. Approved for WP closure.
+WP-02 artifacts satisfy the repository and developer-experience contract. AC1 and AC8 are downstream WP responsibilities documented without fake gates; all required CI checks pass. Approved for WP closure.

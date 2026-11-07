@@ -72,8 +72,9 @@
 ## 8. QA review
 
 - [ ] QA subagent verdict: `APPROVED`.
-- [ ] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 141, `make check`, supply-chain 2/2, hooks, openapi determinism).
-- [x] First QA pass returned `CHANGES_REQUESTED` for a broken `frontend-unit` command (`-- --run` is invalid for `ng test`) and the uncorrected TypeScript pin; both fixed (CI/quality-gates corrected, CR-0005 amends spec §5.1) and sent for re-review.
+- [ ] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 141, `make check`, `cargo deny check`, supply-chain 2/2, hooks, openapi determinism, remote CI run 42409540109 with all 16 required checks).
+- [x] First QA pass: `CHANGES_REQUESTED` for a broken `frontend-unit` command and the uncorrected TypeScript pin; fixed (CI/quality-gates corrected, CR-0005).
+- [x] Second QA pass: `CHANGES_REQUESTED` for the unresolvable Trivy action, `cargo deny` wildcard failures and the unsupported CI-green claim; fixed (trivy v0.36.0, `publish = false`, on-demand image pull) and verified with a green remote CI run.
 
 ## 9. Deferred items and residual risks
 
