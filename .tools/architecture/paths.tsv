@@ -14,6 +14,7 @@ crates/application/src/delivery	delivery
 crates/application/src/memory	memory
 crates/application/src/platform	platform
 crates/application/src/scm	scm
+crates/infrastructure/src	platform
 crates/infrastructure/src/inventory	inventory
 crates/infrastructure/src/lab	lab
 crates/infrastructure/src/kanban	kanban
