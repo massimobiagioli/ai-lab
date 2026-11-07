@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Constraint and optimistic-concurrency tests against the real migrations.
 #
-# Every CHECK, UNIQUE and partial UNIQUE in the schema has a negative case.
-# A two-step UPDATE with `version` proves the optimistic-concurrency guard.
+# Negative cases for every constraint family (CHECK, UNIQUE, partial UNIQUE,
+# FOREIGN KEY, vector dimension) across the core aggregates, plus a two-step
+# UPDATE with `version` proving the optimistic-concurrency guard.
 #
 # Usage: .tools/test-constraints.sh
 # Exit: 0 all cases behave as expected, 1 a case failed, 2 environment error.
@@ -55,6 +56,19 @@ VALUES ('bbbbbbbb-bbbb-7bbb-8bbb-bbbbbbbbbbbb',
 INSERT INTO boards (id, project_id)
 VALUES ('cccccccc-cccc-7ccc-8ccc-cccccccccccc',
         'bbbbbbbb-bbbb-7bbb-8bbb-bbbbbbbbbbbb');
+INSERT INTO providers (id, workspace_id, name, kind, base_url, api_key_ciphertext, api_key_nonce, api_key_last4)
+VALUES ('e0000000-0000-7000-8000-000000000001',
+        '00000000-0000-7000-8000-000000000001', 'DeepSeek', 'deepseek',
+        'https://api.deepseek.com', '\x00', '\x00', 'abcd');
+INSERT INTO models (id, provider_id, name, display_name, context_window, max_output_tokens)
+VALUES ('f0000000-0000-7000-8000-000000000001',
+        'e0000000-0000-7000-8000-000000000001', 'deepseek-flash', 'DeepSeek Flash', 128000, 8192);
+INSERT INTO memory_documents (id, lab_id, scope, kind, title, content, content_hash, created_by)
+VALUES ('a2000000-0000-7000-8000-000000000001', 'aaaaaaaa-aaaa-7aaa-8aaa-aaaaaaaaaaaa',
+        'lab', 'note', 'Lab note', 'Fixture lab memory document', 'hash-1', 'system');
+INSERT INTO cards (id, board_id, project_id, card_key, seq, title, column_name, priority, estimate)
+VALUES ('d0000000-0000-7000-8000-000000000100', 'cccccccc-cccc-7ccc-8ccc-cccccccccccc',
+        'bbbbbbbb-bbbb-7bbb-8bbb-bbbbbbbbbbbb', 'TST-100', 100, 'Base card', 'TODO', 'should', 3);
 SQL
 
 FAIL=0
@@ -111,6 +125,56 @@ expect_fail "ICEBOX without blocked reason" \
   "INSERT INTO cards (id, board_id, project_id, card_key, seq, title, column_name)
    VALUES ('d0000000-0000-7000-8000-000000000005', 'cccccccc-cccc-7ccc-8ccc-cccccccccccc',
            'bbbbbbbb-bbbb-7bbb-8bbb-bbbbbbbbbbbb', 'TST-5', 5, 'Bad ICEBOX', 'ICEBOX');"
+
+expect_fail "project key_prefix must be uppercase letters/digits" \
+  "INSERT INTO projects (id, lab_id, name, slug, key_prefix, source_ref)
+   VALUES ('bbbbbbbb-bbbb-7bbb-8bbb-bbbbbbbbbbbc', 'aaaaaaaa-aaaa-7aaa-8aaa-aaaaaaaaaaaa',
+           'Bad Prefix', 'bad-prefix', 'bad', 'example/bad');"
+
+expect_fail "agent description shorter than 120 characters" \
+  "INSERT INTO agents (id, lab_id, name, role, character_id, description, autonomy_level)
+   VALUES ('a1000000-0000-7000-8000-000000000021', 'aaaaaaaa-aaaa-7aaa-8aaa-aaaaaaaaaaaa',
+           'Short Desc', 'dev', 'scrappy_dev', 'too short', 2);"
+
+expect_fail "duplicate (project_id, card_key)" \
+  "INSERT INTO cards (id, board_id, project_id, card_key, seq, title, column_name)
+   SELECT 'd0000000-0000-7000-8000-000000000006', board_id, project_id, card_key, 60, 'Dup key', 'TODO'
+   FROM cards WHERE card_key = 'TST-100';"
+
+expect_fail "duplicate (project_id, seq)" \
+  "INSERT INTO cards (id, board_id, project_id, card_key, seq, title, column_name)
+   SELECT 'd0000000-0000-7000-8000-000000000007', board_id, project_id, 'TST-7', seq, 'Dup seq', 'TODO'
+   FROM cards WHERE card_key = 'TST-100';"
+
+expect_fail "duplicate (provider_id, name)" \
+  "INSERT INTO models (id, provider_id, name, display_name, context_window, max_output_tokens)
+   VALUES ('f0000000-0000-7000-8000-000000000002', 'e0000000-0000-7000-8000-000000000001',
+           'deepseek-flash', 'Duplicate', 128000, 8192);"
+
+expect_fail "memory scope 'lab' with a project_id" \
+  "INSERT INTO memory_documents (id, lab_id, project_id, scope, kind, title, content, content_hash, created_by)
+   VALUES ('a2000000-0000-7000-8000-000000000002', 'aaaaaaaa-aaaa-7aaa-8aaa-aaaaaaaaaaaa',
+           'bbbbbbbb-bbbb-7bbb-8bbb-bbbbbbbbbbbb', 'lab', 'note', 'Bad scope', 'x', 'hash-2', 'system');"
+
+expect_fail "duplicate (lab_id, seq) in domain_events" \
+  "INSERT INTO domain_events (id, lab_id, seq, event_type, aggregate_type, aggregate_id, actor_type, payload)
+   VALUES ('e1000000-0000-7000-8000-000000000001', 'aaaaaaaa-aaaa-7aaa-8aaa-aaaaaaaaaaaa', 1, 'test', 'card', 'd0000000-0000-7000-8000-000000000010', 'system', '{}'),
+          ('e1000000-0000-7000-8000-000000000002', 'aaaaaaaa-aaaa-7aaa-8aaa-aaaaaaaaaaaa', 1, 'test', 'card', 'd0000000-0000-7000-8000-000000000010', 'system', '{}');"
+
+expect_fail "FK cards.project_id references a missing project" \
+  "INSERT INTO cards (id, board_id, project_id, card_key, seq, title, column_name)
+   VALUES ('d0000000-0000-7000-8000-000000000008', 'cccccccc-cccc-7ccc-8ccc-cccccccccccc',
+           'bbbbbbbb-bbbb-7bbb-8bbb-bbbbbbbbbbbc', 'TST-8', 8, 'Bad FK', 'TODO');"
+
+expect_fail "FK memory_chunks.document_id references a missing document" \
+  "INSERT INTO memory_chunks (id, document_id, lab_id, scope, ordinal, text, token_count, embedding)
+   VALUES ('a3000000-0000-7000-8000-000000000001', 'a2000000-0000-7000-8000-0000000000ff',
+           'aaaaaaaa-aaaa-7aaa-8aaa-aaaaaaaaaaaa', 'lab', 1, 'x', 1, array_fill(0::real, ARRAY[384])::vector);"
+
+expect_fail "memory chunk embedding must be 384 dimensions" \
+  "INSERT INTO memory_chunks (id, document_id, lab_id, scope, ordinal, text, token_count, embedding)
+   VALUES ('a3000000-0000-7000-8000-000000000002', 'a2000000-0000-7000-8000-000000000001',
+           'aaaaaaaa-aaaa-7aaa-8aaa-aaaaaaaaaaaa', 'lab', 1, 'x', 1, array_fill(0::real, ARRAY[3])::vector);"
 
 # Optimistic concurrency: the second update with version=1 must affect zero rows.
 psql_c >/dev/null <<'SQL'

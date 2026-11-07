@@ -29,7 +29,7 @@
 - [x] Egress allowlist + Squid — evidence: `infra/egress/{allowlist.txt,squid.conf}`.
 - [x] Socket proxy minimal allowlist — evidence: compose service + isolation test.
 - [x] Healthcheck subcommands — evidence: `crates/infrastructure/src/health.rs`, service health.
-- [x] `.env.example` aligned (40/40, CR-0004) — evidence: WP-02 review.
+- [x] `.env.example` aligned (45/45, CR-0004/CR-0006/CR-0007) — evidence: WP-02 review.
 - [x] `doctor.sh` — evidence: script categories; host port-conflict fails actionably.
 - [x] Backup/restore scripts — evidence: `scripts/backup.sh`, `scripts/restore-drill.sh`; drill after WP-04.
 - [x] Image build/scan/SBOM/sign hooks — evidence: `.github/workflows/images.yml`.

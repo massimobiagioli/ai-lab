@@ -285,7 +285,7 @@ CI rules: no secrets in logs; least-privilege `permissions:` per job; concurrenc
 - [x] `.github/workflows/images.yml`, `nightly.yml`, `release.yml` skeletons with the exact jobs.
 - [x] `renovate.json`, `deny.toml`, `.gitignore`, `.dockerignore`, `.editorconfig`, `.gitattributes`.
 - [x] `CODEOWNERS`, `CONTRIBUTING.md`, `.docs/product/review-checklist.md`, PR template (WP-00 template).
-- [x] `.env.example` complete and consistent with Appendix D.4 (42/42 variables including `AILAB_RUNNER_TOKEN` per CR-0004, placeholders only).
+- [x] `.env.example` complete and consistent with Appendix D.4 (45/45 variables including `AILAB_RUNNER_TOKEN` per CR-0004, placeholders only).
 - [x] `README.md` quickstart verified from a clean clone (`make setup && make check` exit 0 in 169 s).
 - [x] Contract generation scripts (`gen-openapi.sh`, `gen-asyncapi.sh`) and drift check in CI (generation owned by WP-16; job present).
 

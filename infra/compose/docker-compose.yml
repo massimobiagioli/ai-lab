@@ -14,7 +14,7 @@ x-security: &default-security
 
 x-app-env: &app-env
   AILAB_ENV: ${AILAB_ENV:-production}
-  AILAB_DATABASE_URL: postgres://${POSTGRES_USER:-ailab}:${POSTGRES_PASSWORD:-ailab}@postgres:5432/${POSTGRES_DB:-ailab}
+  AILAB_DATABASE_URL: postgres://ailab_app:${AILAB_APP_DB_PASSWORD:-ailab_app}@postgres:5432/${POSTGRES_DB:-ailab}
   AILAB_REDIS_URL: redis://redis:6379/0
   AILAB_MASTER_KEY: ${AILAB_MASTER_KEY:-}
   AILAB_LOG_LEVEL: ${AILAB_LOG_LEVEL:-info}
@@ -40,9 +40,13 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-ailab}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ailab}
       POSTGRES_DB: ${POSTGRES_DB:-ailab}
+      AILAB_APP_DB_PASSWORD: ${AILAB_APP_DB_PASSWORD:-ailab_app}
+      AILAB_MIGRATE_DB_PASSWORD: ${AILAB_MIGRATE_DB_PASSWORD:-ailab_migrate}
+      AILAB_READONLY_DB_PASSWORD: ${AILAB_READONLY_DB_PASSWORD:-ailab_readonly}
       PGDATA: /var/lib/postgresql/data
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ../postgres/init-roles.sh:/docker-entrypoint-initdb.d/01-roles.sh:ro
     networks:
       - backbone
     shm_size: 256m
@@ -117,7 +121,7 @@ services:
     profiles: ["core"]
     restart: "no"
     environment:
-      DATABASE_URL: postgres://${POSTGRES_USER:-ailab}:${POSTGRES_PASSWORD:-ailab}@postgres:5432/${POSTGRES_DB:-ailab}
+      DATABASE_URL: postgres://ailab_migrate:${AILAB_MIGRATE_DB_PASSWORD:-ailab_migrate}@postgres:5432/${POSTGRES_DB:-ailab}
     depends_on:
       postgres:
         condition: service_healthy

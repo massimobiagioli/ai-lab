@@ -32,7 +32,7 @@
 - [x] `images.yml`, `nightly.yml`, `release.yml` skeletons — evidence: files.
 - [x] `renovate.json`, `deny.toml`, `.gitignore`, `.dockerignore`, `.editorconfig`, `.gitattributes` — evidence: files; supply-chain negatives.
 - [x] `CODEOWNERS`, `CONTRIBUTING.md`, `review-checklist.md`, PR template — evidence: files.
-- [x] `.env.example` complete vs Appendix D.4 — evidence: 40/40 including `AILAB_RUNNER_TOKEN` (CR-0004); placeholders only.
+- [x] `.env.example` complete vs Appendix D.4 — evidence: 45/45 including the runner and role variables (CR-0004/CR-0006/CR-0007); placeholders only.
 - [x] `README.md` quickstart — evidence: `make check` green on the reference host.
 - [x] Contract generation scripts + drift job — evidence: `scripts/gen-openapi.sh`, `scripts/gen-asyncapi.sh`; generation owned by WP-16.
 
@@ -43,7 +43,7 @@
 - [x] AC3 bad commit and secret rejected locally — evidence: `scripts/hooks/commit-msg.sh` bad exit 1 / good exit 0 / missing trailers exit 1; gitleaks fixture exit 1.
 - [x] AC4 CI checks match WP-00 §3.8 and block merge — evidence: 16 job keys, `required-checks.txt`, branch protection (CR-0003).
 - [x] AC5 `cargo-deny`/`npm audit` reject a disallowed license and high CVE — evidence: `.tools/test-supply-chain.sh` 2/2 negatives.
-- [x] AC6 `.env.example` has every Appendix D.4 variable and no real secret — evidence: 40/40 (CR-0004), placeholders only.
+- [x] AC6 `.env.example` has every Appendix D.4 variable and no real secret — evidence: 45/45 (CR-0004/CR-0006/CR-0007), placeholders only.
 - [x] AC7 `sow-lint` detects invalid status and broken link — evidence: `.tools/sow-lint-self-test.sh` 11/11.
 - [x] AC8 `make openapi` deterministic; CI drift check — evidence: two consecutive runs leave no diff; generation is WP-16-owned.
 

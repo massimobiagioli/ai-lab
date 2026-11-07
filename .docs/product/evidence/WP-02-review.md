@@ -19,7 +19,7 @@ The review was iterative: the first pass returned `CHANGES_REQUESTED` for two bl
 | AC3 bad commit and secret rejected locally | PASS | `commit-msg.sh`: bad subject exit 1, good subject exit 0, missing agent trailers exit 1; gitleaks private-key fixture exit 1 |
 | AC4 CI checks match WP-00 §3.8 and block merge | PASS | 16 job keys match `.github/required-checks.txt`, `.docs/product/quality-gates.md` and `.github/branch-protection.json` |
 | AC5 negative supply-chain fixtures rejected | PASS | `.tools/test-supply-chain.sh`: npm audit exit 1 (1 high), cargo-deny exit 4 (license denied) |
-| AC6 `.env.example` complete, no real secret | PASS | All 42 Appendix D.4 variables present (including the runner variables per CR-0004/CR-0006); only placeholders and empty values |
+| AC6 `.env.example` complete, no real secret | PASS | All 45 Appendix D.4 variables present (runner and database-role variables per CR-0004/CR-0006/CR-0007); only placeholders and empty values |
 | AC7 `sow-lint` detects invalid status and broken link | PASS | `.tools/sow-lint-self-test.sh` 11/11 cases |
 | AC8 `make openapi` deterministic | DEFERRED | Scripts delivered; generation is owned by WP-16 and `openapi-compat` activates when the contract exists |
 
@@ -45,7 +45,7 @@ The review was iterative: the first pass returned `CHANGES_REQUESTED` for two bl
 
 ## Review round 2 (WP review, 2026-11-07)
 
-The reviewer re-ran the gates and found one contract inconsistency: `.env.example` carried `AILAB_RUNNER_TOKEN` required by ADR-0023, while Appendix D.4 (declared complete) omitted it and the WP claimed 39/39 variables. Resolved with CR-0004, which adds the variable to Appendix D.4; the WP and this evidence now record 40/40. The `make help` target count was also refreshed from 35 to 41. No blocking defect remained.
+The reviewer re-ran the gates and found one contract inconsistency: `.env.example` carried `AILAB_RUNNER_TOKEN` required by ADR-0023, while Appendix D.4 (declared complete) omitted it and the WP claimed 39/39 variables. Resolved with CR-0004, which adds the variable to Appendix D.4; the WP and this evidence now record the current 45/45. The `make help` target count was also refreshed from 35 to 41. No blocking defect remained.
 
 ## Review round 3 (WP review, 2026-11-07)
 
