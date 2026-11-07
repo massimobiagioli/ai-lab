@@ -244,3 +244,6 @@ pub trait ScmProvider: Send + Sync {
 2026-11-07 | T01 | crates/scm/src/lib.rs | port/types, GitHub adapter, PR conventions, checks/merge guards; 7 tests | — | T02
 2026-11-07 | T02 | crates/scm/src/lib.rs | HMAC webhook verification, replay/idempotency, token broker, rate-limit mapping | — | T03
 2026-11-07 | T03 | .docs/product/github.md | doc link check | live E2E/wiremock/sync deferred WP-13/follow-up | WP-14
+2026-11-07 | review | .docs/sow/WP-12-SCM-GITHUB-review-plan.md, crates/scm/src/lib.rs | constant-time HMAC; random token broker; scope/expiry; 9 scm tests; clippy | idempotency/retry/reconcile WP-13 | QA review
+2026-11-07 | review-fix | crates/scm/src/lib.rs, .docs/product/github.md | full PR body + trace; commit trailer enforcement; 10 scm tests | QA first pass CHANGES_REQUESTED | re-review
+2026-11-07 | re-review | .docs/product/evidence/WP-12-review.md | QA APPROVED; 10 scm tests; full PR body/trace; commit trailers | idempotency/retry/reconcile WP-13 | merge

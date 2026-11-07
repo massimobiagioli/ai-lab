@@ -333,8 +333,22 @@ pub struct PrConventions {
     pub card_title: String,
     /// Summary bullets.
     pub summary: Vec<String>,
+    /// Changed areas.
+    pub changes: Vec<String>,
     /// Acceptance criteria.
     pub acceptance: Vec<String>,
+    /// Verification evidence.
+    pub verification: Vec<String>,
+    /// Risks and rollback.
+    pub risks: Vec<String>,
+    /// Run id.
+    pub run: String,
+    /// Agent id.
+    pub agent: String,
+    /// Model name.
+    pub model: String,
+    /// Attempt number.
+    pub attempt: u32,
 }
 
 impl PrConventions {
@@ -354,12 +368,28 @@ impl PrConventions {
         for item in &self.summary {
             let _ = writeln!(body, "- {item}");
         }
+        let _ = writeln!(body, "\n## Changes");
+        for item in &self.changes {
+            let _ = writeln!(body, "- {item}");
+        }
         let _ = writeln!(body, "\n## Acceptance criteria");
         for item in &self.acceptance {
             let _ = writeln!(body, "- [ ] {item}");
         }
+        let _ = writeln!(body, "\n## Verification");
+        for item in &self.verification {
+            let _ = writeln!(body, "- {item}");
+        }
+        let _ = writeln!(body, "\n## Risks / rollback");
+        for item in &self.risks {
+            let _ = writeln!(body, "- {item}");
+        }
         let _ = writeln!(body, "\n## AI-Lab trace");
+        let _ = writeln!(body, "AI-Lab-Run: {}", self.run);
         let _ = writeln!(body, "AI-Lab-Card: {}", self.card_key);
+        let _ = writeln!(body, "AI-Lab-Agent: {}", self.agent);
+        let _ = writeln!(body, "AI-Lab-Model: {}", self.model);
+        let _ = writeln!(body, "AI-Lab-Attempt: {}", self.attempt);
         body
     }
 }
@@ -426,11 +456,9 @@ impl WebhookVerifier {
         let mut mac = Hmac::<Sha256>::new_from_slice(self.secret.expose().as_bytes())
             .map_err(|_| ScmError::InvalidSignature)?;
         mac.update(body);
-        let expected = mac.finalize().into_bytes();
         let provided_bytes = hex_decode(provided).ok_or(ScmError::InvalidSignature)?;
-        if expected.as_slice() != provided_bytes.as_slice() {
-            return Err(ScmError::InvalidSignature);
-        }
+        mac.verify_slice(&provided_bytes)
+            .map_err(|_| ScmError::InvalidSignature)?;
         {
             let mut seen = self
                 .seen
@@ -450,6 +478,17 @@ impl WebhookVerifier {
             payload,
         })
     }
+}
+
+fn ensure_commit_trailers(message: &str) -> Result<(), ScmError> {
+    for trailer in ["AI-Lab-Run:", "AI-Lab-Card:", "AI-Lab-Agent:"] {
+        if !message.lines().any(|line| line.starts_with(trailer)) {
+            return Err(ScmError::Validation(format!(
+                "missing required commit trailer: {trailer}"
+            )));
+        }
+    }
+    Ok(())
 }
 
 fn hex_decode(value: &str) -> Option<Vec<u8>> {
@@ -593,10 +632,20 @@ impl GitHubClient {
 #[async_trait]
 impl ScmProvider for GitHubClient {
     async fn verify_credential(&self, repo: &RepoRef) -> Result<CredentialStatus, ScmError> {
-        let response = self
+        let response = match self
             .send(self.request(Method::Get, &format!("/repos/{}", repo.full_name()), None))
-            .await?;
-        let scopes = response
+            .await
+        {
+            Ok(response) => response,
+            Err(ScmError::Forbidden(_) | ScmError::NotFound) => {
+                return Ok(CredentialStatus {
+                    state: CredentialState::Expired,
+                    scopes: Vec::new(),
+                });
+            }
+            Err(error) => return Err(error),
+        };
+        let scopes: Vec<String> = response
             .headers
             .get("x-oauth-scopes")
             .map(|value| {
@@ -607,10 +656,18 @@ impl ScmProvider for GitHubClient {
                     .collect()
             })
             .unwrap_or_default();
-        Ok(CredentialStatus {
-            state: CredentialState::Active,
-            scopes,
-        })
+        // Fine-grained PATs report no classic scopes; a present header without
+        // `repo`/`public_repo` means a classic PAT lacks the required scope.
+        let state = if scopes.is_empty()
+            || scopes
+                .iter()
+                .any(|scope| scope == "repo" || scope == "public_repo")
+        {
+            CredentialState::Active
+        } else {
+            CredentialState::Expired
+        };
+        Ok(CredentialStatus { state, scopes })
     }
 
     async fn create_branch(
@@ -644,6 +701,7 @@ impl ScmProvider for GitHubClient {
         if files.is_empty() {
             return Err(ScmError::Validation("no files to commit".to_owned()));
         }
+        ensure_commit_trailers(message)?;
         let mut last_sha = String::new();
         for file in files {
             let body = json!({
@@ -843,7 +901,7 @@ impl TokenBroker {
     /// Issue a short-lived token for a run.
     pub fn issue(&self, run_id: &str, repo: RepoRef, now: DateTime<Utc>, ttl_s: i64) -> RepoToken {
         let token = RepoToken {
-            token: Secret::new(format!("ailab-sandbox-{run_id}")),
+            token: Secret::new(format!("ailab-sandbox-{}", uuid::Uuid::new_v4())),
             expires_at: now + chrono::Duration::seconds(ttl_s),
             repo,
         };
@@ -952,10 +1010,55 @@ mod tests {
             card_key: "AIL-1".to_owned(),
             card_title: "Add board".to_owned(),
             summary: vec!["One".to_owned()],
+            changes: vec!["Added the board".to_owned()],
             acceptance: vec!["Works".to_owned()],
+            verification: vec!["cargo test".to_owned()],
+            risks: vec!["None".to_owned()],
+            run: "run-1".to_owned(),
+            agent: "agent-1".to_owned(),
+            model: "deepseek-flash".to_owned(),
+            attempt: 1,
         };
         assert_eq!(conventions.title(), "[AIL-1] Add board");
-        assert!(conventions.body().contains("AI-Lab-Card: AIL-1"));
+        let body = conventions.body();
+        for section in [
+            "## Summary",
+            "## Changes",
+            "## Verification",
+            "## Risks / rollback",
+        ] {
+            assert!(body.contains(section), "missing {section}");
+        }
+        for trailer in [
+            "AI-Lab-Run: run-1",
+            "AI-Lab-Card: AIL-1",
+            "AI-Lab-Agent: agent-1",
+        ] {
+            assert!(body.contains(trailer), "missing {trailer}");
+        }
+    }
+
+    #[test]
+    fn commit_requires_agent_trailers() {
+        let (client, _) = client(vec![response(200, r#"{"commit":{"sha":"abc123"}}"#)]);
+        let repo = repo();
+        let branch = BranchName::for_card("AIL-1", "fix").expect("branch");
+        let files = vec![FileChange::new("src/lib.rs", "content").expect("file")];
+        let missing = futures::executor::block_on(client.commit_files(
+            &repo,
+            &branch,
+            "feat(test): add thing",
+            &files,
+        ));
+        assert!(matches!(missing, Err(ScmError::Validation(_))));
+        let with_trailers = futures::executor::block_on(client.commit_files(
+            &repo,
+            &branch,
+            "feat(test): add thing\n\nAI-Lab-Run: run-1\nAI-Lab-Card: AIL-1\nAI-Lab-Agent: agent-1",
+            &files,
+        ))
+        .expect("commit");
+        assert_eq!(with_trailers, "abc123");
     }
 
     fn hex_encode(bytes: &[u8]) -> String {
@@ -1095,5 +1198,45 @@ mod tests {
         assert!(broker.get("run-1", now).is_some());
         broker.revoke("run-1");
         assert!(broker.get("run-1", now).is_none());
+    }
+
+    #[test]
+    fn token_broker_tokens_are_unpredictable() {
+        let broker = TokenBroker::default();
+        let now = Utc::now();
+        let first = broker.issue("run-1", repo(), now, 300);
+        let second = broker.issue("run-1", repo(), now, 300);
+        assert_ne!(first.token.expose(), second.token.expose());
+        assert!(!first.token.expose().contains("run-1"));
+        assert!(
+            broker
+                .get("run-1", now + chrono::Duration::seconds(301))
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn credential_verification_reports_missing_scopes() {
+        let (client, _) = client(vec![
+            HttpResponse {
+                status: 200,
+                body: "{}".to_owned(),
+                headers: BTreeMap::from([("x-oauth-scopes".to_owned(), "repo".to_owned())]),
+            },
+            HttpResponse {
+                status: 200,
+                body: "{}".to_owned(),
+                headers: BTreeMap::from([("x-oauth-scopes".to_owned(), "read:user".to_owned())]),
+            },
+            response(403, "forbidden"),
+        ]);
+        let repo = repo();
+        let active = futures::executor::block_on(client.verify_credential(&repo)).expect("active");
+        assert_eq!(active.state, CredentialState::Active);
+        let scoped = futures::executor::block_on(client.verify_credential(&repo)).expect("scoped");
+        assert_eq!(scoped.state, CredentialState::Expired);
+        let expired =
+            futures::executor::block_on(client.verify_credential(&repo)).expect("expired");
+        assert_eq!(expired.state, CredentialState::Expired);
     }
 }
