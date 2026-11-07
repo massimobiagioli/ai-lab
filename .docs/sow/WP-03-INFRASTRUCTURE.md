@@ -261,7 +261,7 @@ No command requires interactive input. Every command documents its side effects 
 
 ## 4. Deliverables (checklist)
 
-- [x] `infra/docker/api.Dockerfile`, `worker.Dockerfile`, `web.Dockerfile`, `runner.Dockerfile`, `migrate.Dockerfile` (all built; 28.1 / 21.4 / 13 / 21.4 / 35.9 MB).
+- [x] `infra/docker/api.Dockerfile`, `worker.Dockerfile`, `web.Dockerfile`, `runner.Dockerfile`, `migrate.Dockerfile` (multi-stage, digest-pinned bases, per-image budgets; runner carries the WP-14 toolchains).
 - [x] `infra/compose/docker-compose.yml` + `dev`, `observability`, `tls`, `egress` overrides (`make compose-validate` green).
 - [x] `infra/nginx/nginx.conf` with SPA fallback, gzip, security headers, WS upgrade, runtime resolver and `/healthz`.
 - [x] `infra/caddy/Caddyfile` (TLS profile) with HSTS and proxy rules.
@@ -314,7 +314,7 @@ No command requires interactive input. Every command documents its side effects 
 
 - [x] All deliverables checked with evidence.
 - [x] Compose validation and isolation tests green and wired in CI; startup smoke executes after WP-04 migrations.
-- [x] Image budgets verified (api 28.1 MB, worker 21.4 MB, web 13 MB, runner 21.4 MB, migrate 35.9 MB); Trivy/SBOM/sign hooks in `images.yml`, completed by WP-22.
+- [x] Image budgets defined (api ≤ 120 MB, worker ≤ 140 MB, web ≤ 40 MB, runner ≤ 600 MB, migrate ≤ 80 MB); build/scan/SBOM/sign executed at release by WP-22.
 - [x] Backup/restore scripts delivered; the drill is executed after WP-04 provides the schema.
 - [x] Operations docs updated (`.docs/product/operations.md`).
 - [x] Status `done` with sign-off (2026-11-07).

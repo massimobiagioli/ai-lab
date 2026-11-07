@@ -213,6 +213,7 @@ Use the `quality-gates` skill for the exact commands and evidence rules.
 | `test-supply-chain` | [`.tools/test-supply-chain.sh`](./.tools/test-supply-chain.sh) | Negative fixtures: vulnerable npm dependency and disallowed Cargo license must be rejected. | `.tools/test-supply-chain.sh` |
 | `test-migrations` | [`.tools/test-migrations.sh`](./.tools/test-migrations.sh) | Diff the versioned migrations against Appendix A on a disposable PostgreSQL container. | `.tools/test-migrations.sh` |
 | `test-constraints` | [`.tools/test-constraints.sh`](./.tools/test-constraints.sh) | Run CHECK/UNIQUE negatives and the optimistic-concurrency case. | `.tools/test-constraints.sh` |
+| `test-compose-isolation` | [`.tools/test-compose-isolation.sh`](./.tools/test-compose-isolation.sh) | Assert Compose network isolation, hardening and resource limits across services. | `.tools/test-compose-isolation.sh` |
 | `integrity-check` | [`scripts/integrity-check.sh`](./scripts/integrity-check.sh) | Run the report-only integrity checks against the live database. | `scripts/integrity-check.sh` |
 | `backup` | [`scripts/backup.sh`](./scripts/backup.sh) | Dump the database, archive artifacts and write a manifest. | `scripts/backup.sh` |
 | `restore-drill` | [`scripts/restore-drill.sh`](./scripts/restore-drill.sh) | Restore a dump into a scratch database and compare row counts. | `scripts/restore-drill.sh <dump>` |

@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-FROM rust:1.99.1-trixie AS chef
+FROM rust:1.99.1-trixie@sha256:8a4e90c7946b74626488b1446f712c0fe0ed1a596cbd3d871684bc9c5433ae07 AS chef
 RUN cargo install cargo-chef --locked
 WORKDIR /src
 
@@ -13,7 +13,7 @@ RUN cargo chef cook --release --recipe-path recipe.json -p ailab-api
 COPY . .
 RUN cargo build --release -p ailab-api
 
-FROM gcr.io/distroless/cc-debian13
+FROM gcr.io/distroless/cc-debian13@sha256:58e12be899275afaa05f1b03051ab19037ed7f252528e57a3a9ad7e220a62578
 LABEL org.opencontainers.image.title="ailab-api" \
       org.opencontainers.image.description="AI-Lab API service" \
       org.opencontainers.image.licenses="Apache-2.0" \

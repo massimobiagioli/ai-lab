@@ -1,12 +1,12 @@
 # syntax=docker/dockerfile:1.7
-FROM node:24.22.0-trixie-slim AS builder
+FROM node:24.22.0-trixie-slim@sha256:a6155384446670e9719bdc4fd0ebe4d4b29fb32a8d6aa523da3547a6cfbcf22c AS builder
 WORKDIR /app
 COPY web/package.json web/package-lock.json ./
 RUN npm ci
 COPY web ./
 RUN npm run build
 
-FROM nginxinc/nginx-unprivileged:1.29-alpine-slim
+FROM nginxinc/nginx-unprivileged:1.29-alpine-slim@sha256:59678856b05324b7f6371f26eb1520be7fcd8bdc8ab380fc4913db8503e5a842
 LABEL org.opencontainers.image.title="ailab-web" \
       org.opencontainers.image.description="AI-Lab Angular web application" \
       org.opencontainers.image.licenses="Apache-2.0" \

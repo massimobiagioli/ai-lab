@@ -227,6 +227,8 @@ Each ADR follows: **Context → Decision → Consequences → Alternatives → S
 | `AILAB_RUNNER_MEMORY_MB` | no | `4096` | Memory limit |
 | `AILAB_RUNNER_TIMEOUT_S` | no | `2700` | Run wall clock |
 | `AILAB_RUNNER_TOKEN` | **yes** (runner) | — | Shared secret for the worker→runner API; ≥ 32 bytes (CR-0004) |
+| `AILAB_RUNNER_URL` | no | `http://runner:8081` | Worker readiness probe target (CR-0006) |
+| `AILAB_RUNNER_BIND` | no | `0.0.0.0:8081` | Runner readiness listener bind address (CR-0006) |
 | `AILAB_WORKER_CONCURRENCY` | no | `4` | Runs per worker |
 | `AILAB_SCHEDULER_TICK_MS` | no | `1000` | Scheduler tick |
 | `AILAB_LEASE_TTL_S` | no | `900` | Lease TTL |

@@ -21,6 +21,7 @@ x-app-env: &app-env
   AILAB_LOG_FORMAT: ${AILAB_LOG_FORMAT:-json}
   AILAB_RUNNER_TOKEN: ${AILAB_RUNNER_TOKEN:-change-me-in-env}
   AILAB_RUNNER_IMAGE: ${AILAB_RUNNER_IMAGE:-ailab/runner:1.0.0}
+  AILAB_RUNNER_URL: ${AILAB_RUNNER_URL:-http://runner:8081}
   AILAB_WORKER_CONCURRENCY: ${AILAB_WORKER_CONCURRENCY:-4}
   AILAB_LEASE_TTL_S: ${AILAB_LEASE_TTL_S:-900}
   AILAB_LLM_DEFAULT_MODEL: ${AILAB_LLM_DEFAULT_MODEL:-deepseek-flash}
@@ -32,7 +33,7 @@ x-app-env: &app-env
 
 services:
   postgres:
-    image: pgvector/pgvector:0.8.7-pg18-trixie
+    image: pgvector/pgvector:0.8.7-pg18-trixie@sha256:5895949dfcdf308eb0cd31c950c93c14895c77f33fbedfecf1fa511ab1d4bcd2
     profiles: ["core"]
     restart: unless-stopped
     environment:
@@ -69,7 +70,7 @@ services:
       start_period: 10s
 
   redis:
-    image: redis:8.8.4-trixie
+    image: redis:8.8.4-trixie@sha256:6e61ab45b3e867bacbef2fdd969ec74f4e0f8aaca8cc946cb8ac0c494035e7e7
     profiles: ["core"]
     restart: unless-stopped
     command:
@@ -179,7 +180,7 @@ services:
       redis:
         condition: service_healthy
       runner:
-        condition: service_started
+        condition: service_healthy
     networks:
       - backbone
       - runner
@@ -211,6 +212,7 @@ services:
     restart: unless-stopped
     environment:
       AILAB_RUNNER_TOKEN: ${AILAB_RUNNER_TOKEN:-change-me-in-env}
+      AILAB_RUNNER_BIND: ${AILAB_RUNNER_BIND:-0.0.0.0:8081}
       DOCKER_HOST: tcp://docker-socket-proxy:2375
       AILAB_ARTIFACTS_DIR: /var/lib/ailab/artifacts
       AILAB_WORKSPACES_DIR: /var/lib/ailab/workspaces
@@ -240,7 +242,7 @@ services:
       start_period: 10s
 
   docker-socket-proxy:
-    image: tecnativa/docker-socket-proxy:0.3.0
+    image: tecnativa/docker-socket-proxy:0.3.0@sha256:9e4b9e7517a6b660f2cc903a19b257b1852d5b3344794e3ea334ff00ae677ac2
     profiles: ["core"]
     restart: unless-stopped
     environment:

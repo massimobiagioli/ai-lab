@@ -19,7 +19,7 @@ The review was iterative: the first pass returned `CHANGES_REQUESTED` for two bl
 | AC3 bad commit and secret rejected locally | PASS | `commit-msg.sh`: bad subject exit 1, good subject exit 0, missing agent trailers exit 1; gitleaks private-key fixture exit 1 |
 | AC4 CI checks match WP-00 §3.8 and block merge | PASS | 16 job keys match `.github/required-checks.txt`, `.docs/product/quality-gates.md` and `.github/branch-protection.json` |
 | AC5 negative supply-chain fixtures rejected | PASS | `.tools/test-supply-chain.sh`: npm audit exit 1 (1 high), cargo-deny exit 4 (license denied) |
-| AC6 `.env.example` complete, no real secret | PASS | All 40 Appendix D.4 variables present (including AILAB_RUNNER_TOKEN per CR-0004); only placeholders and empty values |
+| AC6 `.env.example` complete, no real secret | PASS | All 42 Appendix D.4 variables present (including the runner variables per CR-0004/CR-0006); only placeholders and empty values |
 | AC7 `sow-lint` detects invalid status and broken link | PASS | `.tools/sow-lint-self-test.sh` 11/11 cases |
 | AC8 `make openapi` deterministic | DEFERRED | Scripts delivered; generation is owned by WP-16 and `openapi-compat` activates when the contract exists |
 

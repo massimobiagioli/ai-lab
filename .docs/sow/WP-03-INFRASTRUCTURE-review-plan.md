@@ -43,9 +43,9 @@
 - [x] AC2 `make up` healthy ≤ 10 min cold / ≤ 90 s warm — DEFERRED to WP-04 for migrations/seed; the stack is currently running healthy.
 - [x] AC3 failing migration blocks api/worker and exits non-zero — DEFERRED to WP-04 (owns migration content); compose ordering and `service_completed_successfully` dependency inspected.
 - [x] AC4 Postgres/Redis unreachable from `edge`/sandbox — evidence: `.tools/test-compose-isolation.sh`.
-- [x] AC5 runner restricted to the proxy allowlist; sandbox no host mounts, no socket, read-only, cap drop, non-root — evidence: compose + isolation test + runner Dockerfile.
-- [x] AC6 egress allowlist reachable, arbitrary domain denied — evidence: `infra/egress/*`; runtime enforcement owned by WP-14.
-- [x] AC7 image budgets, Trivy clean, SBOM/sign per image — DEFERRED to WP-22 for SBOM/sign; build/scan hooks present.
+- [x] AC5 runner restricted to the proxy allowlist; sandbox no host mounts, no socket, read-only, cap drop, non-root — proxy allowlist, socket `:ro`, runner hardening verified; sandbox-container hardening is DEFERRED to WP-14 (runtime creator).
+- [x] AC6 egress allowlist reachable, arbitrary domain denied — static allowlist/Squid config verified; runtime allow/deny DEFERRED to WP-14.
+- [x] AC7 image budgets, Trivy clean, SBOM/sign per image — budgets defined, digest-pinned bases, Trivy/SBOM/sign hooks present; image build/scan/sign DEFERRED to WP-22.
 - [x] AC8 backup dump/manifest + restore drill — DEFERRED to WP-04 for the schema.
 - [x] AC9 SIGTERM exits ≤ 20 s without losing an in-flight run — DEFERRED to WP-13 (run lifecycle); compose `stop_grace_period` inspected.
 - [x] AC10 `make doctor` actionable on stopped Docker, busy port or missing key — evidence: doctor categories; busy-port path reproduced on this host.
@@ -74,14 +74,21 @@
 ## 8. QA review
 
 - [ ] QA subagent verdict: `APPROVED`.
-- [ ] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 141, compose-validate all profiles, isolation 8 services, rendered config).
+- [ ] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 142, compose-validate all profiles, isolation 8 services, rendered config).
+- [x] First QA pass returned `CHANGES_REQUESTED` for the runner image toolchains, missing digest pins, the unregistered isolation tool and the worker runner probe; all fixed:
+  - runner image rebuilt on `debian:trixie-slim` with Rust/Node/Python/build toolchains and `just`;
+  - all third-party Compose and Dockerfile bases pinned by digest;
+  - `.tools/test-compose-isolation.sh` registered in the AGENTS tool registry;
+  - runner exposes a readiness listener on `AILAB_RUNNER_BIND`; the worker probes `AILAB_RUNNER_URL` (CR-0006).
 
 ## 9. Deferred items and residual risks
 
 - [x] AC2/AC3/AC8 startup, migration failure and backup drill — owner: Dev, WP-04.
-- [x] AC7 SBOM/sign and AC9 graceful run termination — owners: WP-22 and WP-13.
+- [x] AC5/AC6 sandbox hardening and runtime egress enforcement — owner: Dev, WP-14.
+- [x] AC7 image build/Trivy/SBOM/sign and AC9 graceful run termination — owners: WP-22 and WP-13.
 - [x] No unexplained deferral remains.
 
 ## 10. Decisions
 
 - [x] ADR-0020 Compose deployment and ADR-0023 runner control plane — recorded.
+- [x] CR-0006 adds `AILAB_RUNNER_URL`/`AILAB_RUNNER_BIND` to the environment contract (linked ADR-0023).
