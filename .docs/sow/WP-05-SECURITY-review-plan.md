@@ -7,7 +7,7 @@
 | Review branch | `review/wp-05-security` |
 | Reviewer | Chief Software Engineer (agent) |
 | QA reviewer | qa-review-agent (independent subagent) |
-| Status | `in_review` |
+| Status | `approved` |
 
 ## 1. Contract completeness
 
@@ -79,8 +79,9 @@
 
 ## 8. QA review
 
-- [ ] QA subagent verdict: `APPROVED`.
-- [ ] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 143, crypto/exposure/redact/headers tests, exit-78 matrix, supply-chain 2/2).
+- [x] QA subagent verdict: `APPROVED`.
+- [x] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 143, 31 infrastructure tests, exit-78 matrix, supply-chain 2/2); redactor JSON/header/JWT/PEM cases verified.
+- [x] Caddy TLS edge aligned with the hardened header set.
 - [x] First QA pass returned `CHANGES_REQUESTED` for two blocking defects:
   - Redactor bypassed secrets in JSON, URLs, sensitive headers, JWTs and PEM blocks. Resolved with a regex-based redactor covering all of them, with regression tests.
   - Security headers were incomplete/weakened. Resolved: `style-src 'self'`, `connect-src 'self'`, `form-action 'self'`, `Referrer-Policy: no-referrer`, `Permissions-Policy`, COOP, CORP and `Cache-Control: no-store`, in both `security_headers.rs` and nginx.
