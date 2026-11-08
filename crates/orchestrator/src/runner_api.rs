@@ -224,6 +224,22 @@ pub struct RunnerState {
     backend: Arc<dyn SandboxBackend>,
     token: Secret<String>,
     roles: Arc<std::sync::Mutex<std::collections::BTreeMap<String, AgentRole>>>,
+    denials: Arc<std::sync::Mutex<Vec<AuditDenial>>>,
+}
+
+/// One recorded policy denial.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct AuditDenial {
+    /// Sandbox.
+    pub sandbox_id: String,
+    /// Rule.
+    pub rule: String,
+    /// Tool.
+    pub tool: String,
+    /// Argument.
+    pub argument: String,
+    /// Reason.
+    pub reason: String,
 }
 
 impl RunnerState {
@@ -240,6 +256,7 @@ impl RunnerState {
             backend,
             token,
             roles: Arc::new(std::sync::Mutex::new(std::collections::BTreeMap::new())),
+            denials: Arc::new(std::sync::Mutex::new(Vec::new())),
         }
     }
 
@@ -249,12 +266,32 @@ impl RunnerState {
         }
     }
 
-    fn role_of(&self, sandbox_id: &str) -> AgentRole {
+    fn role_of(&self, sandbox_id: &str) -> Option<AgentRole> {
         self.roles
             .lock()
             .ok()
             .and_then(|roles| roles.get(sandbox_id).copied())
-            .unwrap_or(AgentRole::Dev)
+    }
+
+    fn record_denial(&self, denial: &crate::tools::ToolDenial, sandbox_id: &str) {
+        if let Ok(mut denials) = self.denials.lock() {
+            denials.push(AuditDenial {
+                sandbox_id: sandbox_id.to_owned(),
+                rule: denial.rule.clone(),
+                tool: denial.tool.clone(),
+                argument: denial.argument.clone(),
+                reason: denial.reason.clone(),
+            });
+        }
+    }
+
+    /// Recorded policy denials (audit sink).
+    #[must_use]
+    pub fn denials(&self) -> Vec<AuditDenial> {
+        self.denials
+            .lock()
+            .map(|denials| denials.clone())
+            .unwrap_or_default()
     }
 
     fn authorize(&self, headers: &HeaderMap) -> Result<(), ApiError> {
@@ -379,15 +416,18 @@ async fn exec_command(
     if tool != "shell.run" {
         return Err(ApiError::unsupported_tool(tool));
     }
-    let role = state.role_of(&id);
+    let role = state
+        .role_of(&id)
+        .ok_or_else(|| ApiError::policy("unknown sandbox role"))?;
     let registry = crate::tools::ToolRegistry::v1();
-    registry
-        .authorize(
-            role,
-            "shell.run",
-            &serde_json::json!({"argv": request.argv, "path": request.cwd}),
-        )
-        .map_err(ApiError::policy_denial)?;
+    if let Err(denial) = registry.authorize(
+        role,
+        "shell.run",
+        &serde_json::json!({"argv": request.argv, "path": request.cwd}),
+    ) {
+        state.record_denial(&denial, &id);
+        return Err(ApiError::policy_denial(denial));
+    }
     let timeout = request
         .timeout_s
         .min(registry.get("shell.run").map_or(600, |spec| spec.timeout_s));
@@ -642,7 +682,7 @@ mod tests {
             .as_str()
             .expect("id")
             .to_owned();
-        assert_eq!(state.role_of(&analyst_id), AgentRole::Analyst);
+        assert_eq!(state.role_of(&analyst_id), Some(AgentRole::Analyst));
         let denied = router
             .oneshot(request(
                 "POST",
@@ -656,6 +696,12 @@ mod tests {
         let value: serde_json::Value = serde_json::from_slice(&body).expect("json");
         assert_eq!(value["code"], "POLICY_DENIED");
         assert_eq!(value["rule"], "ROLE_NOT_ALLOWED");
+        assert!(
+            state
+                .denials()
+                .iter()
+                .any(|denial| denial.rule == "ROLE_NOT_ALLOWED")
+        );
     }
 
     #[tokio::test]

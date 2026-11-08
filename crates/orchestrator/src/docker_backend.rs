@@ -28,6 +28,7 @@ pub struct DockerBackend {
     docker: Docker,
     workspaces_dir: String,
     egress_network: String,
+    tokens: std::sync::Mutex<std::collections::BTreeMap<String, ailab_application::Secret<String>>>,
 }
 
 impl DockerBackend {
@@ -43,6 +44,7 @@ impl DockerBackend {
             docker,
             workspaces_dir: workspaces_dir.into(),
             egress_network: egress_network.into(),
+            tokens: std::sync::Mutex::new(std::collections::BTreeMap::new()),
         })
     }
 
@@ -78,6 +80,14 @@ impl DockerBackend {
             .inspect_container(sandbox_id, None)
             .await
             .map_err(map_docker_error)?;
+        let labeled = info
+            .config
+            .as_ref()
+            .and_then(|config| config.labels.as_ref())
+            .is_some_and(|labels| labels.contains_key("ailab.run_id"));
+        if !labeled {
+            return Err(BackendError::NotFound);
+        }
         info.id.ok_or(BackendError::NotFound)
     }
 }
@@ -121,9 +131,6 @@ fn container_env(spec: &SandboxSpec) -> Option<Vec<String>> {
         env.push(format!("HTTP_PROXY={proxy}"));
         env.push(format!("HTTPS_PROXY={proxy}"));
         env.push("NO_PROXY=127.0.0.1,localhost".to_owned());
-    }
-    if let Some(token) = &spec.scm_token {
-        env.push(format!("AILAB_SCM_TOKEN={}", token.expose()));
     }
     if env.is_empty() { None } else { Some(env) }
 }
@@ -264,6 +271,12 @@ impl SandboxBackend for DockerBackend {
         let container = self.container(sandbox_id).await?;
         let timeout = Duration::from_secs(timeout_s.max(1));
         let result = tokio::time::timeout(timeout, async {
+            let token_env = self
+                .tokens
+                .lock()
+                .ok()
+                .and_then(|tokens| tokens.get(&container).cloned())
+                .map(|token| vec![format!("AILAB_SCM_TOKEN={}", token.expose())]);
             let exec = self
                 .docker
                 .create_exec(
@@ -271,6 +284,7 @@ impl SandboxBackend for DockerBackend {
                     CreateExecOptions {
                         cmd: Some(call.argv.clone()),
                         working_dir: Some(call.cwd.clone()),
+                        env: token_env,
                         attach_stdout: Some(true),
                         attach_stderr: Some(true),
                         ..Default::default()
@@ -320,6 +334,7 @@ impl SandboxBackend for DockerBackend {
     }
 
     async fn delete(&self, sandbox_id: &str) -> Result<(), BackendError> {
+        self.container(sandbox_id).await?;
         self.docker
             .remove_container(
                 sandbox_id,
@@ -329,7 +344,11 @@ impl SandboxBackend for DockerBackend {
                 }),
             )
             .await
-            .map_err(map_docker_error)
+            .map_err(map_docker_error)?;
+        if let Ok(mut tokens) = self.tokens.lock() {
+            tokens.remove(sandbox_id);
+        }
+        Ok(())
     }
 }
 
@@ -373,8 +392,9 @@ mod tests {
                 .any(|value| value == "HTTP_PROXY=http://egress-proxy:3128")
         );
         assert!(
-            env.iter()
-                .any(|value| value == "AILAB_SCM_TOKEN=short-token")
+            !env.iter()
+                .any(|value| value.starts_with("AILAB_SCM_TOKEN=")),
+            "the token must be injected per-exec, not into the whole sandbox"
         );
         let debug = format!("{spec:?}");
         assert!(!debug.contains("short-token"));
