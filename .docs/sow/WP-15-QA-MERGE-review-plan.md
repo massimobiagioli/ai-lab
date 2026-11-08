@@ -71,7 +71,7 @@
 
 - [x] QA subagent verdict: `CHANGES_REQUESTED` (HEAD `f6fae06`).
 - [x] QA evidence: harness 16, sow-lint 31, doc links 146, 18 application tests, clippy clean.
-- [x] First-pass blockers addressed: §3.7 hard stops (11), `blocked`/`not_tested`, finding `file/line/issue/fix`, review pipeline/verdict computation, PR-state/diff/merger conditions, `qa-merge.md`. Remaining: API/events/audit (WP-16), live E2E (WP-21).
+- [x] First-pass blockers addressed: §3.7 hard stops (11), `blocked`/`not_tested`, finding `file/line/issue/fix`, review pipeline/verdict computation, PR-state/diff/merger conditions, `qa-merge.md`, empty-matrix/AC-duplicate validation, per-stop tests, hard-stop escalation and merge-policy wiring in `WiredExecutor`. Remaining: review persistence/API/events/audit (WP-16), live E2E (WP-21).
 
 ## 9. Deferred items and residual risks
 

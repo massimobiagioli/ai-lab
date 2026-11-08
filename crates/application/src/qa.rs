@@ -17,7 +17,6 @@ pub enum ReviewVerdict {
 
 /// Finding severity.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
 pub enum FindingSeverity {
     /// Release blocker.
     P0,
@@ -80,6 +79,10 @@ pub struct ReviewRecord {
     pub reviewer_id: String,
     /// Reviewed head SHA.
     pub head_sha: String,
+    /// One-line summary.
+    pub summary: String,
+    /// Blocked reason, when blocked.
+    pub blocked_reason: Option<String>,
     /// Verdict.
     pub verdict: ReviewVerdict,
     /// Findings.
@@ -101,6 +104,12 @@ impl ReviewRecord {
                 "QA verdict is not APPROVED",
             ));
         }
+        if self.head_sha.is_empty() {
+            return Err(MergeViolation::new(
+                "MISSING_HEAD_SHA",
+                "the review must record the head SHA",
+            ));
+        }
         if self.acceptance.is_empty()
             || self
                 .acceptance
@@ -110,6 +119,17 @@ impl ReviewRecord {
             return Err(MergeViolation::new(
                 "AC_NOT_PASS",
                 "every acceptance criterion must pass",
+            ));
+        }
+        let unique: std::collections::BTreeSet<&str> = self
+            .acceptance
+            .iter()
+            .map(|result| result.criterion.as_str())
+            .collect();
+        if unique.len() != self.acceptance.len() {
+            return Err(MergeViolation::new(
+                "AC_DUPLICATE",
+                "every acceptance criterion must appear exactly once",
             ));
         }
         if self
@@ -218,16 +238,23 @@ impl ReviewPipeline {
         reviewer_id: impl Into<String>,
         head_sha: impl Into<String>,
     ) -> ReviewRecord {
+        let acceptance = self.acceptance;
+        let findings = self.findings;
         let mut record = ReviewRecord {
             review_id: review_id.into(),
             run_id: run_id.into(),
             reviewer_id: reviewer_id.into(),
             head_sha: head_sha.into(),
+            summary: format!("{} criteria, {} findings", acceptance.len(), findings.len()),
+            blocked_reason: None,
             verdict: ReviewVerdict::Approved,
-            findings: self.findings,
-            acceptance: self.acceptance,
+            findings,
+            acceptance,
         };
         record.verdict = record.compute_verdict();
+        if record.verdict == ReviewVerdict::Blocked {
+            record.blocked_reason = Some("P0 finding".to_owned());
+        }
         record
     }
 }
@@ -426,7 +453,7 @@ impl ReworkLoop {
     /// Record a changes-requested round.
     pub const fn changes_requested(&mut self) -> ReworkOutcome {
         self.rounds = self.rounds.saturating_add(1);
-        if self.rounds >= self.max_rounds {
+        if self.rounds > self.max_rounds {
             ReworkOutcome::Icebox
         } else {
             ReworkOutcome::Rework
@@ -740,6 +767,7 @@ mod tests {
     #[test]
     fn rework_moves_to_icebox_after_three_rounds() {
         let mut rework = ReworkLoop::default();
+        assert_eq!(rework.changes_requested(), ReworkOutcome::Rework);
         assert_eq!(rework.changes_requested(), ReworkOutcome::Rework);
         assert_eq!(rework.changes_requested(), ReworkOutcome::Rework);
         assert_eq!(rework.changes_requested(), ReworkOutcome::Icebox);

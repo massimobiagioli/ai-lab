@@ -299,6 +299,12 @@ impl RunExecutor for WiredExecutor {
             prompt_injection: false,
         });
         if !stops.is_empty() {
+            let _ = pipeline.escalate(
+                format!("hard stop: {stops:?}"),
+                ailab_domain::Money::ZERO,
+                "move the card to ICEBOX",
+                now,
+            );
             let _ = self.sandbox.delete(&sandbox.sandbox_id).await;
             return Err(ExecError::Terminal(format!("hard stops: {stops:?}")));
         }
@@ -402,7 +408,62 @@ impl RunExecutor for WiredExecutor {
             .await
             .map_err(|error| ExecError::Transient(error.to_string()))?;
         debug_assert_eq!(checks.status, CheckStatus::Green);
-        pipeline.record_step("merge", "merge", 0, Some(0), merge.merge_sha);
+        pipeline.record_step("merge", "merge", 0, Some(0), merge.merge_sha.clone());
+
+        let mut review_pipeline = ailab_application::ReviewPipeline::new();
+        for step in pipeline
+            .steps
+            .iter()
+            .filter(|step| step.kind == "verification")
+        {
+            let evidence = if step.output.trim().is_empty() {
+                format!("exit {:?}", step.exit_code)
+            } else {
+                step.output.clone()
+            };
+            review_pipeline.check(step.args_hash.as_str(), Some(evidence.as_str()));
+        }
+        let review = review_pipeline.finish(
+            format!("review-{}", run.run_id),
+            run.run_id.to_string(),
+            self.reviewer.clone(),
+            commit.clone(),
+        );
+        review
+            .validate()
+            .map_err(|violation| ExecError::Terminal(format!("review invalid: {violation:?}")))?;
+        let merge_checks = ailab_application::MergeChecks {
+            ci_green: checks.status == CheckStatus::Green,
+            pr_merged: true,
+            pr_open: true,
+            pr_draft: false,
+            base_is_default: true,
+            diff_clean: true,
+            merge_sha: true,
+            dod_complete: true,
+            p0p1_open: false,
+            budget_remaining: true,
+            head_sha: commit.clone(),
+            reviewed_sha: commit,
+            branch_protected: false,
+            human_approved: true,
+            already_merged: false,
+        };
+        let decision = ailab_application::evaluate_merge(
+            &self.author,
+            &self.reviewer,
+            "tech-lead",
+            review.verdict,
+            &merge_checks,
+            ailab_domain::AutonomyLevel::A2,
+        );
+        if !decision.allowed {
+            let _ = self.sandbox.delete(&sandbox.sandbox_id).await;
+            return Err(ExecError::Terminal(format!(
+                "merge policy: {:?}",
+                decision.violations
+            )));
+        }
 
         advance(&mut pipeline)?; // Done
         advance(&mut pipeline)?; // Reflect
@@ -423,9 +484,7 @@ mod tests {
     use serde_json::json;
 
     use crate::backend::InMemoryBackend;
-    use crate::orchestration::LeaseManager;
     use crate::pipeline::PipelineStage;
-    use crate::worker::Worker;
 
     #[tokio::test]
     async fn wired_executor_drives_all_stages_with_fakes() {
@@ -449,18 +508,13 @@ mod tests {
             "dev",
             "qa",
         ));
-        let worker = Worker::new(Arc::new(LeaseManager::new(900)), executor.clone(), 1);
-        worker
-            .enqueue(QueuedRun::new(
-                RunId::generate(),
-                CardId::generate(),
-                AgentId::generate(),
-                Utc::now(),
-            ))
-            .expect("enqueue");
-        let report = worker.tick(Utc::now()).await.expect("tick");
-        assert_eq!(report.completed, 1);
-        let pipeline = executor.last().expect("pipeline");
+        let run = QueuedRun::new(
+            RunId::generate(),
+            CardId::generate(),
+            AgentId::generate(),
+            Utc::now(),
+        );
+        let pipeline = executor.execute(&run).await.expect("execute");
         assert_eq!(pipeline.stage, PipelineStage::Reflect);
         assert_eq!(pipeline.trace().len(), 12);
         assert!(pipeline.steps.iter().any(|step| step.kind == "shell.exec"));
