@@ -102,7 +102,7 @@ test: ## Rust and frontend unit/integration tests
 typecheck: ## Type-check the frontend without emitting
 	$(WEB) npx tsc -p tsconfig.app.json --noEmit
 
-check: fmt-check lint typecheck test sow-lint docs-check arch-fitness crate-fitness compose-validate compose-isolation ## Fast local gate
+check: fmt-check lint typecheck test sow-lint docs-check openapi-drift arch-fitness crate-fitness compose-validate compose-isolation ## Fast local gate
 	@echo "check: OK"
 
 frontend-build: ## Build the Angular app and enforce budgets
@@ -135,6 +135,9 @@ restore-drill: ## Restore into a scratch database and verify (WP-03/WP-20)
 
 openapi: ## Regenerate OpenAPI and client types (WP-16)
 	scripts/gen-openapi.sh
+
+openapi-drift: ## Fail when an OpenAPI path is not served by the router
+	.tools/check-openapi-drift.py
 
 asyncapi: ## Regenerate AsyncAPI (WP-16)
 	scripts/gen-asyncapi.sh

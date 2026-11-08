@@ -340,7 +340,7 @@ impl AppState {
     /// Build with a specific store and optional bearer token.
     #[must_use]
     pub fn with_store_and_token(store: Arc<dyn RunStore>, token: Option<String>) -> Self {
-        let (hub, _) = broadcast::channel(1_024);
+        let (hub, _) = broadcast::channel(256);
         Self {
             store,
             limiter: Arc::new(RateLimiter::new(RateLimitPolicy::default())),
@@ -1012,11 +1012,10 @@ async fn list_events(
     if let Err(response) = enforce(&state, &headers, RateLimitKind::Read) {
         return response;
     }
-    let lab_id = if query.lab_id.is_empty() {
-        "default"
-    } else {
-        &query.lab_id
-    };
+    if query.lab_id.is_empty() {
+        return problem(DomainError::validation("lab_id", "lab_id is required"));
+    }
+    let lab_id = query.lab_id.as_str();
     let after = query.after.unwrap_or(query.since);
     let limit = query.limit.unwrap_or(200).clamp(1, 1_000) as usize;
     let mut events = state.store.events_after(lab_id, after).await;
