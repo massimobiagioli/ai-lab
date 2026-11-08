@@ -324,6 +324,194 @@ pub trait ScmProvider: Send + Sync {
     async fn comment(&self, repo: &RepoRef, number: u64, body: &str) -> Result<(), ScmError>;
 }
 
+/// In-memory SCM provider for tests and the pipeline E2E.
+#[derive(Default)]
+pub struct FakeScm {
+    inner: Mutex<FakeScmState>,
+}
+
+#[derive(Default)]
+struct FakeScmState {
+    branches: Vec<String>,
+    commits: Vec<String>,
+    prs: Vec<PullRequest>,
+    reviews: Vec<(u64, ReviewVerdict)>,
+    merges: Vec<String>,
+    comments: Vec<String>,
+}
+
+impl FakeScm {
+    /// Number of branches created.
+    #[must_use]
+    pub fn branch_count(&self) -> usize {
+        self.inner.lock().map_or(0, |state| state.branches.len())
+    }
+
+    /// Number of commits.
+    #[must_use]
+    pub fn commit_count(&self) -> usize {
+        self.inner.lock().map_or(0, |state| state.commits.len())
+    }
+
+    /// Number of pull requests.
+    #[must_use]
+    pub fn pr_count(&self) -> usize {
+        self.inner.lock().map_or(0, |state| state.prs.len())
+    }
+
+    /// Number of merges.
+    #[must_use]
+    pub fn merge_count(&self) -> usize {
+        self.inner.lock().map_or(0, |state| state.merges.len())
+    }
+}
+
+#[async_trait]
+impl ScmProvider for FakeScm {
+    async fn verify_credential(&self, _repo: &RepoRef) -> Result<CredentialStatus, ScmError> {
+        Ok(CredentialStatus {
+            state: CredentialState::Active,
+            scopes: vec!["repo".to_owned()],
+        })
+    }
+
+    async fn create_branch(
+        &self,
+        _repo: &RepoRef,
+        branch: &BranchName,
+        _from_sha: &str,
+    ) -> Result<(), ScmError> {
+        let mut state = self
+            .inner
+            .lock()
+            .map_err(|_| ScmError::Transport("fake scm lock poisoned".to_owned()))?;
+        if !state
+            .branches
+            .iter()
+            .any(|existing| existing == branch.as_str())
+        {
+            state.branches.push(branch.as_str().to_owned());
+        }
+        drop(state);
+        Ok(())
+    }
+
+    async fn commit_files(
+        &self,
+        _repo: &RepoRef,
+        _branch: &BranchName,
+        message: &str,
+        files: &[FileChange],
+    ) -> Result<String, ScmError> {
+        if files.is_empty() {
+            return Err(ScmError::Validation("no files to commit".to_owned()));
+        }
+        ensure_commit_trailers(message)?;
+        let mut state = self
+            .inner
+            .lock()
+            .map_err(|_| ScmError::Transport("fake scm lock poisoned".to_owned()))?;
+        let sha = format!("commit-{}", state.commits.len() + 1);
+        state.commits.push(sha.clone());
+        drop(state);
+        Ok(sha)
+    }
+
+    async fn open_pull_request(
+        &self,
+        _repo: &RepoRef,
+        request: &PullRequestRequest,
+    ) -> Result<PullRequest, ScmError> {
+        if request.author == request.reviewer {
+            return Err(ScmError::Validation(
+                "reviewer must differ from the author".to_owned(),
+            ));
+        }
+        let mut state = self
+            .inner
+            .lock()
+            .map_err(|_| ScmError::Transport("fake scm lock poisoned".to_owned()))?;
+        let number = u64::try_from(state.prs.len() + 1).unwrap_or(u64::MAX);
+        let pr = PullRequest {
+            number,
+            url: format!("https://example.test/pull/{number}"),
+            head: request.head.as_str().to_owned(),
+            base: request.base.clone(),
+        };
+        state.prs.push(pr.clone());
+        drop(state);
+        Ok(pr)
+    }
+
+    async fn get_checks(&self, _repo: &RepoRef, _sha: &str) -> Result<CheckSummary, ScmError> {
+        Ok(CheckSummary {
+            status: CheckStatus::Green,
+            total: 1,
+            passed: 1,
+            failed: 0,
+            pending: 0,
+        })
+    }
+
+    async fn submit_review(
+        &self,
+        _repo: &RepoRef,
+        pr_number: u64,
+        verdict: ReviewVerdict,
+        author: &str,
+        reviewer: &str,
+    ) -> Result<(), ScmError> {
+        if author == reviewer {
+            return Err(ScmError::Forbidden(
+                "separation of duties: reviewer is the author".to_owned(),
+            ));
+        }
+        let mut state = self
+            .inner
+            .lock()
+            .map_err(|_| ScmError::Transport("fake scm lock poisoned".to_owned()))?;
+        state.reviews.push((pr_number, verdict));
+        drop(state);
+        Ok(())
+    }
+
+    async fn merge_pull_request(
+        &self,
+        _repo: &RepoRef,
+        _pr_number: u64,
+        author: &str,
+        reviewer: &str,
+        checks: CheckStatus,
+    ) -> Result<MergeOutcome, ScmError> {
+        if author == reviewer {
+            return Err(ScmError::Forbidden(
+                "separation of duties: merger is the author".to_owned(),
+            ));
+        }
+        if checks != CheckStatus::Green {
+            return Err(ScmError::Conflict("checks are not green".to_owned()));
+        }
+        let mut state = self
+            .inner
+            .lock()
+            .map_err(|_| ScmError::Transport("fake scm lock poisoned".to_owned()))?;
+        let sha = format!("merge-{}", state.merges.len() + 1);
+        state.merges.push(sha.clone());
+        drop(state);
+        Ok(MergeOutcome { merge_sha: sha })
+    }
+
+    async fn comment(&self, _repo: &RepoRef, _number: u64, body: &str) -> Result<(), ScmError> {
+        let mut state = self
+            .inner
+            .lock()
+            .map_err(|_| ScmError::Transport("fake scm lock poisoned".to_owned()))?;
+        state.comments.push(body.to_owned());
+        drop(state);
+        Ok(())
+    }
+}
+
 /// PR conventions.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PrConventions {

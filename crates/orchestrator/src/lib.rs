@@ -9,4 +9,5 @@ pub mod orchestration;
 pub mod pipeline;
 pub mod runner_api;
 pub mod sandbox;
+pub mod wired;
 pub mod worker;

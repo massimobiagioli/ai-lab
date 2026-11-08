@@ -140,6 +140,8 @@ dependencies = [
  "ailab-application",
  "ailab-domain",
  "ailab-infrastructure",
+ "ailab-llm",
+ "ailab-scm",
  "async-trait",
  "axum",
  "bollard",

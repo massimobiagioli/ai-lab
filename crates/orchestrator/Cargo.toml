@@ -19,6 +19,8 @@ workspace = true
 ailab-application = { path = "../application" }
 ailab-domain = { path = "../domain" }
 ailab-infrastructure = { path = "../infrastructure" }
+ailab-llm = { path = "../llm" }
+ailab-scm = { path = "../scm" }
 async-trait = "0.1"
 axum = "0.8"
 bollard = "0.18"

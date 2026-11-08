@@ -47,7 +47,11 @@ A card is eligible when it is `READY`, the agent is active, the budget is availa
 
 `crates/orchestrator/src/worker.rs` implements the scheduler tick: reap expired leases, pop queued runs, acquire the lease, execute through the `RunExecutor` port (LLM/sandbox/SCM are injected), release the lease, and requeue retryable failures. The tick respects `WORKER_CONCURRENCY` and an active lease keeps a run queued for the next tick.
 
-## 9. Pipeline, loops and recovery
+## 9. Port wiring
+
+`crates/orchestrator/src/wired.rs` implements `WiredExecutor`: it drives the 13 stages through the `LlmProvider` (plan), `SandboxBackend` (implement/verify exec) and `ScmProvider` (branch, commit, PR, review, merge), records a step per stage, attaches the handoff and deletes the sandbox. The deterministic E2E uses `FakeLlm`, `FakeScm` and the in-memory sandbox backend and asserts one branch, commit, PR and merge.
+
+## 10. Pipeline, loops and recovery
 
 `crates/orchestrator/src/pipeline.rs` implements the 13 normative stages (`lease → context → plan → implement → verify → commit → push → pr → transition → review → merge → done → reflect`) with:
 
@@ -61,14 +65,14 @@ A card is eligible when it is `READY`, the agent is active, the budget is availa
 
 `crates/orchestrator/src/context.rs` builds a token-budgeted context bundle: the task packet is never dropped, high-priority overflow is summarized and low-priority overflow is omitted, deterministically.
 
-## 10. Deferred to the WP-13 follow-up
+## 11. Deferred to the WP-13 follow-up
 
 - Postgres-backed leases/heartbeats and the worker scheduler loop.
 - Real adapters for the pipeline stages (LLM/sandbox/SCM) and event emission.
 - Worker concurrency, dead-letter persistence and metrics/traces.
 - Integration/chaos suites in WP-21.
 
-## 11. References
+## 12. References
 
 - `.docs/sow/WP-13-ORCHESTRATION.md`
 - `.docs/technical-specification/AI-LAB-TECHNICAL-SPECIFICATION.md` §8, §18

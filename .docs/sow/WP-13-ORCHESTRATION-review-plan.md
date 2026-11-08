@@ -25,15 +25,15 @@
 - [x] Run state machine, attempts/retries/backoff/dead letter — state machine + retry classification; dead-letter persistence deferred.
 - [x] Pipeline stages 1–13 with budgets — `RunPipeline`.
 - [x] Context builder with token budget/citations — `ContextBundle` builder.
-- [x] Agent loop bounds and step recording — `LoopLimits`, `RunStep`; tool authorization is WP-14.
-- [x] Verification/review feedback loop (≤ 3) — `fail_verification`, `request_changes`.
-- [x] Commit/push/PR idempotency keys and handoff states — `idempotency_key`, `Handoff`.
+- [x] Agent loop bounds and step recording + wired executor — `LoopLimits`, `RunStep`, `WiredExecutor` (LLM/sandbox/SCM); tool authorization is WP-14.
+- [x] Verification/review feedback loop (≤ 3) and wired verification — `fail_verification`, `request_changes`, sandbox exec in `WiredExecutor`.
+- [x] Commit/push/PR via the SCM port + idempotency keys and handoff — `WiredExecutor`, `idempotency_key`, `Handoff`.
 - [x] Handoff/review/merge orchestration — `Handoff`, pipeline stages.
 - [x] Crash recovery/reconciliation — `reconcile` + `ExternalPrState::recovery`.
 - [x] Cancellation/pause — `request_cancel`, checkpoints; sandbox destruction is WP-14.
 - [x] Escalation ladder + human intervention records — `escalate`, `HumanDecision`.
 - [x] Run events mapping + trace/step recording — `PipelineStage::event`, `RunStep`.
-- [x] Integration/idempotency/bounds tests — 41 orchestrator tests; real LLM/SCM E2E in WP-21.
+- [x] Integration/idempotency/bounds/wiring tests — 43 orchestrator tests including the FakeLlm/FakeScm E2E; load/chaos in WP-21.
 - [x] `.docs/product/orchestration.md` — present, but it documents the deferrals.
 
 ## 4. Acceptance criteria
@@ -42,13 +42,13 @@
 - [x] AC2 45 s heartbeat timeout requeues with backoff — `reconcile` + `retry_decision`.
 - [x] AC3 agent loop stops at 40 tool calls / 25 iterations / 45 min — `RunPipeline` bounds.
 - [x] AC4 failed verification loops ≤ 3 — `fail_verification`.
-- [x] AC5 exactly one PR/review/merge; retries dedupe — idempotency keys + handoff; adapter dedupe WP-12/WP-16.
+- [x] AC5 exactly one PR/review/merge; retries dedupe — `WiredExecutor` opens one PR, one review and one merge; idempotency keys + handoff; adapter dedupe WP-12/WP-16.
 - [x] AC6 worker kill recovers from external PR state — `ExternalPrState::recovery`.
 - [x] AC7 budget exhaustion stops with `BUDGET_EXCEEDED` and pauses the lab — `RunBudget::charge` typed code + `lab_paused`; test.
 - [x] AC8 cancellation stops at a tool boundary — `request_cancel` + checkpoint.
 - [x] AC9 DONE only after QA/CI/merge/DoD — Kanban domain (WP-09).
 - [x] AC10 complete step trace + trace_id — `RunStep` + `trace_id`.
-- [x] AC11 `FakeLlm` + `FakeScm` E2E — deterministic pipeline/loop/recovery tests; full E2E in WP-21.
+- [x] AC11 `FakeLlm` + `FakeScm` E2E — `WiredExecutor` drives all stages through the ports; deterministic E2E asserts one branch/commit/PR/merge.
 
 ## 5. Implementation and tests
 

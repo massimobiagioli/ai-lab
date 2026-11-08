@@ -659,6 +659,54 @@ fn parse_response(body: &str, model: &str) -> Result<LlmResponse, LlmError> {
     })
 }
 
+/// Deterministic LLM provider for tests and the pipeline E2E.
+pub struct FakeLlm {
+    responses: Mutex<std::collections::VecDeque<String>>,
+    calls: std::sync::atomic::AtomicUsize,
+}
+
+impl FakeLlm {
+    /// Build from an ordered set of responses.
+    #[must_use]
+    pub fn new(responses: Vec<String>) -> Self {
+        Self {
+            responses: Mutex::new(responses.into_iter().collect()),
+            calls: std::sync::atomic::AtomicUsize::new(0),
+        }
+    }
+
+    /// Number of calls served.
+    #[must_use]
+    pub fn calls(&self) -> usize {
+        self.calls.load(std::sync::atomic::Ordering::SeqCst)
+    }
+}
+
+#[async_trait]
+impl LlmProvider for FakeLlm {
+    async fn complete(&self, request: &LlmRequest) -> Result<LlmResponse, LlmError> {
+        self.calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        let content = self
+            .responses
+            .lock()
+            .map_err(|_| LlmError::Transport("fake llm lock poisoned".to_owned()))?
+            .pop_front()
+            .ok_or_else(|| LlmError::Transport("fake llm has no response".to_owned()))?;
+        Ok(LlmResponse {
+            content,
+            usage: Usage {
+                tokens_in: 10,
+                tokens_out: 5,
+            },
+            model: request.model.clone(),
+        })
+    }
+
+    async fn health(&self) -> ProviderHealth {
+        ProviderHealth::Healthy
+    }
+}
+
 /// Validate a structured output.
 pub trait Validate {
     /// Return an error when the value is invalid.
