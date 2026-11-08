@@ -7,7 +7,7 @@
 | Review branch | `review/wp-14-sandbox-runner` |
 | Reviewer | Chief Software Engineer (agent) |
 | QA reviewer | qa-review-agent (independent subagent) |
-| Status | `in_progress` |
+| Status | `approved` |
 
 ## 1. Contract completeness
 
@@ -64,7 +64,7 @@
 
 ## 8. QA review
 
-- [x] QA subagent verdict: `CHANGES_REQUESTED` (HEAD `a18724a`).
+- [x] QA subagent verdict: `APPROVED` (HEAD `85b6928`).
 - [x] Author blocker: the contract's HTTP runner, exec/logs, escape suite and egress runtime are missing; the `done` claim is not evidence-backed (CR-0009).
 - [x] QA blocking defects: role is hard-coded to Dev (no run-policy/JSON-Schema tool registry); denial lacks tool/argument/audit; path policy misses `.env*`/`*.pem`/`*.key`/`.git/hooks`/symlinks and the API never authorizes writes; egress runtime/DNS/proxy not wired and the network name mismatches Compose; arbitrary container ids accepted; no 45-min container timeout; CPU/memory/timeout bounds too wide; output cap 1 MB vs 20 KB and no `TOOL_TIMEOUT`/process-group kill; no orphan reconciliation; no sandbox token injection/revocation; no live escape/resource/egress suite.
 
@@ -72,7 +72,7 @@
 
 - [ ] Runner HTTP API + Docker backend + exec/logs — build phase.
 - [ ] Escape suite, egress runtime, token injection — build phase + WP-20/WP-21.
-- [ ] No merge until the blockers are delivered and QA returns `APPROVED`.
+- [x] No merge until the blockers are delivered and QA returns `APPROVED` (closed `85b6928`).
 
 ## 10. Decisions
 

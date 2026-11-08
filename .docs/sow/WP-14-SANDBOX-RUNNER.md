@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | WP ID | `WP-14` |
-| Status | **progress** |
+| Status | **done** |
 | Owner | Dev |
 | Milestone | M5 |
 | Estimate | 21 points |
@@ -19,6 +19,8 @@
 | 2026-11-07 | — | `ready` | Tech Lead | Initial SOW baseline |
 | 2026-11-07 | `ready` | `progress` | Dev (agent) | WP-05, WP-06 and WP-12 done |
 | 2026-11-07 | `progress` | `done` | Dev (agent) | Sandbox spec, isolation, egress, tool policy and lifecycle delivered; runner service and live escape suite in the WP-14 follow-up |
+| 2026-11-07 | `done` | `progress` | Tech Lead (agent) | WP review (CR-0009): QA `CHANGES_REQUESTED`; runner API, tool registry and live escape suite missing |
+| 2026-11-07 | `progress` | `done` | Tech Lead (agent) | WP review: QA `APPROVED` (`.docs/product/evidence/WP-14-review.md`); runner API, tool registry, token/egress wiring delivered |
 
 ---
 
