@@ -20,7 +20,7 @@ use crate::backend::{BackendError, CreatedSandbox, ExecOutcome, SandboxBackend, 
 use crate::sandbox::{EgressPolicy, SandboxSpec, ToolCall};
 
 /// Create-sandbox request.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateSandboxRequest {
     /// Run id (idempotency key).
     pub run_id: String,
@@ -55,7 +55,7 @@ pub type SandboxStatus = SandboxView;
 pub type ExecResponse = ExecOutcome;
 
 /// Exec request.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExecRequest {
     /// Command and arguments.
     pub argv: Vec<String>,

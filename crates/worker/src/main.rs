@@ -7,6 +7,7 @@ use std::time::Duration;
 use ailab_llm::{FakeLlm, LlmProvider};
 use ailab_orchestrator::backend::{InMemoryBackend, SandboxBackend};
 use ailab_orchestrator::postgres::{PostgresCancelProbe, PostgresScheduler, PostgresWorker};
+use ailab_orchestrator::runner_client::HttpSandboxBackend;
 use ailab_orchestrator::wired::WiredExecutor;
 use ailab_orchestrator::worker::RunExecutor;
 use ailab_scm::{FakeScm, RepoRef, ScmProvider};
@@ -30,7 +31,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let scheduler = PostgresScheduler::connect(&database_url).await?;
     let llm: Arc<dyn LlmProvider> = Arc::new(FakeLlm::new(Vec::new()));
     let scm: Arc<dyn ScmProvider> = Arc::new(FakeScm::default());
-    let sandbox: Arc<dyn SandboxBackend> = Arc::new(InMemoryBackend::new());
+    let sandbox: Arc<dyn SandboxBackend> = match HttpSandboxBackend::from_env() {
+        Some(client) => Arc::new(client?),
+        None => Arc::new(InMemoryBackend::new()),
+    };
     let probe = Arc::new(PostgresCancelProbe::new(scheduler.pool().clone()));
     let executor: Arc<dyn RunExecutor> = Arc::new(
         WiredExecutor::new(

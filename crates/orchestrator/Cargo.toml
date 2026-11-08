@@ -16,6 +16,7 @@ description = "AI-Lab orchestrator crate"
 workspace = true
 
 [dependencies]
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 ailab-application = { path = "../application" }
 ailab-domain = { path = "../domain" }
 ailab-infrastructure = { path = "../infrastructure" }

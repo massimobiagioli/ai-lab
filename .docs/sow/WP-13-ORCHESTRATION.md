@@ -382,3 +382,4 @@ Outputs are stored in `run_steps` (type `verification`) and attached to the PR b
 2026-11-07 | build | crates/orchestrator/src/{worker,wired,postgres}.rs, crates/scm/src/lib.rs | merged recovery; persisted lab pause; BUDGET_EXCEEDED; 53/11 tests | steps-on-failure/events/metrics/adapters open | QA review
 2026-11-07 | build | crates/orchestrator/src/{worker,wired,postgres}.rs, crates/scm/src/lib.rs | merged SHA recovery; failed-run step snapshots; 53/11 tests | context/metrics/adapters open | QA review
 2026-11-07 | build | crates/orchestrator/src/postgres.rs | merged recovery allows READY→DONE; reaped attempt>=4 dead-letters | runner-client/open recovery open | QA review
+2026-11-07 | build | crates/orchestrator/src/runner_client.rs, crates/worker/src/main.rs | HTTP runner client + contract test; worker selects it via env; 54 tests | context/open-resume/metrics/E2E open | QA review

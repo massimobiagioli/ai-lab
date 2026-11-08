@@ -9,6 +9,7 @@ pub mod orchestration;
 pub mod pipeline;
 pub mod postgres;
 pub mod runner_api;
+pub mod runner_client;
 pub mod sandbox;
 pub mod tools;
 pub mod wired;

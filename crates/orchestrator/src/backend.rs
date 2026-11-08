@@ -7,7 +7,7 @@ use std::sync::Mutex;
 use ailab_domain::AgentRole;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::sandbox::{Sandbox, SandboxSpec, SandboxState, ToolCall, ToolPolicy};
@@ -33,7 +33,7 @@ pub enum BackendError {
 }
 
 /// A created sandbox.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CreatedSandbox {
     /// Sandbox id.
     pub sandbox_id: String,
@@ -44,7 +44,7 @@ pub struct CreatedSandbox {
 }
 
 /// Sandbox status view.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SandboxView {
     /// Sandbox id.
     pub sandbox_id: String,
@@ -59,7 +59,7 @@ pub struct SandboxView {
 }
 
 /// Exec result.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ExecOutcome {
     /// Exit code.
     pub exit_code: i32,
