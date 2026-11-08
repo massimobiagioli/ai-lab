@@ -2,5 +2,7 @@
 //! control-plane types. The runner binary is built from this crate.
 #![forbid(unsafe_code)]
 
+pub mod context;
 pub mod orchestration;
+pub mod pipeline;
 pub mod sandbox;

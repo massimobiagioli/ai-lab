@@ -358,3 +358,4 @@ Outputs are stored in `run_steps` (type `verification`) and attached to the PR b
 2026-11-07 | T01 | crates/orchestrator/src/orchestration.rs | eligibility, leases, run state, retries, budget, reconcile; 7 tests | — | T02
 2026-11-07 | T02 | .docs/product/orchestration.md | 12 orchestrator tests; clippy green | Postgres leases/worker pipeline deferred WP-13 follow-up | WP-15
 2026-11-07 | review | .docs/sow/WP-13-ORCHESTRATION-review-plan.md | 12 orchestrator tests; scheduler/lease/state/retry/budget/reconcile only | BLOCKED: pipeline, agent loop, verification, PR/handoff, telemetry, E2E (CR-0008) | WP-13 follow-up
+2026-11-07 | review-fix | crates/orchestrator/src/{pipeline,context}.rs, .docs/product/orchestration.md | 13-stage pipeline; context bundle; bounds; verify/review loops; handoff/recovery; cancellation; escalation; step trace; 28 tests | CR-0008 | QA review

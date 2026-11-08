@@ -43,14 +43,28 @@ A card is eligible when it is `READY`, the agent is active, the budget is availa
 
 `cargo test -p ailab-orchestrator` covers eligibility reasons, lease contention, expiry/reap, run transitions, retry classification, budget hard stop and reconciliation.
 
-## 8. Deferred to the WP-13 follow-up
+## 8. Pipeline, loops and recovery
 
-- Postgres-backed leases/heartbeats and the scheduler loop.
-- The full agent pipeline (plan → tools → tests → PR → review).
-- Worker concurrency, dead-letter persistence, event emission and metrics.
+`crates/orchestrator/src/pipeline.rs` implements the 13 normative stages (`lease → context → plan → implement → verify → commit → push → pr → transition → review → merge → done → reflect`) with:
+
+- per-stage and total wall-clock budgets, checked at every checkpoint;
+- loop bounds (40 tool calls, 25 iterations) and bounded verification (3) and review (3) reworks;
+- cancellation checkpoints between tool calls;
+- a step trace (`RunStep` with args hash, duration, exit status and output ≤ 20 KB) and one `trace_id`;
+- the structured `Handoff` object, escalation (last 20 steps + cost) and human-decision records;
+- idempotency keys (`run_id:operation:target`) and external-PR recovery (`merged → done`, `open → resume review`, `branch → resume push`, none → retry);
+- catalog event mapping (`delivery.run.started|step|completed`).
+
+`crates/orchestrator/src/context.rs` builds a token-budgeted context bundle: the task packet is never dropped, high-priority overflow is summarized and low-priority overflow is omitted, deterministically.
+
+## 9. Deferred to the WP-13 follow-up
+
+- Postgres-backed leases/heartbeats and the worker scheduler loop.
+- Real adapters for the pipeline stages (LLM/sandbox/SCM) and event emission.
+- Worker concurrency, dead-letter persistence and metrics/traces.
 - Integration/chaos suites in WP-21.
 
-## 9. References
+## 10. References
 
 - `.docs/sow/WP-13-ORCHESTRATION.md`
 - `.docs/technical-specification/AI-LAB-TECHNICAL-SPECIFICATION.md` §8, §18
