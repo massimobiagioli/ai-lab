@@ -83,7 +83,7 @@ pub trait RunStore: Send + Sync {
     /// Enqueue a run for a card.
     async fn enqueue_card(&self, card_id: &str) -> Result<RunView, StoreError>;
     /// Events after a sequence.
-    async fn events_after(&self, since: i64) -> Vec<EventEnvelope>;
+    async fn events_after(&self, lab_id: &str, since: i64) -> Vec<EventEnvelope>;
     /// Append an event to the backfill buffer.
     async fn append_event(&self, event: EventEnvelope);
 }
@@ -182,11 +182,14 @@ impl RunStore for InMemoryRunStore {
         Ok(run)
     }
 
-    async fn events_after(&self, since: i64) -> Vec<EventEnvelope> {
+    async fn events_after(&self, lab_id: &str, since: i64) -> Vec<EventEnvelope> {
         let Some(data) = self.data.lock().ok() else {
             return Vec::new();
         };
         crate::events_after(&data.events, since)
+            .into_iter()
+            .filter(|event| event.lab_id.to_string() == lab_id)
+            .collect()
     }
 
     async fn append_event(&self, event: EventEnvelope) {
@@ -455,10 +458,15 @@ fn enforce(state: &AppState, headers: &HeaderMap, kind: RateLimitKind) -> Result
     if state.limiter.allow(&rate_key(headers), kind) {
         Ok(())
     } else {
-        Err(problem(DomainError::policy(
-            "RATE_LIMITED",
-            "rate limit exceeded",
-        )))
+        let mut details =
+            ProblemDetails::from(DomainError::policy("RATE_LIMITED", "rate limit exceeded"));
+        details.status = 429;
+        Err((
+            StatusCode::TOO_MANY_REQUESTS,
+            [(axum::http::header::RETRY_AFTER, "60")],
+            Json(details),
+        )
+            .into_response())
     }
 }
 
@@ -605,6 +613,8 @@ async fn enqueue_run(
 #[derive(Debug, Clone, Deserialize, Default)]
 struct EventsQuery {
     #[serde(default)]
+    lab_id: String,
+    #[serde(default)]
     since: i64,
 }
 
@@ -658,7 +668,12 @@ async fn list_events(
     if let Err(response) = enforce(&state, &headers, RateLimitKind::Read) {
         return response;
     }
-    Json(state.store.events_after(query.since).await).into_response()
+    let lab_id = if query.lab_id.is_empty() {
+        "default"
+    } else {
+        &query.lab_id
+    };
+    Json(state.store.events_after(lab_id, query.since).await).into_response()
 }
 
 async fn get_metrics(
@@ -685,7 +700,7 @@ async fn handle_socket(mut socket: WebSocket, state: AppState) {
     let mut events = state.subscribe();
     let seq = state
         .store
-        .events_after(0)
+        .events_after("default", 0)
         .await
         .last()
         .map_or(0, |event| event.seq);
@@ -877,9 +892,10 @@ mod tests {
     async fn relay_drains_the_outbox_and_backfills_events() {
         let state = AppState::with_store(Arc::new(InMemoryRunStore::new()));
         let outbox = ailab_infrastructure::outbox::InMemoryOutbox::new();
+        let lab_id = LabId::generate();
         let event = DomainEvent::new(
             "kanban.card.moved",
-            LabId::generate(),
+            lab_id,
             Actor::system(),
             serde_json::json!({"x": 1}),
             Utc::now(),
@@ -894,7 +910,10 @@ mod tests {
         assert!(outbox.pending().await.expect("pending").is_empty());
         let app = router(state);
         let response = app
-            .oneshot(request("GET", "/api/v1/events?since=0"))
+            .oneshot(request(
+                "GET",
+                &format!("/api/v1/events?lab_id={lab_id}&since=0"),
+            ))
             .await
             .expect("response");
         assert_eq!(response.status(), StatusCode::OK);

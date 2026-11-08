@@ -31,6 +31,12 @@ pub struct ProblemDetails {
     /// Violations.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub violations: Vec<Violation>,
+    /// Request instance.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub instance: Option<String>,
+    /// Correlation trace id.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub trace_id: Option<String>,
 }
 
 impl From<DomainError> for ProblemDetails {
@@ -60,6 +66,8 @@ impl From<DomainError> for ProblemDetails {
             code: code.to_owned(),
             detail: error.to_string(),
             violations,
+            instance: None,
+            trace_id: None,
         }
     }
 }

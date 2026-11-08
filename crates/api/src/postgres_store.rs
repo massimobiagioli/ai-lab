@@ -182,11 +182,15 @@ impl RunStore for PostgresRunStore {
         self.fetch_run(run_id).await.ok_or(StoreError::Conflict)
     }
 
-    async fn events_after(&self, since: i64) -> Vec<EventEnvelope> {
+    async fn events_after(&self, lab_id: &str, since: i64) -> Vec<EventEnvelope> {
+        let Ok(lab) = Uuid::parse_str(lab_id) else {
+            return Vec::new();
+        };
         let rows = sqlx::query(
             "SELECT id, event_type, seq, lab_id, occurred_at, payload \
-             FROM domain_events WHERE seq > $1 ORDER BY seq LIMIT 200",
+             FROM domain_events WHERE lab_id = $1 AND seq > $2 ORDER BY seq LIMIT 200",
         )
+        .bind(lab)
         .bind(since)
         .fetch_all(&self.pool)
         .await
