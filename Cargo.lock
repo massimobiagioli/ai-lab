@@ -197,7 +197,13 @@ dependencies = [
 name = "ailab-worker"
 version = "0.1.0"
 dependencies = [
+ "ailab-domain",
  "ailab-infrastructure",
+ "ailab-llm",
+ "ailab-orchestrator",
+ "ailab-scm",
+ "chrono",
+ "tokio",
 ]
 
 [[package]]

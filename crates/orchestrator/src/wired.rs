@@ -72,12 +72,11 @@ impl WiredExecutor {
         pipeline: &mut RunPipeline,
         sandbox_id: &str,
         prompt: &str,
-        now: chrono::DateTime<Utc>,
     ) -> Result<(), ExecError> {
         let mut user = prompt.to_owned();
         loop {
             pipeline
-                .next_iteration(now)
+                .next_iteration(Utc::now())
                 .map_err(|error| ExecError::Terminal(error.to_string()))?;
             let response = self
                 .llm
@@ -95,7 +94,7 @@ impl WiredExecutor {
             }
             for call in &response.tool_calls {
                 pipeline
-                    .record_tool_call(now)
+                    .record_tool_call(Utc::now())
                     .map_err(|error| ExecError::Terminal(error.to_string()))?;
                 let (argv, cwd) = tool_call_to_exec(call)?;
                 let outcome = self
@@ -132,9 +131,10 @@ impl WiredExecutor {
         pipeline: &mut RunPipeline,
         sandbox_id: &str,
     ) -> Result<(), String> {
-        const COMMANDS: [(&str, &[&str]); 3] = [
+        const COMMANDS: [(&str, &[&str]); 4] = [
             ("fmt", &["cargo", "fmt", "--check"]),
             ("lint", &["cargo", "clippy", "-D", "warnings"]),
+            ("typecheck", &["cargo", "check", "--workspace"]),
             ("tests", &["cargo", "test"]),
         ];
         for (kind, argv) in COMMANDS {
@@ -164,6 +164,43 @@ impl WiredExecutor {
                     outcome.exit_code, outcome.stdout
                 ));
             }
+        }
+        let scan = self
+            .sandbox
+            .exec(
+                sandbox_id,
+                &ToolCall {
+                    argv: [
+                        "rg",
+                        "-n",
+                        "--hidden",
+                        "-g",
+                        "!.git",
+                        "-e",
+                        "AKIA[0-9A-Z]{16}",
+                        "-e",
+                        "BEGIN [A-Z ]*PRIVATE KEY",
+                        ".",
+                    ]
+                    .iter()
+                    .map(|arg| (*arg).to_owned())
+                    .collect(),
+                    cwd: "workspace".to_owned(),
+                    writes: Vec::new(),
+                },
+                120,
+            )
+            .await
+            .map_err(|error| error.to_string())?;
+        pipeline.record_step(
+            "verification",
+            "secrets",
+            scan.duration_ms,
+            Some(scan.exit_code),
+            scan.stdout.clone(),
+        );
+        if scan.exit_code == 0 && !scan.stdout.trim().is_empty() {
+            return Err(format!("[secrets] {}\n{}", scan.exit_code, scan.stdout));
         }
         Ok(())
     }
@@ -246,7 +283,7 @@ impl RunExecutor for WiredExecutor {
             .create(&spec, AgentRole::Dev)
             .await
             .map_err(|error| ExecError::Transient(error.to_string()))?;
-        self.run_agent_loop(&mut pipeline, &sandbox.sandbox_id, &bundle.render(), now)
+        self.run_agent_loop(&mut pipeline, &sandbox.sandbox_id, &bundle.render())
             .await?;
 
         advance(&mut pipeline)?; // Verify
@@ -268,7 +305,6 @@ impl RunExecutor for WiredExecutor {
                                 &mut pipeline,
                                 &sandbox.sandbox_id,
                                 &format!("Verification failed:\n{output}"),
-                                now,
                             )
                             .await?;
                             advance(&mut pipeline)?; // Implement -> Verify

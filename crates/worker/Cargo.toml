@@ -12,4 +12,10 @@ description = "AI-Lab worker crate"
 workspace = true
 
 [dependencies]
+ailab-domain = { path = "../domain" }
 ailab-infrastructure = { path = "../infrastructure" }
+ailab-llm = { path = "../llm" }
+ailab-orchestrator = { path = "../orchestrator" }
+ailab-scm = { path = "../scm" }
+chrono = { version = "0.4", features = ["serde"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }

@@ -1,13 +1,19 @@
-//! AI-Lab `worker` binary.
-//!
-//! The scheduler and run pipeline land with WP-13. WP-03 delivers the platform
-//! health probe and keeps the process alive for the container health model.
+//! AI-Lab `worker` binary: scheduler, leases and the run pipeline.
 #![forbid(unsafe_code)]
 
+use std::sync::Arc;
 use std::time::Duration;
 
+use ailab_llm::{FakeLlm, LlmProvider};
+use ailab_orchestrator::backend::{InMemoryBackend, SandboxBackend};
+use ailab_orchestrator::postgres::{PostgresScheduler, PostgresWorker};
+use ailab_orchestrator::wired::WiredExecutor;
+use ailab_orchestrator::worker::RunExecutor;
+use ailab_scm::{FakeScm, RepoRef, ScmProvider};
+
 #[allow(clippy::bool_to_int_with_if)]
-fn main() {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if std::env::args().any(|arg| arg == "healthcheck") {
         let healthy = ailab_infrastructure::health::check_urls(
             &["AILAB_DATABASE_URL", "AILAB_REDIS_URL", "AILAB_RUNNER_URL"],
@@ -16,7 +22,29 @@ fn main() {
         std::process::exit(if healthy { 0 } else { 1 });
     }
 
+    let Ok(database_url) = std::env::var("AILAB_DATABASE_URL") else {
+        loop {
+            tokio::time::sleep(Duration::from_secs(3_600)).await;
+        }
+    };
+    let scheduler = PostgresScheduler::connect(&database_url).await?;
+    let llm: Arc<dyn LlmProvider> = Arc::new(FakeLlm::new(Vec::new()));
+    let scm: Arc<dyn ScmProvider> = Arc::new(FakeScm::default());
+    let sandbox: Arc<dyn SandboxBackend> = Arc::new(InMemoryBackend::new());
+    let executor: Arc<dyn RunExecutor> = Arc::new(WiredExecutor::new(
+        llm,
+        scm,
+        sandbox,
+        RepoRef::parse("ai-lab/demo")?,
+        "WP-00",
+        "agent-dev",
+        "agent-qa",
+    ));
+    let worker = PostgresWorker::new(scheduler, executor, 4);
     loop {
-        std::thread::sleep(Duration::from_secs(3600));
+        if let Err(error) = worker.tick(chrono::Utc::now()).await {
+            eprintln!("worker tick failed: {error}");
+        }
+        tokio::time::sleep(Duration::from_secs(5)).await;
     }
 }
