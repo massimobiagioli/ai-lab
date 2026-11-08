@@ -1,9 +1,11 @@
-//! Wiring of the run pipeline to the LLM, sandbox and SCM ports.
+//! Wiring of the run pipeline to the LLM, sandbox and SCM ports, including the
+//! bounded agent loop and the ordered verification runner.
 
+use std::fmt::Write as _;
 use std::sync::{Arc, Mutex};
 
-use ailab_domain::AgentId;
-use ailab_llm::{LlmProvider, LlmRequest};
+use ailab_domain::{AgentId, AgentRole};
+use ailab_llm::{LlmProvider, LlmRequest, LlmToolCall};
 use ailab_scm::{
     BranchName, CheckStatus, FileChange, PullRequestRequest, RepoRef, ReviewVerdict, ScmProvider,
 };
@@ -12,7 +14,7 @@ use chrono::Utc;
 
 use crate::backend::SandboxBackend;
 use crate::context::{ContextSection, build_context};
-use crate::pipeline::{Handoff, HandoffState, RunPipeline};
+use crate::pipeline::{Handoff, HandoffState, RunPipeline, VerifyOutcome};
 use crate::sandbox::{EgressPolicy, SandboxSpec, ToolCall};
 use crate::worker::{ExecError, QueuedRun, RunExecutor};
 
@@ -64,6 +66,131 @@ impl WiredExecutor {
         BranchName::for_card(&self.card_key, "run")
             .map_err(|error| ExecError::Terminal(error.to_string()))
     }
+
+    async fn run_agent_loop(
+        &self,
+        pipeline: &mut RunPipeline,
+        sandbox_id: &str,
+        prompt: &str,
+        now: chrono::DateTime<Utc>,
+    ) -> Result<(), ExecError> {
+        let mut user = prompt.to_owned();
+        loop {
+            pipeline
+                .next_iteration(now)
+                .map_err(|error| ExecError::Terminal(error.to_string()))?;
+            let response = self
+                .llm
+                .complete(&LlmRequest {
+                    model: "deepseek-flash".to_owned(),
+                    system: "Use the allowed tools to implement the card.".to_owned(),
+                    user: user.clone(),
+                    temperature: 0.0,
+                    json_mode: false,
+                })
+                .await
+                .map_err(|error| ExecError::Transient(error.to_string()))?;
+            if response.tool_calls.is_empty() {
+                return Ok(());
+            }
+            for call in &response.tool_calls {
+                pipeline
+                    .record_tool_call(now)
+                    .map_err(|error| ExecError::Terminal(error.to_string()))?;
+                let (argv, cwd) = tool_call_to_exec(call)?;
+                let outcome = self
+                    .sandbox
+                    .exec(
+                        sandbox_id,
+                        &ToolCall {
+                            argv,
+                            cwd,
+                            writes: Vec::new(),
+                        },
+                        120,
+                    )
+                    .await
+                    .map_err(|error| ExecError::Transient(error.to_string()))?;
+                pipeline.record_step(
+                    &call.name,
+                    &call.id,
+                    outcome.duration_ms,
+                    Some(outcome.exit_code),
+                    outcome.stdout.clone(),
+                );
+                let _ = write!(
+                    user,
+                    "\nTool {} exited {}\n{}\n",
+                    call.name, outcome.exit_code, outcome.stdout
+                );
+            }
+        }
+    }
+
+    async fn run_verification(
+        &self,
+        pipeline: &mut RunPipeline,
+        sandbox_id: &str,
+    ) -> Result<(), String> {
+        const COMMANDS: [(&str, &[&str]); 3] = [
+            ("fmt", &["cargo", "fmt", "--check"]),
+            ("lint", &["cargo", "clippy", "-D", "warnings"]),
+            ("tests", &["cargo", "test"]),
+        ];
+        for (kind, argv) in COMMANDS {
+            let outcome = self
+                .sandbox
+                .exec(
+                    sandbox_id,
+                    &ToolCall {
+                        argv: argv.iter().map(|arg| (*arg).to_owned()).collect(),
+                        cwd: "workspace".to_owned(),
+                        writes: Vec::new(),
+                    },
+                    300,
+                )
+                .await
+                .map_err(|error| error.to_string())?;
+            pipeline.record_step(
+                "verification",
+                kind,
+                outcome.duration_ms,
+                Some(outcome.exit_code),
+                outcome.stdout.clone(),
+            );
+            if outcome.exit_code != 0 {
+                return Err(format!(
+                    "[{kind}] {}\n{}",
+                    outcome.exit_code, outcome.stdout
+                ));
+            }
+        }
+        Ok(())
+    }
+}
+
+fn tool_call_to_exec(call: &LlmToolCall) -> Result<(Vec<String>, String), ExecError> {
+    if call.name != "shell.exec" {
+        return Err(ExecError::Terminal(format!(
+            "unsupported tool: {}",
+            call.name
+        )));
+    }
+    let argv = call.arguments["argv"]
+        .as_array()
+        .map(|values| {
+            values
+                .iter()
+                .filter_map(|value| value.as_str().map(ToOwned::to_owned))
+                .collect::<Vec<String>>()
+        })
+        .filter(|values| !values.is_empty())
+        .ok_or_else(|| ExecError::Terminal("shell.exec requires argv".to_owned()))?;
+    let cwd = call.arguments["cwd"]
+        .as_str()
+        .unwrap_or("workspace")
+        .to_owned();
+    Ok((argv, cwd))
 }
 
 #[async_trait]
@@ -83,22 +210,22 @@ impl RunExecutor for WiredExecutor {
             vec![
                 ContextSection::new("task", format!("Implement card {}", self.card_key), 0),
                 ContextSection::new("card", format!("card {}", run.card_id), 1),
+                ContextSection::new("conventions", "follow AGENTS.md", 2),
             ],
             8_000,
         );
         pipeline.record_step("context", "context", 0, Some(0), bundle.render());
 
         advance(&mut pipeline)?; // Plan
-        let request = LlmRequest {
-            model: "deepseek-flash".to_owned(),
-            system: "Return a JSON plan.".to_owned(),
-            user: bundle.render(),
-            temperature: 0.0,
-            json_mode: true,
-        };
         let plan = self
             .llm
-            .complete(&request)
+            .complete(&LlmRequest {
+                model: "deepseek-flash".to_owned(),
+                system: "Return a JSON plan.".to_owned(),
+                user: bundle.render(),
+                temperature: 0.0,
+                json_mode: true,
+            })
             .await
             .map_err(|error| ExecError::Transient(error.to_string()))?;
         pipeline.record_step("llm", "plan", 0, Some(0), plan.content.clone());
@@ -110,50 +237,52 @@ impl RunExecutor for WiredExecutor {
             format!("run-{}", run.run_id),
             1_000,
             512,
-            900,
+            2_700,
             EgressPolicy::Disabled,
         )
         .map_err(|error| ExecError::Terminal(error.to_string()))?;
         let sandbox = self
             .sandbox
-            .create(&spec, ailab_domain::AgentRole::Dev)
+            .create(&spec, AgentRole::Dev)
             .await
             .map_err(|error| ExecError::Transient(error.to_string()))?;
-        let exec = ToolCall {
-            argv: vec!["cargo".to_owned(), "test".to_owned()],
-            cwd: "workspace".to_owned(),
-            writes: vec![],
-        };
-        let outcome = self
-            .sandbox
-            .exec(&sandbox.sandbox_id, &exec, 120)
-            .await
-            .map_err(|error| ExecError::Transient(error.to_string()))?;
-        pipeline.record_step(
-            "tool",
-            "test",
-            outcome.duration_ms,
-            Some(outcome.exit_code),
-            outcome.stdout.clone(),
-        );
+        self.run_agent_loop(&mut pipeline, &sandbox.sandbox_id, &bundle.render(), now)
+            .await?;
 
         advance(&mut pipeline)?; // Verify
-        let verify = self
-            .sandbox
-            .exec(&sandbox.sandbox_id, &exec, 120)
-            .await
-            .map_err(|error| ExecError::Transient(error.to_string()))?;
-        if verify.exit_code != 0 {
-            let _ = self.sandbox.delete(&sandbox.sandbox_id).await;
-            return Err(ExecError::Terminal("verification failed".to_owned()));
+        let mut reworks = 0_u8;
+        loop {
+            match self
+                .run_verification(&mut pipeline, &sandbox.sandbox_id)
+                .await
+            {
+                Ok(()) => break,
+                Err(output) => {
+                    reworks += 1;
+                    match pipeline
+                        .fail_verification(now)
+                        .map_err(|error| ExecError::Terminal(error.to_string()))?
+                    {
+                        VerifyOutcome::Rework => {
+                            self.run_agent_loop(
+                                &mut pipeline,
+                                &sandbox.sandbox_id,
+                                &format!("Verification failed:\n{output}"),
+                                now,
+                            )
+                            .await?;
+                            advance(&mut pipeline)?; // Implement -> Verify
+                        }
+                        VerifyOutcome::Failed => {
+                            let _ = self.sandbox.delete(&sandbox.sandbox_id).await;
+                            return Err(ExecError::Terminal(format!(
+                                "verification failed after {reworks} reworks"
+                            )));
+                        }
+                    }
+                }
+            }
         }
-        pipeline.record_step(
-            "verification",
-            "verify",
-            verify.duration_ms,
-            Some(verify.exit_code),
-            verify.stdout,
-        );
 
         advance(&mut pipeline)?; // Commit
         let branch = self.branch()?;
@@ -201,19 +330,18 @@ impl RunExecutor for WiredExecutor {
         pipeline.record_step("pr", "pr", 0, Some(0), pr.url.clone());
 
         advance(&mut pipeline)?; // Transition
-        let handoff = Handoff {
-            from: run.agent_id,
-            to: AgentId::generate(),
-            card_id: run.card_id,
-            run_id: run.run_id,
-            summary: "implementation ready for QA".to_owned(),
-            state: HandoffState::Pending,
-            open_questions: Vec::new(),
-            artifacts: vec![pr.url.clone()],
-            acceptance_status: "evidenced".to_owned(),
-        };
         pipeline
-            .attach_handoff(handoff)
+            .attach_handoff(Handoff {
+                from: run.agent_id,
+                to: AgentId::generate(),
+                card_id: run.card_id,
+                run_id: run.run_id,
+                summary: "implementation ready for QA".to_owned(),
+                state: HandoffState::Pending,
+                open_questions: Vec::new(),
+                artifacts: vec![pr.url.clone()],
+                acceptance_status: "evidenced".to_owned(),
+            })
             .map_err(|error| ExecError::Terminal(error.to_string()))?;
 
         advance(&mut pipeline)?; // Review
@@ -262,11 +390,10 @@ impl RunExecutor for WiredExecutor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Arc;
-
     use ailab_domain::{CardId, RunId};
-    use ailab_llm::FakeLlm;
+    use ailab_llm::{FakeLlm, FakeStep};
     use ailab_scm::FakeScm;
+    use serde_json::json;
 
     use crate::backend::InMemoryBackend;
     use crate::orchestration::LeaseManager;
@@ -275,7 +402,15 @@ mod tests {
 
     #[tokio::test]
     async fn wired_executor_drives_all_stages_with_fakes() {
-        let llm = Arc::new(FakeLlm::new(vec![r#"{"plan":["cargo test"]}"#.to_owned()]));
+        let llm = Arc::new(FakeLlm::from_steps(vec![
+            FakeStep::Text(r#"{"plan":["cargo test"]}"#.to_owned()),
+            FakeStep::ToolCalls(vec![LlmToolCall {
+                id: "call-1".to_owned(),
+                name: "shell.exec".to_owned(),
+                arguments: json!({"argv":["cargo","test"],"cwd":"workspace"}),
+            }]),
+            FakeStep::Text("done".to_owned()),
+        ]));
         let scm = Arc::new(FakeScm::default());
         let sandbox = Arc::new(InMemoryBackend::new());
         let executor = Arc::new(WiredExecutor::new(
@@ -301,8 +436,16 @@ mod tests {
         let pipeline = executor.last().expect("pipeline");
         assert_eq!(pipeline.stage, PipelineStage::Reflect);
         assert_eq!(pipeline.trace().len(), 12);
-        assert!(pipeline.steps.len() >= 6);
-        assert_eq!(llm.calls(), 1);
+        assert!(pipeline.steps.iter().any(|step| step.kind == "shell.exec"));
+        assert!(
+            pipeline
+                .steps
+                .iter()
+                .filter(|step| step.kind == "verification")
+                .count()
+                >= 3
+        );
+        assert_eq!(llm.calls(), 3);
         assert_eq!(scm.branch_count(), 1);
         assert_eq!(scm.commit_count(), 1);
         assert_eq!(scm.pr_count(), 1);

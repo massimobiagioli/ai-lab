@@ -74,11 +74,24 @@ pub struct Usage {
     pub tokens_out: u64,
 }
 
+/// One tool call requested by the model.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LlmToolCall {
+    /// Provider call id.
+    pub id: String,
+    /// Tool name.
+    pub name: String,
+    /// JSON arguments.
+    pub arguments: serde_json::Value,
+}
+
 /// Provider response.
 #[derive(Debug, Clone)]
 pub struct LlmResponse {
     /// Content.
     pub content: String,
+    /// Tool calls requested by the model.
+    pub tool_calls: Vec<LlmToolCall>,
     /// Usage.
     pub usage: Usage,
     /// Model.
@@ -649,8 +662,29 @@ fn parse_response(body: &str, model: &str) -> Result<LlmResponse, LlmError> {
         .ok_or_else(|| LlmError::InvalidOutput("missing choices[0].message.content".to_owned()))?;
     let tokens_in = value["usage"]["prompt_tokens"].as_u64().unwrap_or(0);
     let tokens_out = value["usage"]["completion_tokens"].as_u64().unwrap_or(0);
+    let tool_calls = value["choices"][0]["message"]["tool_calls"]
+        .as_array()
+        .map(|calls| {
+            calls
+                .iter()
+                .filter_map(|call| {
+                    let name = call["function"]["name"].as_str()?;
+                    let arguments = call["function"]["arguments"]
+                        .as_str()
+                        .and_then(|raw| serde_json::from_str(raw).ok())
+                        .unwrap_or(serde_json::Value::Null);
+                    Some(LlmToolCall {
+                        id: call["id"].as_str().unwrap_or_default().to_owned(),
+                        name: name.to_owned(),
+                        arguments,
+                    })
+                })
+                .collect()
+        })
+        .unwrap_or_default();
     Ok(LlmResponse {
         content: content.to_owned(),
+        tool_calls,
         usage: Usage {
             tokens_in,
             tokens_out,
@@ -659,18 +693,33 @@ fn parse_response(body: &str, model: &str) -> Result<LlmResponse, LlmError> {
     })
 }
 
+/// Deterministic LLM step for `FakeLlm`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum FakeStep {
+    /// Text response.
+    Text(String),
+    /// Tool calls.
+    ToolCalls(Vec<LlmToolCall>),
+}
+
 /// Deterministic LLM provider for tests and the pipeline E2E.
 pub struct FakeLlm {
-    responses: Mutex<std::collections::VecDeque<String>>,
+    steps: Mutex<std::collections::VecDeque<FakeStep>>,
     calls: std::sync::atomic::AtomicUsize,
 }
 
 impl FakeLlm {
-    /// Build from an ordered set of responses.
+    /// Build from an ordered set of text responses.
     #[must_use]
     pub fn new(responses: Vec<String>) -> Self {
+        Self::from_steps(responses.into_iter().map(FakeStep::Text).collect())
+    }
+
+    /// Build from an ordered set of text/tool-call steps.
+    #[must_use]
+    pub fn from_steps(steps: Vec<FakeStep>) -> Self {
         Self {
-            responses: Mutex::new(responses.into_iter().collect()),
+            steps: Mutex::new(steps.into_iter().collect()),
             calls: std::sync::atomic::AtomicUsize::new(0),
         }
     }
@@ -686,14 +735,19 @@ impl FakeLlm {
 impl LlmProvider for FakeLlm {
     async fn complete(&self, request: &LlmRequest) -> Result<LlmResponse, LlmError> {
         self.calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-        let content = self
-            .responses
+        let step = self
+            .steps
             .lock()
             .map_err(|_| LlmError::Transport("fake llm lock poisoned".to_owned()))?
             .pop_front()
             .ok_or_else(|| LlmError::Transport("fake llm has no response".to_owned()))?;
+        let (content, tool_calls) = match step {
+            FakeStep::Text(content) => (content, Vec::new()),
+            FakeStep::ToolCalls(calls) => (String::new(), calls),
+        };
         Ok(LlmResponse {
             content,
+            tool_calls,
             usage: Usage {
                 tokens_in: 10,
                 tokens_out: 5,
@@ -1041,6 +1095,7 @@ mod tests {
     fn response(content: &str) -> LlmResponse {
         LlmResponse {
             content: content.to_owned(),
+            tool_calls: Vec::new(),
             usage: Usage::default(),
             model: "deepseek-flash".to_owned(),
         }

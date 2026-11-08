@@ -49,7 +49,7 @@ A card is eligible when it is `READY`, the agent is active, the budget is availa
 
 ## 9. Port wiring
 
-`crates/orchestrator/src/wired.rs` implements `WiredExecutor`: it drives the 13 stages through the `LlmProvider` (plan), `SandboxBackend` (implement/verify exec) and `ScmProvider` (branch, commit, PR, review, merge), records a step per stage, attaches the handoff and deletes the sandbox. The deterministic E2E uses `FakeLlm`, `FakeScm` and the in-memory sandbox backend and asserts one branch, commit, PR and merge.
+`crates/orchestrator/src/wired.rs` implements `WiredExecutor`: it drives the 13 stages through the `LlmProvider`, `SandboxBackend` and `ScmProvider`. The Implement stage is a **bounded agent loop** (`next_iteration` 25, `record_tool_call` 40) that executes LLM tool calls through the sandbox and feeds results back; the Verify stage runs the ordered `cargo fmt --check` → `clippy -D warnings` → `test` runner and on failure feeds the raw output back through `fail_verification` (≤ 3 reworks). Commit/PR/review/merge use the SCM port; the sandbox is deleted on success or terminal failure. The deterministic E2E uses `FakeLlm` (text + tool calls), `FakeScm` and the in-memory sandbox and asserts one branch, commit, PR and merge.
 
 ## 10. Pipeline, loops and recovery
 
