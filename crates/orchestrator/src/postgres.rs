@@ -222,7 +222,7 @@ impl PostgresScheduler {
         .await?;
         if let Some(merge_sha) = merge_sha {
             sqlx::query(
-                "UPDATE cards SET column_name = 'DONE', merge_sha = $2, version = version + 1                  WHERE id = (SELECT card_id FROM runs WHERE id = $1)                    AND column_name IN ('REVIEW','DOING')",
+                "UPDATE cards SET column_name = 'DONE', merge_sha = $2, version = version + 1                  WHERE id = (SELECT card_id FROM runs WHERE id = $1)                    AND column_name IN ('REVIEW','DOING','READY')",
             )
             .bind(run_id.as_uuid())
             .bind(merge_sha)
@@ -611,6 +611,8 @@ impl PostgresWorker {
                     self.scheduler
                         .complete_success(run_id, final_sha.as_deref(), None, now)
                         .await?;
+                } else if attempt >= 4 {
+                    self.scheduler.dead_letter(run_id, *card).await?;
                 } else {
                     let backoff = match attempt {
                         1 => 30,

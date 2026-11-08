@@ -381,3 +381,4 @@ Outputs are stored in `run_steps` (type `verification`) and attached to the PR b
 2026-11-07 | build | crates/scm/src/lib.rs | GitHub commit/review/merge idempotency; 11 scm tests | metrics/adapters/E2E open | QA review
 2026-11-07 | build | crates/orchestrator/src/{worker,wired,postgres}.rs, crates/scm/src/lib.rs | merged recovery; persisted lab pause; BUDGET_EXCEEDED; 53/11 tests | steps-on-failure/events/metrics/adapters open | QA review
 2026-11-07 | build | crates/orchestrator/src/{worker,wired,postgres}.rs, crates/scm/src/lib.rs | merged SHA recovery; failed-run step snapshots; 53/11 tests | context/metrics/adapters open | QA review
+2026-11-07 | build | crates/orchestrator/src/postgres.rs | merged recovery allows READY→DONE; reaped attempt>=4 dead-letters | runner-client/open recovery open | QA review

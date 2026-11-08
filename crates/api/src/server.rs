@@ -403,7 +403,10 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/runs/{id}/cancel", post(cancel_run))
         .route("/api/v1/labs/{id}/runs", get(list_runs))
         .route("/api/v1/labs/{id}/metrics", get(get_metrics))
-        .route("/api/v1/cards/{id}/runs", post(enqueue_run))
+        .route(
+            "/api/v1/cards/{id}/runs",
+            get(not_implemented).post(enqueue_run),
+        )
         .route("/api/v1/events", get(list_events))
         .route("/api/v1/openapi.json", get(openapi))
         .route("/api/v1/telemetry", post(ingest_telemetry))
@@ -423,6 +426,7 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/providers/{id}", get(not_implemented))
         .route("/api/v1/providers/{id}/verify", post(not_implemented))
         .route("/api/v1/providers/{id}/rotate", post(not_implemented))
+        .route("/api/v1/providers/{id}/rotate-key", post(not_implemented))
         .route("/api/v1/scm-credentials", get(not_implemented))
         .route("/api/v1/models", get(not_implemented))
         .route(
@@ -449,7 +453,10 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/cards/{id}/events", get(not_implemented))
         .route("/api/v1/cards/{id}/assign", post(not_implemented))
         .route("/api/v1/cards/{id}/merge", post(not_implemented))
-        .route("/api/v1/memory/search", post(not_implemented))
+        .route(
+            "/api/v1/memory/search",
+            get(not_implemented).post(not_implemented),
+        )
         .route("/api/v1/memory/documents", get(not_implemented))
         .route("/api/v1/memory/documents/{id}", get(not_implemented))
         .route("/api/v1/memory/notes", get(not_implemented))

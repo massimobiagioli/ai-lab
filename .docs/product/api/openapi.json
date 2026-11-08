@@ -198,12 +198,32 @@
         "operationId": "backfillEvents",
         "parameters": [
           {
+            "name": "lab_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
             "name": "after",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "limit",
             "in": "query",
             "required": false,
             "schema": {
               "type": "integer",
-              "format": "int64"
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 200
             }
           }
         ],
@@ -354,8 +374,8 @@
           }
         ],
         "responses": {
-          "201": {
-            "description": "Created"
+          "202": {
+            "description": "Accepted"
           }
         }
       }
