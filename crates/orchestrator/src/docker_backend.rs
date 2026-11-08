@@ -265,8 +265,9 @@ impl SandboxBackend for DockerBackend {
     }
 
     async fn logs(&self, sandbox_id: &str) -> Result<Vec<String>, BackendError> {
+        let sandbox_id = self.container(sandbox_id).await?;
         let mut stream = self.docker.logs(
-            sandbox_id,
+            &sandbox_id,
             Some(LogsOptions::<String> {
                 stdout: true,
                 stderr: true,
