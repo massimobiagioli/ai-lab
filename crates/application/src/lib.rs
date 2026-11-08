@@ -12,5 +12,9 @@ pub use ports::{
     BusError, Clock, EventBus, IdGenerator, Outbox, Repository, RepositoryError, TransactionManager,
 };
 pub use problem::{ProblemDetails, Violation};
-pub use qa::{MergeChecks, MergeDecision, MergeViolation, ReviewVerdict, evaluate_merge};
+pub use qa::{
+    AcceptanceResult, AcceptanceStatus, Finding, FindingSeverity, HardStop, HardStopInputs,
+    MergeChecks, MergeDecision, MergeViolation, ReviewPipeline, ReviewRecord, ReviewVerdict,
+    ReworkLoop, ReworkOutcome, evaluate_hard_stops, evaluate_merge,
+};
 pub use secret::Secret;

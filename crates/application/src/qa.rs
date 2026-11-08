@@ -746,6 +746,106 @@ mod tests {
     }
 
     #[test]
+    fn each_hard_stop_fires_individually() {
+        let base = HardStopInputs {
+            budget_remaining: true,
+            no_secrets: true,
+            no_forbidden_path: true,
+            no_force_push: true,
+            no_destructive_sql: true,
+            dependencies_ok: true,
+            checks_enabled: true,
+            changed_lines: 10,
+            changed_files: 2,
+            reviewer_is_author: false,
+            merger_is_author: false,
+            prompt_injection: false,
+        };
+        let cases = [
+            (
+                HardStop::BudgetExceeded,
+                HardStopInputs {
+                    budget_remaining: false,
+                    ..base
+                },
+            ),
+            (
+                HardStop::SecretDetected,
+                HardStopInputs {
+                    no_secrets: false,
+                    ..base
+                },
+            ),
+            (
+                HardStop::ForbiddenPath,
+                HardStopInputs {
+                    no_forbidden_path: false,
+                    ..base
+                },
+            ),
+            (
+                HardStop::ForcePush,
+                HardStopInputs {
+                    no_force_push: false,
+                    ..base
+                },
+            ),
+            (
+                HardStop::DestructiveSql,
+                HardStopInputs {
+                    no_destructive_sql: false,
+                    ..base
+                },
+            ),
+            (
+                HardStop::DependencyRisk,
+                HardStopInputs {
+                    dependencies_ok: false,
+                    ..base
+                },
+            ),
+            (
+                HardStop::DisableChecks,
+                HardStopInputs {
+                    checks_enabled: false,
+                    ..base
+                },
+            ),
+            (
+                HardStop::LargePullRequest,
+                HardStopInputs {
+                    changed_lines: 2_000,
+                    ..base
+                },
+            ),
+            (
+                HardStop::SelfReview,
+                HardStopInputs {
+                    reviewer_is_author: true,
+                    ..base
+                },
+            ),
+            (
+                HardStop::SelfMerge,
+                HardStopInputs {
+                    merger_is_author: true,
+                    ..base
+                },
+            ),
+            (
+                HardStop::PromptInjection,
+                HardStopInputs {
+                    prompt_injection: true,
+                    ..base
+                },
+            ),
+        ];
+        for (expected, inputs) in cases {
+            assert_eq!(evaluate_hard_stops(&inputs), vec![expected], "{expected:?}");
+        }
+    }
+
+    #[test]
     fn hard_stops_cover_the_eleven_conditions() {
         let inputs = HardStopInputs {
             budget_remaining: false,

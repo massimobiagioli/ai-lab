@@ -284,6 +284,25 @@ impl RunExecutor for WiredExecutor {
             }
         }
 
+        let stops = ailab_application::evaluate_hard_stops(&ailab_application::HardStopInputs {
+            budget_remaining: true,
+            no_secrets: true,
+            no_forbidden_path: true,
+            no_force_push: true,
+            no_destructive_sql: true,
+            dependencies_ok: true,
+            checks_enabled: true,
+            changed_lines: 0,
+            changed_files: 0,
+            reviewer_is_author: self.author == self.reviewer,
+            merger_is_author: false,
+            prompt_injection: false,
+        });
+        if !stops.is_empty() {
+            let _ = self.sandbox.delete(&sandbox.sandbox_id).await;
+            return Err(ExecError::Terminal(format!("hard stops: {stops:?}")));
+        }
+
         advance(&mut pipeline)?; // Commit
         let branch = self.branch()?;
         self.scm
