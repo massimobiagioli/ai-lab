@@ -56,6 +56,15 @@ impl ContextBundle {
             output.push_str(&section.content);
             output.push_str("\n\n");
         }
+        if !self.citations.is_empty() {
+            output.push_str("## citations\n\n");
+            for citation in &self.citations {
+                output.push_str("- ");
+                output.push_str(citation);
+                output.push('\n');
+            }
+            output.push('\n');
+        }
         output
     }
 

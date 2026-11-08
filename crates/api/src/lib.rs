@@ -134,8 +134,8 @@ pub enum WsClientMessage {
     },
     /// Heartbeat ping.
     Ping {
-        /// Client sequence.
-        seq: i64,
+        /// Client timestamp.
+        ts: i64,
     },
     /// Acknowledge receipt.
     Ack {
@@ -175,20 +175,25 @@ pub enum WsServerMessage {
     },
     /// Resync request after a lag.
     Resync {
-        /// Number of skipped events.
-        skipped: u64,
+        /// Last delivered sequence.
+        after: i64,
     },
     /// Heartbeat pong.
     Pong {
-        /// Echoed client sequence.
-        seq: i64,
+        /// Echoed client timestamp.
+        ts: i64,
+    },
+    /// Subscription acknowledged.
+    Ack {
+        /// Topics.
+        topics: Vec<String>,
     },
     /// Protocol error.
     Error {
         /// Code.
         code: String,
-        /// Message.
-        message: String,
+        /// Detail.
+        detail: String,
     },
     /// Health snapshot.
     Health {

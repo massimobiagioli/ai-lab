@@ -169,7 +169,18 @@ impl WiredExecutor {
     ) -> Result<(), String> {
         const COMMANDS: [(&str, &[&str]); 4] = [
             ("fmt", &["cargo", "fmt", "--check"]),
-            ("lint", &["cargo", "clippy", "-D", "warnings"]),
+            (
+                "lint",
+                &[
+                    "cargo",
+                    "clippy",
+                    "--workspace",
+                    "--all-targets",
+                    "--",
+                    "-D",
+                    "warnings",
+                ],
+            ),
             ("typecheck", &["cargo", "check", "--workspace"]),
             ("tests", &["cargo", "test"]),
         ];

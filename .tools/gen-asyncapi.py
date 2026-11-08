@@ -28,6 +28,23 @@ def main() -> int:
         }
         for name, _version in sorted(events)
     }
+    for topic, parameter in (
+        ("lab:{labId}", "labId"),
+        ("card:{cardId}", "cardId"),
+        ("run:{runId}", "runId"),
+        ("system", None),
+    ):
+        channel = {
+            "address": topic,
+            "messages": {
+                "event": {"payload": {"$ref": "#/components/schemas/DomainEvent"}}
+            },
+        }
+        if parameter:
+            channel["parameters"] = {
+                parameter: {"description": f"{parameter} scope"}
+            }
+        channels[topic] = channel
     document = {
         "asyncapi": "3.0.0",
         "info": {
@@ -45,6 +62,25 @@ def main() -> int:
         "channels": channels,
         "components": {
             "schemas": {
+                "DomainEvent": {
+                    "type": "object",
+                    "required": [
+                        "event_id",
+                        "event",
+                        "seq",
+                        "lab_id",
+                        "occurred_at",
+                        "payload",
+                    ],
+                    "properties": {
+                        "event_id": {"type": "string", "format": "uuid"},
+                        "event": {"type": "string"},
+                        "seq": {"type": "integer", "format": "int64"},
+                        "lab_id": {"type": "string", "format": "uuid"},
+                        "occurred_at": {"type": "string", "format": "date-time"},
+                        "payload": {"type": "object"},
+                    },
+                },
                 "EventEnvelope": {
                     "type": "object",
                     "required": [

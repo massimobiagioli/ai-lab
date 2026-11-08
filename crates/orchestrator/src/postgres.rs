@@ -63,9 +63,12 @@ impl PostgresScheduler {
         let mut scheduled = Vec::new();
         // Claim explicitly queued runs first (API `POST /cards/{id}/runs`).
         let queued = sqlx::query(
-            "SELECT id, card_id, agent_id, attempt, lab_id FROM runs \
-             WHERE status = 'queued' AND created_at <= $1 \
-             ORDER BY created_at FOR UPDATE SKIP LOCKED LIMIT $2",
+            "SELECT r.id, r.card_id, r.agent_id, r.attempt, r.lab_id FROM runs r \
+             JOIN cards c ON c.id = r.card_id JOIN agents a ON a.id = r.agent_id \
+             WHERE r.status = 'queued' AND r.created_at <= $1 AND r.attempt < 4 \
+               AND c.blocked_reason IS NULL AND c.spent_microusd < c.budget_microusd \
+               AND a.status IN ('idle','working') AND a.retired_at IS NULL \
+             ORDER BY r.created_at FOR UPDATE OF r SKIP LOCKED LIMIT $2",
         )
         .bind(now)
         .bind(limit)
@@ -209,7 +212,7 @@ impl PostgresScheduler {
         .await?;
         if let Some(merge_sha) = merge_sha {
             sqlx::query(
-                "UPDATE cards SET column_name = 'DONE', merge_sha = $2                  WHERE id = (SELECT card_id FROM runs WHERE id = $1)                    AND column_name IN ('REVIEW','DOING')",
+                "UPDATE cards SET column_name = 'DONE', merge_sha = $2, version = version + 1                  WHERE id = (SELECT card_id FROM runs WHERE id = $1)                    AND column_name IN ('REVIEW','DOING')",
             )
             .bind(run_id.as_uuid())
             .bind(merge_sha)
@@ -247,7 +250,8 @@ impl PostgresScheduler {
             .bind(json!({
                 "args_hash": step.args_hash,
                 "output": step.output,
-                "trace_id": step.trace_id
+                "trace_id": step.trace_id,
+                "exit_code": step.exit_code
             }))
             .bind(i32::try_from(step.duration_ms).unwrap_or(i32::MAX))
             .execute(&mut *tx)
@@ -388,9 +392,9 @@ impl PostgresScheduler {
     pub async fn latest_run(
         &self,
         card_id: CardId,
-    ) -> Result<Option<(RunId, Option<String>, LabId)>, sqlx::Error> {
+    ) -> Result<Option<(RunId, Option<String>, LabId, i16)>, sqlx::Error> {
         let row = sqlx::query(
-            "SELECT id, merge_sha, lab_id FROM runs WHERE card_id = $1 \
+            "SELECT id, merge_sha, lab_id, attempt FROM runs WHERE card_id = $1 \
              ORDER BY attempt DESC LIMIT 1",
         )
         .bind(card_id.as_uuid())
@@ -400,10 +404,12 @@ impl PostgresScheduler {
         let id: Uuid = row.get("id");
         let merge_sha: Option<String> = row.get("merge_sha");
         let lab_id: Uuid = row.get("lab_id");
+        let attempt: i16 = row.get("attempt");
         Ok(Some((
             RunId::new(id).map_err(|_| sqlx::Error::RowNotFound)?,
             merge_sha,
             LabId::new(lab_id).map_err(|_| sqlx::Error::RowNotFound)?,
+            attempt,
         )))
     }
 
@@ -533,16 +539,26 @@ impl PostgresWorker {
     }
 
     /// Run one tick: reap stale runs, lease up to concurrency runs and execute.
+    #[allow(clippy::too_many_lines)]
     pub async fn tick(&self, now: DateTime<Utc>) -> Result<PostgresTickReport, sqlx::Error> {
         let reaped_cards = self.scheduler.reap(now).await?;
         for card in &reaped_cards {
-            if let Some((run_id, merge_sha, _lab_id)) = self.scheduler.latest_run(*card).await? {
+            if let Some((run_id, merge_sha, _lab_id, attempt)) =
+                self.scheduler.latest_run(*card).await?
+            {
                 if merge_sha.is_some() {
                     self.scheduler
                         .complete_success(run_id, merge_sha.as_deref(), now)
                         .await?;
                 } else {
-                    self.scheduler.requeue(run_id, *card, now).await?;
+                    let backoff = match attempt {
+                        1 => 30,
+                        2 => 120,
+                        _ => 600,
+                    };
+                    self.scheduler
+                        .requeue(run_id, *card, now + Duration::seconds(backoff))
+                        .await?;
                 }
             }
         }

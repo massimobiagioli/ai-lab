@@ -133,6 +133,16 @@
         }
       }
     },
+    "inventory.agent.updated": {
+      "address": "inventory.agent.updated",
+      "messages": {
+        "event": {
+          "payload": {
+            "$ref": "#/components/schemas/EventEnvelope"
+          }
+        }
+      }
+    },
     "inventory.project.connected": {
       "address": "inventory.project.connected",
       "messages": {
@@ -185,6 +195,16 @@
     },
     "kanban.card.moved": {
       "address": "kanban.card.moved",
+      "messages": {
+        "event": {
+          "payload": {
+            "$ref": "#/components/schemas/EventEnvelope"
+          }
+        }
+      }
+    },
+    "kanban.card.overdue": {
+      "address": "kanban.card.overdue",
       "messages": {
         "event": {
           "payload": {
@@ -253,6 +273,16 @@
         }
       }
     },
+    "office.agent.speech": {
+      "address": "office.agent.speech",
+      "messages": {
+        "event": {
+          "payload": {
+            "$ref": "#/components/schemas/EventEnvelope"
+          }
+        }
+      }
+    },
     "security.auth_denied": {
       "address": "security.auth_denied",
       "messages": {
@@ -283,6 +313,16 @@
         }
       }
     },
+    "system.escalation": {
+      "address": "system.escalation",
+      "messages": {
+        "event": {
+          "payload": {
+            "$ref": "#/components/schemas/EventEnvelope"
+          }
+        }
+      }
+    },
     "system.health.changed": {
       "address": "system.health.changed",
       "messages": {
@@ -292,10 +332,100 @@
           }
         }
       }
+    },
+    "lab:{labId}": {
+      "address": "lab:{labId}",
+      "messages": {
+        "event": {
+          "payload": {
+            "$ref": "#/components/schemas/DomainEvent"
+          }
+        }
+      },
+      "parameters": {
+        "labId": {
+          "description": "labId scope"
+        }
+      }
+    },
+    "card:{cardId}": {
+      "address": "card:{cardId}",
+      "messages": {
+        "event": {
+          "payload": {
+            "$ref": "#/components/schemas/DomainEvent"
+          }
+        }
+      },
+      "parameters": {
+        "cardId": {
+          "description": "cardId scope"
+        }
+      }
+    },
+    "run:{runId}": {
+      "address": "run:{runId}",
+      "messages": {
+        "event": {
+          "payload": {
+            "$ref": "#/components/schemas/DomainEvent"
+          }
+        }
+      },
+      "parameters": {
+        "runId": {
+          "description": "runId scope"
+        }
+      }
+    },
+    "system": {
+      "address": "system",
+      "messages": {
+        "event": {
+          "payload": {
+            "$ref": "#/components/schemas/DomainEvent"
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "DomainEvent": {
+        "type": "object",
+        "required": [
+          "event_id",
+          "event",
+          "seq",
+          "lab_id",
+          "occurred_at",
+          "payload"
+        ],
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "event": {
+            "type": "string"
+          },
+          "seq": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "lab_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "payload": {
+            "type": "object"
+          }
+        }
+      },
       "EventEnvelope": {
         "type": "object",
         "required": [

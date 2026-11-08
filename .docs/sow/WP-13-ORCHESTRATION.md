@@ -373,3 +373,4 @@ Outputs are stored in `run_steps` (type `verification`) and attached to the PR b
 2026-11-07 | build | crates/orchestrator/src/{context,wired,postgres}.rs | citations; retry limit → ICEBOX dead-letter; 53 tests | recovery/eligibility/metrics/adapters open | QA review
 2026-11-07 | build | crates/orchestrator/src/postgres.rs | heartbeat task; backoff (30s/2m/10m); queued claim → DOING; complete_success with merge_sha; 53 tests | recovery/eligibility/metrics/adapters open | QA review
 2026-11-07 | build | crates/orchestrator/src/{postgres,wired}.rs, crates/domain/src/event.rs | merge-SHA recovery; context sections/citations; per-run budget; cancelled/timed_out events | eligibility/metrics/adapters open | QA review
+2026-11-07 | build | crates/orchestrator/src/{wired,postgres,context}.rs | lint fix; backoff; eligibility; exit_code; DONE version; citations rendered | external recovery/adapters/metrics open | QA review

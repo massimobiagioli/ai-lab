@@ -410,11 +410,13 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/health/providers", get(health_providers))
         .route("/api/v1/health/scm", get(health_scm))
         .route("/ws", get(ws_upgrade))
+        .route("/api/v1/ws", get(ws_upgrade))
         .layer(middleware::from_fn_with_state(state.clone(), auth));
     Router::new()
         .route("/api/v1/health/live", get(health_live))
         .route("/api/v1/health/ready", get(health_ready))
         .merge(protected)
+        .fallback(not_found)
         .with_state(state)
 }
 
@@ -439,13 +441,41 @@ async fn auth(State(state): State<AppState>, request: Request, next: Next) -> Re
     }
 }
 
+async fn not_found() -> Response {
+    let mut details = ProblemDetails::from(DomainError::NotFound);
+    details.trace_id = Some(format!(
+        "{:x}",
+        chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
+    ));
+    details.instance = Some("about:blank".to_owned());
+    (
+        StatusCode::NOT_FOUND,
+        [(axum::http::header::CONTENT_TYPE, "application/problem+json")],
+        Json(details),
+    )
+        .into_response()
+}
+
 fn unauthorized() -> Response {
     let mut problem = ProblemDetails::from(DomainError::policy(
         "UNAUTHORIZED",
         "missing or invalid API token",
     ));
     problem.status = 401;
-    (StatusCode::UNAUTHORIZED, Json(problem)).into_response()
+    problem.trace_id = Some(format!(
+        "{:x}",
+        chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
+    ));
+    problem.instance = Some("about:blank".to_owned());
+    (
+        StatusCode::UNAUTHORIZED,
+        [
+            (axum::http::header::CONTENT_TYPE, "application/problem+json"),
+            (axum::http::header::WWW_AUTHENTICATE, "Bearer"),
+        ],
+        Json(problem),
+    )
+        .into_response()
 }
 
 fn idempotency_key(headers: &HeaderMap, method: &str, path: &str) -> Option<String> {
@@ -486,6 +516,9 @@ fn problem(error: DomainError) -> Response {
 }
 
 fn rate_key(headers: &HeaderMap) -> String {
+    if std::env::var("AILAB_TRUSTED_PROXY").is_err() {
+        return "local".to_owned();
+    }
     headers
         .get("x-forwarded-for")
         .or_else(|| headers.get("x-real-ip"))
@@ -727,6 +760,10 @@ struct EventsQuery {
     lab_id: String,
     #[serde(default)]
     since: i64,
+    #[serde(default)]
+    after: Option<i64>,
+    #[serde(default)]
+    limit: Option<u32>,
 }
 
 /// The generated `OpenAPI` document.
@@ -747,11 +784,20 @@ async fn openapi(State(state): State<AppState>, headers: HeaderMap) -> Response 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct TelemetryEvent {
-    /// Event name.
-    pub event: String,
-    /// Event properties.
+    /// Level.
+    pub level: String,
+    /// Message.
+    pub message: String,
+    /// Stack trace.
     #[serde(default)]
-    pub properties: serde_json::Value,
+    pub stack: Option<String>,
+    /// Route.
+    pub route: String,
+    /// Build.
+    pub build: String,
+    /// Trace id.
+    #[serde(default)]
+    pub trace_id: Option<String>,
 }
 
 async fn ingest_telemetry(
@@ -762,10 +808,22 @@ async fn ingest_telemetry(
     if let Err(response) = enforce(&state, &headers, RateLimitKind::Write) {
         return response;
     }
-    if body.event.is_empty() || body.event.len() > 64 {
+    if !matches!(body.level.as_str(), "debug" | "info" | "warn" | "error") {
         return problem(DomainError::validation(
-            "telemetry.event",
-            "must be 1-64 characters",
+            "telemetry.level",
+            "must be debug, info, warn or error",
+        ));
+    }
+    if body.message.is_empty() || body.message.len() > 1_024 {
+        return problem(DomainError::validation(
+            "telemetry.message",
+            "must be 1-1024 characters",
+        ));
+    }
+    if body.route.is_empty() || body.build.is_empty() {
+        return problem(DomainError::validation(
+            "telemetry.route",
+            "route and build are required",
         ));
     }
     StatusCode::ACCEPTED.into_response()
@@ -784,7 +842,11 @@ async fn list_events(
     } else {
         &query.lab_id
     };
-    Json(state.store.events_after(lab_id, query.since).await).into_response()
+    let after = query.after.unwrap_or(query.since);
+    let limit = query.limit.unwrap_or(200).clamp(1, 1_000) as usize;
+    let mut events = state.store.events_after(lab_id, after).await;
+    events.truncate(limit);
+    Json(events).into_response()
 }
 
 async fn get_metrics(
@@ -837,7 +899,7 @@ async fn handle_socket(mut socket: WebSocket, state: AppState, query: WsQuery) {
         return;
     }
     let mut events = state.subscribe();
-    let mut heartbeat = interval(Duration::from_secs(20));
+    let mut heartbeat = interval(Duration::from_secs(10));
     let mut last_seen = Instant::now();
     loop {
         tokio::select! {
@@ -850,8 +912,9 @@ async fn handle_socket(mut socket: WebSocket, state: AppState, query: WsQuery) {
                                 topics: subscribed,
                             }) => {
                                 topics.clone_from(&subscribed);
-                                let reply = hello(Utc::now(), seq, subscribed);
-                                if let Ok(body) = serde_json::to_string(&reply) {
+                                if let Ok(body) = serde_json::to_string(&WsServerMessage::Ack {
+                                    topics: subscribed,
+                                }) {
                                     let _ = socket.send(Message::Text(body.into())).await;
                                 }
                             }
@@ -860,9 +923,9 @@ async fn handle_socket(mut socket: WebSocket, state: AppState, query: WsQuery) {
                             }) => {
                                 topics.retain(|topic| !removed.contains(topic));
                             }
-                            Ok(WsClientMessage::Ping { seq }) => {
+                            Ok(WsClientMessage::Ping { ts }) => {
                                 if let Ok(body) =
-                                    serde_json::to_string(&WsServerMessage::Pong { seq })
+                                    serde_json::to_string(&WsServerMessage::Pong { ts })
                                 {
                                     let _ = socket.send(Message::Text(body.into())).await;
                                 }
@@ -871,7 +934,7 @@ async fn handle_socket(mut socket: WebSocket, state: AppState, query: WsQuery) {
                             Err(_) => {
                                 let error = WsServerMessage::Error {
                                     code: "BAD_MESSAGE".to_owned(),
-                                    message: "invalid websocket message".to_owned(),
+                                    detail: "invalid websocket message".to_owned(),
                                 };
                                 if let Ok(body) = serde_json::to_string(&error) {
                                     let _ = socket.send(Message::Text(body.into())).await;
@@ -915,8 +978,8 @@ async fn handle_socket(mut socket: WebSocket, state: AppState, query: WsQuery) {
                             break;
                         }
                     }
-                    Err(tokio::sync::broadcast::error::RecvError::Lagged(skipped)) => {
-                        let resync = WsServerMessage::Resync { skipped };
+                    Err(tokio::sync::broadcast::error::RecvError::Lagged(_skipped)) => {
+                        let resync = WsServerMessage::Resync { after: seq };
                         if let Ok(body) = serde_json::to_string(&resync) {
                             let _ = socket.send(Message::Text(body.into())).await;
                         }
@@ -932,7 +995,7 @@ async fn handle_socket(mut socket: WebSocket, state: AppState, query: WsQuery) {
                 }
             }
             _ = heartbeat.tick() => {
-                if last_seen.elapsed() > Duration::from_secs(30) {
+                if last_seen.elapsed() > Duration::from_secs(25) {
                     let _ = socket
                         .send(Message::Close(Some(axum::extract::ws::CloseFrame {
                             code: 1013,
@@ -1070,7 +1133,7 @@ mod tests {
                     .uri("/api/v1/telemetry")
                     .header("content-type", "application/json")
                     .body(Body::from(
-                        r#"{"event":"ui.render","properties":{"ms":12}}"#,
+                        r#"{"level":"info","message":"ui.render","route":"/lab","build":"1.0.0"}"#,
                     ))
                     .expect("request"),
             )
@@ -1083,7 +1146,9 @@ mod tests {
                     .method("POST")
                     .uri("/api/v1/telemetry")
                     .header("content-type", "application/json")
-                    .body(Body::from(r#"{"event":"","properties":{}}"#))
+                    .body(Body::from(
+                        r#"{"level":"info","message":"","route":"/lab","build":"1.0.0"}"#,
+                    ))
                     .expect("request"),
             )
             .await
