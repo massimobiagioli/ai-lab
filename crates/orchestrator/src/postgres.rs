@@ -52,6 +52,7 @@ impl PostgresScheduler {
 
     /// Acquire up to `limit` READY cards, transition them to DOING and insert a
     /// running attempt with a lease, all in one transaction.
+    #[allow(clippy::too_many_lines)]
     pub async fn acquire_batch(
         &self,
         now: DateTime<Utc>,
@@ -104,9 +105,14 @@ impl PostgresScheduler {
             return Ok(scheduled);
         }
         let cards = sqlx::query(
-            "SELECT id, project_id, assignee_id FROM cards \
-             WHERE column_name = 'READY' AND assignee_id IS NOT NULL \
-             ORDER BY due_date NULLS LAST FOR UPDATE SKIP LOCKED LIMIT $1",
+            "SELECT c.id, c.project_id, c.assignee_id FROM cards c \
+             JOIN agents a ON a.id = c.assignee_id \
+             WHERE c.column_name = 'READY' AND c.assignee_id IS NOT NULL \
+               AND c.blocked_reason IS NULL AND c.priority <> 'wont' \
+               AND c.spent_microusd < c.budget_microusd \
+               AND a.status IN ('idle','working') AND a.retired_at IS NULL \
+               AND COALESCE((SELECT MAX(r.attempt) FROM runs r WHERE r.card_id = c.id), 0) < 4 \
+             ORDER BY c.due_date NULLS LAST FOR UPDATE OF c SKIP LOCKED LIMIT $1",
         )
         .bind(remaining)
         .fetch_all(&mut *tx)
@@ -193,10 +199,12 @@ impl PostgresScheduler {
     ) -> Result<(), sqlx::Error> {
         let mut tx = self.pool.begin().await?;
         sqlx::query(
-            "UPDATE runs SET status = 'succeeded', ended_at = $2, lease_id = NULL WHERE id = $1",
+            "UPDATE runs SET status = 'succeeded', ended_at = $2, lease_id = NULL, \
+             merge_sha = $3 WHERE id = $1",
         )
         .bind(run_id.as_uuid())
         .bind(now)
+        .bind(merge_sha)
         .execute(&mut *tx)
         .await?;
         if let Some(merge_sha) = merge_sha {
@@ -298,7 +306,8 @@ impl PostgresScheduler {
         let threshold = now - Duration::seconds(45);
         let rows = sqlx::query(
             "UPDATE runs SET status = 'timed_out', ended_at = $1, lease_id = NULL \
-             WHERE status = 'running' AND heartbeat_at < $2 RETURNING card_id",
+             WHERE status = 'running' AND heartbeat_at < $2 \
+             RETURNING id, card_id, lab_id",
         )
         .bind(now)
         .bind(threshold)
@@ -308,9 +317,16 @@ impl PostgresScheduler {
         let mut ids = Vec::new();
         for row in rows {
             let card_id: Uuid = row.get("card_id");
+            let run_id: Uuid = row.get("id");
+            let lab_id: Uuid = row.get("lab_id");
             if let Ok(card) = CardId::new(card_id) {
                 cards.push(card);
                 ids.push(card_id);
+                if let (Ok(run), Ok(lab)) = (RunId::new(run_id), LabId::new(lab_id)) {
+                    let _ = self
+                        .emit_event_raw("delivery.run.timed_out", run, lab, card, now)
+                        .await;
+                }
             }
         }
         if !ids.is_empty() {
@@ -342,6 +358,53 @@ impl PostgresScheduler {
         .execute(&self.pool)
         .await?;
         Ok(())
+    }
+
+    /// Emit an event without a full scheduled-run record.
+    pub async fn emit_event_raw(
+        &self,
+        event_type: &str,
+        run_id: RunId,
+        lab_id: LabId,
+        card_id: CardId,
+        now: DateTime<Utc>,
+    ) -> Result<(), sqlx::Error> {
+        sqlx::query(
+            "INSERT INTO outbox (id, aggregate_type, aggregate_id, event_type, payload, available_at) \
+             VALUES ($1, 'run', $2, $3, jsonb_build_object('run_id', $2::text, 'lab_id', $4::text, 'card_id', $5::text), $6)",
+        )
+        .bind(Uuid::new_v4())
+        .bind(run_id.as_uuid())
+        .bind(event_type)
+        .bind(lab_id.as_uuid())
+        .bind(card_id.as_uuid())
+        .bind(now)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    /// Latest run for a card and its merge SHA.
+    pub async fn latest_run(
+        &self,
+        card_id: CardId,
+    ) -> Result<Option<(RunId, Option<String>, LabId)>, sqlx::Error> {
+        let row = sqlx::query(
+            "SELECT id, merge_sha, lab_id FROM runs WHERE card_id = $1 \
+             ORDER BY attempt DESC LIMIT 1",
+        )
+        .bind(card_id.as_uuid())
+        .fetch_optional(&self.pool)
+        .await?;
+        let Some(row) = row else { return Ok(None) };
+        let id: Uuid = row.get("id");
+        let merge_sha: Option<String> = row.get("merge_sha");
+        let lab_id: Uuid = row.get("lab_id");
+        Ok(Some((
+            RunId::new(id).map_err(|_| sqlx::Error::RowNotFound)?,
+            merge_sha,
+            LabId::new(lab_id).map_err(|_| sqlx::Error::RowNotFound)?,
+        )))
     }
 
     /// Relay unpublished outbox rows into `domain_events` with a per-lab `seq`.
@@ -471,7 +534,19 @@ impl PostgresWorker {
 
     /// Run one tick: reap stale runs, lease up to concurrency runs and execute.
     pub async fn tick(&self, now: DateTime<Utc>) -> Result<PostgresTickReport, sqlx::Error> {
-        let reaped = self.scheduler.reap(now).await?.len();
+        let reaped_cards = self.scheduler.reap(now).await?;
+        for card in &reaped_cards {
+            if let Some((run_id, merge_sha, _lab_id)) = self.scheduler.latest_run(*card).await? {
+                if merge_sha.is_some() {
+                    self.scheduler
+                        .complete_success(run_id, merge_sha.as_deref(), now)
+                        .await?;
+                } else {
+                    self.scheduler.requeue(run_id, *card, now).await?;
+                }
+            }
+        }
+        let reaped = reaped_cards.len();
         let runs = self.scheduler.acquire_batch(now, self.concurrency).await?;
         let mut report = PostgresTickReport {
             reaped,
@@ -518,7 +593,7 @@ impl PostgresWorker {
                 Err(crate::worker::ExecError::Cancelled) => {
                     self.scheduler.finish(run.run_id, "cancelled", now).await?;
                     self.scheduler
-                        .emit_event("delivery.run.failed", &run, now)
+                        .emit_event("delivery.run.cancelled", &run, now)
                         .await?;
                     report.cancelled += 1;
                 }

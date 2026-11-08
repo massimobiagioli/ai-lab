@@ -132,6 +132,16 @@ pub enum WsClientMessage {
         /// Topics.
         topics: Vec<String>,
     },
+    /// Heartbeat ping.
+    Ping {
+        /// Client sequence.
+        seq: i64,
+    },
+    /// Acknowledge receipt.
+    Ack {
+        /// Acknowledged sequence.
+        seq: i64,
+    },
 }
 
 /// Server WebSocket message.
@@ -167,6 +177,18 @@ pub enum WsServerMessage {
     Resync {
         /// Number of skipped events.
         skipped: u64,
+    },
+    /// Heartbeat pong.
+    Pong {
+        /// Echoed client sequence.
+        seq: i64,
+    },
+    /// Protocol error.
+    Error {
+        /// Code.
+        code: String,
+        /// Message.
+        message: String,
     },
     /// Health snapshot.
     Health {

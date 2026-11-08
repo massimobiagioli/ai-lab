@@ -270,6 +270,14 @@ fn tool_call_to_exec(call: &LlmToolCall) -> Result<(Vec<String>, String), ExecEr
 impl RunExecutor for WiredExecutor {
     #[allow(clippy::too_many_lines)]
     async fn execute(&self, run: &QueuedRun) -> Result<RunPipeline, ExecError> {
+        let limit = std::env::var("AILAB_RUN_BUDGET_MICROUSD")
+            .ok()
+            .and_then(|value| value.parse::<i64>().ok())
+            .and_then(|value| Money::from_microusd(value).ok())
+            .unwrap_or_else(|| Money::from_microusd(5_000_000).unwrap_or(Money::ZERO));
+        if let Ok(mut budget) = self.budget.lock() {
+            *budget = RunBudget::new(limit);
+        }
         let now = Utc::now();
         let mut pipeline = RunPipeline::new(run.run_id, run.card_id, now);
         let advance = |pipeline: &mut RunPipeline| -> Result<(), ExecError> {
@@ -282,14 +290,20 @@ impl RunExecutor for WiredExecutor {
         let bundle = build_context(
             vec![
                 ContextSection::new("task", format!("Implement card {}", self.card_key), 0),
-                ContextSection::new("card", format!("card {}", run.card_id), 1),
-                ContextSection::new("conventions", "follow AGENTS.md", 2),
+                ContextSection::new("repo_map", "repository map".to_owned(), 1),
+                ContextSection::new("card", format!("card {}", run.card_id), 2),
+                ContextSection::new("memory", "memory top-8 relevant notes", 3),
+                ContextSection::new("files", "relevant files: src/lib.rs", 4),
+                ContextSection::new("feedback", "previous review feedback", 5),
+                ContextSection::new("conventions", "follow AGENTS.md", 6),
             ],
             8_000,
         )
         .with_citations(vec![
             format!("card:{}", self.card_key),
             format!("run:{}", run.run_id),
+            "memory:top-8".to_owned(),
+            "files:src/lib.rs".to_owned(),
         ]);
         pipeline.record_step("context", "context", 0, Some(0), bundle.render());
 

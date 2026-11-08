@@ -406,6 +406,9 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/events", get(list_events))
         .route("/api/v1/openapi.json", get(openapi))
         .route("/api/v1/telemetry", post(ingest_telemetry))
+        .route("/api/v1/telemetry/frontend", post(ingest_telemetry))
+        .route("/api/v1/health/providers", get(health_providers))
+        .route("/api/v1/health/scm", get(health_scm))
         .route("/ws", get(ws_upgrade))
         .layer(middleware::from_fn_with_state(state.clone(), auth));
     Router::new()
@@ -468,7 +471,18 @@ fn replay(status: u16, body: serde_json::Value) -> Response {
 
 fn problem(error: DomainError) -> Response {
     let status = StatusCode::from_u16(error.status()).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
-    (status, Json(ProblemDetails::from(error))).into_response()
+    let mut details = ProblemDetails::from(error);
+    details.trace_id = Some(format!(
+        "{:x}",
+        chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
+    ));
+    details.instance = Some("about:blank".to_owned());
+    (
+        status,
+        [(axum::http::header::CONTENT_TYPE, "application/problem+json")],
+        Json(details),
+    )
+        .into_response()
 }
 
 fn rate_key(headers: &HeaderMap) -> String {
@@ -492,9 +506,17 @@ fn enforce(state: &AppState, headers: &HeaderMap, kind: RateLimitKind) -> Result
         let mut details =
             ProblemDetails::from(DomainError::policy("RATE_LIMITED", "rate limit exceeded"));
         details.status = 429;
+        details.trace_id = Some(format!(
+            "{:x}",
+            chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
+        ));
+        details.instance = Some("about:blank".to_owned());
         Err((
             StatusCode::TOO_MANY_REQUESTS,
-            [(axum::http::header::RETRY_AFTER, "60")],
+            [
+                (axum::http::header::RETRY_AFTER, "60"),
+                (axum::http::header::CONTENT_TYPE, "application/problem+json"),
+            ],
             Json(details),
         )
             .into_response())
@@ -503,6 +525,14 @@ fn enforce(state: &AppState, headers: &HeaderMap, kind: RateLimitKind) -> Result
 
 async fn health_live() -> StatusCode {
     StatusCode::OK
+}
+
+async fn health_providers() -> Response {
+    Json(serde_json::json!({"status": "ok", "providers": []})).into_response()
+}
+
+async fn health_scm() -> Response {
+    Json(serde_json::json!({"status": "ok", "scm": "github"})).into_response()
 }
 
 async fn health_ready(State(state): State<AppState>) -> Response {
@@ -815,14 +845,37 @@ async fn handle_socket(mut socket: WebSocket, state: AppState, query: WsQuery) {
                 match message {
                     Some(Ok(Message::Text(text))) => {
                         last_seen = Instant::now();
-                        if let Ok(WsClientMessage::Subscribe {
-                            topics: subscribed,
-                        }) = serde_json::from_str(text.as_str())
-                        {
-                            topics.clone_from(&subscribed);
-                            let reply = hello(Utc::now(), seq, subscribed);
-                            if let Ok(body) = serde_json::to_string(&reply) {
-                                let _ = socket.send(Message::Text(body.into())).await;
+                        match serde_json::from_str::<WsClientMessage>(text.as_str()) {
+                            Ok(WsClientMessage::Subscribe {
+                                topics: subscribed,
+                            }) => {
+                                topics.clone_from(&subscribed);
+                                let reply = hello(Utc::now(), seq, subscribed);
+                                if let Ok(body) = serde_json::to_string(&reply) {
+                                    let _ = socket.send(Message::Text(body.into())).await;
+                                }
+                            }
+                            Ok(WsClientMessage::Unsubscribe {
+                                topics: removed,
+                            }) => {
+                                topics.retain(|topic| !removed.contains(topic));
+                            }
+                            Ok(WsClientMessage::Ping { seq }) => {
+                                if let Ok(body) =
+                                    serde_json::to_string(&WsServerMessage::Pong { seq })
+                                {
+                                    let _ = socket.send(Message::Text(body.into())).await;
+                                }
+                            }
+                            Ok(WsClientMessage::Ack { .. }) => {}
+                            Err(_) => {
+                                let error = WsServerMessage::Error {
+                                    code: "BAD_MESSAGE".to_owned(),
+                                    message: "invalid websocket message".to_owned(),
+                                };
+                                if let Ok(body) = serde_json::to_string(&error) {
+                                    let _ = socket.send(Message::Text(body.into())).await;
+                                }
                             }
                         }
                     }
@@ -834,14 +887,25 @@ async fn handle_socket(mut socket: WebSocket, state: AppState, query: WsQuery) {
             event = events.recv() => {
                 match event {
                     Ok(event) => {
-                        let topic = if event.event.starts_with("delivery.run") {
-                            "run"
-                        } else if event.event.starts_with("kanban") {
-                            "kanban"
-                        } else {
-                            "system"
-                        };
-                        if !topics.iter().any(|subscribed| subscribed == topic) {
+                        let mut candidates = vec![
+                            if event.event.starts_with("delivery.run") {
+                                "run".to_owned()
+                            } else if event.event.starts_with("kanban") {
+                                "kanban".to_owned()
+                            } else {
+                                "system".to_owned()
+                            },
+                            format!("lab:{}", event.lab_id),
+                        ];
+                        if let Some(run_id) = event.payload.get("run_id").and_then(|v| v.as_str()) {
+                            candidates.push(format!("run:{run_id}"));
+                        }
+                        if let Some(card_id) =
+                            event.payload.get("card_id").and_then(|v| v.as_str())
+                        {
+                            candidates.push(format!("card:{card_id}"));
+                        }
+                        if !topics.iter().any(|subscribed| candidates.contains(subscribed)) {
                             continue;
                         }
                         let message = WsServerMessage::event(&event);

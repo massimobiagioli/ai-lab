@@ -221,7 +221,8 @@ Use the `quality-gates` skill for the exact commands and evidence rules.
 | `wait-for` | [`scripts/wait-for.sh`](./scripts/wait-for.sh) | Wait for a TCP host and port. | `scripts/wait-for.sh HOST PORT [TIMEOUT]` |
 | `install-hooks` | [`scripts/hooks/install.sh`](./scripts/hooks/install.sh) | Install lefthook or native git hooks. | `scripts/hooks/install.sh` |
 | `gen-openapi` | [`scripts/gen-openapi.sh`](./scripts/gen-openapi.sh) | Generate `.docs/product/api/openapi.json` (WP-16). | `scripts/gen-openapi.sh` |
-| `gen-asyncapi` | [`scripts/gen-asyncapi.sh`](./scripts/gen-asyncapi.sh) | Generate `.docs/product/api/asyncapi.json` (WP-16). | `scripts/gen-asyncapi.sh` |
+| `gen-asyncapi` | [`scripts/gen-asyncapi.sh`](./scripts/gen-asyncapi.sh) | Generate `.docs/product/api/asyncapi.json` from the event catalog (WP-16). | `scripts/gen-asyncapi.sh` |
+| `gen-asyncapi-catalog` | [`.tools/gen-asyncapi.py`](./.tools/gen-asyncapi.py) | Generate AsyncAPI channels from `EVENT_CATALOG`. | `.tools/gen-asyncapi.py [--root DIR]` |
 | `seed-demo` | [`scripts/seed-demo.sh`](./scripts/seed-demo.sh) | Seed the deterministic demo dataset (WP-04). | `scripts/seed-demo.sh` |
 | `test-supply-chain` | [`.tools/test-supply-chain.sh`](./.tools/test-supply-chain.sh) | Negative fixtures: vulnerable npm dependency and disallowed Cargo license must be rejected. | `.tools/test-supply-chain.sh` |
 | `test-migrations` | [`.tools/test-migrations.sh`](./.tools/test-migrations.sh) | Diff the versioned migrations against Appendix A on a disposable PostgreSQL container. | `.tools/test-migrations.sh` |

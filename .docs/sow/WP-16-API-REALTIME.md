@@ -323,3 +323,4 @@ Server → client:
 2026-11-07 | build | crates/api/src/{lib,server}.rs | WS since-backfill; flat event envelope; resync/1013; 30 s pong timeout; 13 API tests | full surface/cursor/idempotency/Redis/OpenAPI open | QA review
 2026-11-07 | build | crates/api/src/server.rs | scoped/length-checked idempotency; in-flight guard; Idempotent-Replay; 13 API tests | surface/cursor/Redis/OpenAPI open | QA review
 2026-11-07 | build | crates/api/src/{server,postgres_store}.rs | readiness 503; topic-filtered WS; 13 API tests | surface/cursor/Redis/OpenAPI open | QA review
+2026-11-07 | build | crates/api/src/{server,lib}.rs, .tools/gen-asyncapi.py, scripts/gen-asyncapi.sh | trace_id/problem+json; health providers/scm; telemetry alias; WS lab/card/run topics + ping/pong/error; AsyncAPI 28 channels | full surface/cursor/Redis/OpenAPI open | QA review

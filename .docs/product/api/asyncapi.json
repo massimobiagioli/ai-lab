@@ -13,26 +13,322 @@
     }
   },
   "channels": {
-    "inventory.agent.created": { "address": "inventory.agent.created", "messages": { "event": { "payload": { "$ref": "#/components/schemas/EventEnvelope" } } } },
-    "inventory.project.connected": { "address": "inventory.project.connected", "messages": { "event": { "payload": { "$ref": "#/components/schemas/EventEnvelope" } } } },
-    "kanban.card.created": { "address": "kanban.card.created", "messages": { "event": { "payload": { "$ref": "#/components/schemas/EventEnvelope" } } } },
-    "kanban.card.moved": { "address": "kanban.card.moved", "messages": { "event": { "payload": { "$ref": "#/components/schemas/EventEnvelope" } } } },
-    "delivery.run.completed": { "address": "delivery.run.completed", "messages": { "event": { "payload": { "$ref": "#/components/schemas/EventEnvelope" } } } },
-    "memory.document.created": { "address": "memory.document.created", "messages": { "event": { "payload": { "$ref": "#/components/schemas/EventEnvelope" } } } },
-    "system.health.changed": { "address": "system.health.changed", "messages": { "event": { "payload": { "$ref": "#/components/schemas/EventEnvelope" } } } }
+    "delivery.merge.completed": {
+      "address": "delivery.merge.completed",
+      "messages": {
+        "event": {
+          "payload": {
+            "$ref": "#/components/schemas/EventEnvelope"
+          }
+        }
+      }
+    },
+    "delivery.pr.opened": {
+      "address": "delivery.pr.opened",
+      "messages": {
+        "event": {
+          "payload": {
+            "$ref": "#/components/schemas/EventEnvelope"
+          }
+        }
+      }
+    },
+    "delivery.review.submitted": {
+      "address": "delivery.review.submitted",
+      "messages": {
+        "event": {
+          "payload": {
+            "$ref": "#/components/schemas/EventEnvelope"
+          }
+        }
+      }
+    },
+    "delivery.run.cancelled": {
+      "address": "delivery.run.cancelled",
+      "messages": {
+        "event": {
+          "payload": {
+            "$ref": "#/components/schemas/EventEnvelope"
+          }
+        }
+      }
+    },
+    "delivery.run.completed": {
+      "address": "delivery.run.completed",
+      "messages": {
+        "event": {
+          "payload": {
+            "$ref": "#/components/schemas/EventEnvelope"
+          }
+        }
+      }
+    },
+    "delivery.run.failed": {
+      "address": "delivery.run.failed",
+      "messages": {
+        "event": {
+          "payload": {
+            "$ref": "#/components/schemas/EventEnvelope"
+          }
+        }
+      }
+    },
+    "delivery.run.queued": {
+      "address": "delivery.run.queued",
+      "messages": {
+        "event": {
+          "payload": {
+            "$ref": "#/components/schemas/EventEnvelope"
+          }
+        }
+      }
+    },
+    "delivery.run.started": {
+      "address": "delivery.run.started",
+      "messages": {
+        "event": {
+          "payload": {
+            "$ref": "#/components/schemas/EventEnvelope"
+          }
+        }
+      }
+    },
+    "delivery.run.step": {
+      "address": "delivery.run.step",
+      "messages": {
+        "event": {
+          "payload": {
+            "$ref": "#/components/schemas/EventEnvelope"
+          }
+        }
+      }
+    },
+    "delivery.run.timed_out": {
+      "address": "delivery.run.timed_out",
+      "messages": {
+        "event": {
+          "payload": {
+            "$ref": "#/components/schemas/EventEnvelope"
+          }
+        }
+      }
+    },
+    "inventory.agent.created": {
+      "address": "inventory.agent.created",
+      "messages": {
+        "event": {
+          "payload": {
+            "$ref": "#/components/schemas/EventEnvelope"
+          }
+        }
+      }
+    },
+    "inventory.agent.cv_updated": {
+      "address": "inventory.agent.cv_updated",
+      "messages": {
+        "event": {
+          "payload": {
+            "$ref": "#/components/schemas/EventEnvelope"
+          }
+        }
+      }
+    },
+    "inventory.project.connected": {
+      "address": "inventory.project.connected",
+      "messages": {
+        "event": {
+          "payload": {
+            "$ref": "#/components/schemas/EventEnvelope"
+          }
+        }
+      }
+    },
+    "inventory.provider.created": {
+      "address": "inventory.provider.created",
+      "messages": {
+        "event": {
+          "payload": {
+            "$ref": "#/components/schemas/EventEnvelope"
+          }
+        }
+      }
+    },
+    "inventory.provider.updated": {
+      "address": "inventory.provider.updated",
+      "messages": {
+        "event": {
+          "payload": {
+            "$ref": "#/components/schemas/EventEnvelope"
+          }
+        }
+      }
+    },
+    "kanban.card.blocked": {
+      "address": "kanban.card.blocked",
+      "messages": {
+        "event": {
+          "payload": {
+            "$ref": "#/components/schemas/EventEnvelope"
+          }
+        }
+      }
+    },
+    "kanban.card.created": {
+      "address": "kanban.card.created",
+      "messages": {
+        "event": {
+          "payload": {
+            "$ref": "#/components/schemas/EventEnvelope"
+          }
+        }
+      }
+    },
+    "kanban.card.moved": {
+      "address": "kanban.card.moved",
+      "messages": {
+        "event": {
+          "payload": {
+            "$ref": "#/components/schemas/EventEnvelope"
+          }
+        }
+      }
+    },
+    "kanban.card.unblocked": {
+      "address": "kanban.card.unblocked",
+      "messages": {
+        "event": {
+          "payload": {
+            "$ref": "#/components/schemas/EventEnvelope"
+          }
+        }
+      }
+    },
+    "kanban.card.updated": {
+      "address": "kanban.card.updated",
+      "messages": {
+        "event": {
+          "payload": {
+            "$ref": "#/components/schemas/EventEnvelope"
+          }
+        }
+      }
+    },
+    "lab.agent.status_changed": {
+      "address": "lab.agent.status_changed",
+      "messages": {
+        "event": {
+          "payload": {
+            "$ref": "#/components/schemas/EventEnvelope"
+          }
+        }
+      }
+    },
+    "lab.budget.changed": {
+      "address": "lab.budget.changed",
+      "messages": {
+        "event": {
+          "payload": {
+            "$ref": "#/components/schemas/EventEnvelope"
+          }
+        }
+      }
+    },
+    "memory.compaction.completed": {
+      "address": "memory.compaction.completed",
+      "messages": {
+        "event": {
+          "payload": {
+            "$ref": "#/components/schemas/EventEnvelope"
+          }
+        }
+      }
+    },
+    "memory.document.created": {
+      "address": "memory.document.created",
+      "messages": {
+        "event": {
+          "payload": {
+            "$ref": "#/components/schemas/EventEnvelope"
+          }
+        }
+      }
+    },
+    "security.auth_denied": {
+      "address": "security.auth_denied",
+      "messages": {
+        "event": {
+          "payload": {
+            "$ref": "#/components/schemas/EventEnvelope"
+          }
+        }
+      }
+    },
+    "system.audit.recorded": {
+      "address": "system.audit.recorded",
+      "messages": {
+        "event": {
+          "payload": {
+            "$ref": "#/components/schemas/EventEnvelope"
+          }
+        }
+      }
+    },
+    "system.budget.exhausted": {
+      "address": "system.budget.exhausted",
+      "messages": {
+        "event": {
+          "payload": {
+            "$ref": "#/components/schemas/EventEnvelope"
+          }
+        }
+      }
+    },
+    "system.health.changed": {
+      "address": "system.health.changed",
+      "messages": {
+        "event": {
+          "payload": {
+            "$ref": "#/components/schemas/EventEnvelope"
+          }
+        }
+      }
+    }
   },
   "components": {
     "schemas": {
       "EventEnvelope": {
         "type": "object",
-        "required": ["event_id", "event", "seq", "lab_id", "occurred_at", "payload"],
+        "required": [
+          "event_id",
+          "event",
+          "seq",
+          "lab_id",
+          "occurred_at",
+          "payload"
+        ],
         "properties": {
-          "event_id": { "type": "string", "format": "uuid" },
-          "event": { "type": "string" },
-          "seq": { "type": "integer", "format": "int64" },
-          "lab_id": { "type": "string", "format": "uuid" },
-          "occurred_at": { "type": "string", "format": "date-time" },
-          "payload": { "type": "object" }
+          "event_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "event": {
+            "type": "string"
+          },
+          "seq": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "lab_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "payload": {
+            "type": "object"
+          }
         }
       }
     }

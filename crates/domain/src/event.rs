@@ -26,6 +26,8 @@ pub const EVENT_CATALOG: &[(&str, u32)] = &[
     ("delivery.run.started", 1),
     ("delivery.run.step", 1),
     ("delivery.run.completed", 1),
+    ("delivery.run.cancelled", 1),
+    ("delivery.run.timed_out", 1),
     ("delivery.run.failed", 1),
     ("delivery.pr.opened", 1),
     ("delivery.review.submitted", 1),
