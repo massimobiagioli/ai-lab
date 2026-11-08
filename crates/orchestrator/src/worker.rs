@@ -72,6 +72,15 @@ impl ExecError {
 pub trait RunExecutor: Send + Sync {
     /// Execute a queued run and return its pipeline.
     async fn execute(&self, run: &QueuedRun) -> Result<RunPipeline, ExecError>;
+
+    /// Reconcile a crashed run against external SCM state.
+    async fn recover(
+        &self,
+        _card_id: CardId,
+        _run_id: RunId,
+    ) -> Option<crate::pipeline::RecoveryAction> {
+        None
+    }
 }
 
 /// Probe used to cancel a running run at a tool boundary.

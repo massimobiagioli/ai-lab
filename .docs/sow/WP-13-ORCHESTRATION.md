@@ -375,3 +375,4 @@ Outputs are stored in `run_steps` (type `verification`) and attached to the PR b
 2026-11-07 | build | crates/orchestrator/src/{postgres,wired}.rs, crates/domain/src/event.rs | merge-SHA recovery; context sections/citations; per-run budget; cancelled/timed_out events | eligibility/metrics/adapters open | QA review
 2026-11-07 | build | crates/orchestrator/src/{wired,postgres,context}.rs | lint fix; backoff; eligibility; exit_code; DONE version; citations rendered | external recovery/adapters/metrics open | QA review
 2026-11-07 | build | crates/orchestrator/src/{postgres,wired}.rs | retry off-by-one; verification step type; reachable budget; 53 tests | external recovery/adapters/metrics open | QA review
+2026-11-07 | build | crates/orchestrator/src/{worker,wired,postgres}.rs | SCM recovery; max_concurrent_cards/lab budget eligibility; 53 tests | adapter idempotency/metrics/adapters open | QA review

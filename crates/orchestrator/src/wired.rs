@@ -15,6 +15,7 @@ use chrono::Utc;
 use crate::backend::SandboxBackend;
 use crate::context::{ContextSection, build_context};
 use crate::orchestration::RunBudget;
+use crate::pipeline::RecoveryAction;
 use crate::pipeline::{Handoff, HandoffState, RunPipeline, VerifyOutcome};
 use crate::sandbox::{EgressPolicy, SandboxSpec, ToolCall};
 use crate::worker::{CancelProbe, ExecError, QueuedRun, RunExecutor};
@@ -281,6 +282,19 @@ fn tool_call_to_exec(call: &LlmToolCall) -> Result<(Vec<String>, String), ExecEr
 
 #[async_trait]
 impl RunExecutor for WiredExecutor {
+    async fn recover(
+        &self,
+        _card_id: ailab_domain::CardId,
+        _run_id: ailab_domain::RunId,
+    ) -> Option<RecoveryAction> {
+        let branch = self.branch().ok()?;
+        match self.scm.find_pull_request(&self.repo, &branch).await {
+            Ok(Some(_)) => Some(RecoveryAction::ResumeReview),
+            Ok(None) => Some(RecoveryAction::Retry),
+            Err(_) => None,
+        }
+    }
+
     #[allow(clippy::too_many_lines)]
     async fn execute(&self, run: &QueuedRun) -> Result<RunPipeline, ExecError> {
         let limit = std::env::var("AILAB_RUN_BUDGET_MICROUSD")

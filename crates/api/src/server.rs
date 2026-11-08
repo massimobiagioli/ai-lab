@@ -407,6 +407,13 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/openapi.json", get(openapi))
         .route("/api/v1/telemetry", post(ingest_telemetry))
         .route("/api/v1/telemetry/frontend", post(ingest_telemetry))
+        .route("/api/v1/providers", get(not_implemented))
+        .route("/api/v1/providers/{id}", get(not_implemented))
+        .route("/api/v1/models", get(not_implemented))
+        .route("/api/v1/projects", get(not_implemented))
+        .route("/api/v1/projects/{id}/board", get(not_implemented))
+        .route("/api/v1/cards/{id}", get(not_implemented))
+        .route("/api/v1/cards/{id}/transition", post(not_implemented))
         .route("/api/v1/health/providers", get(health_providers))
         .route("/api/v1/health/scm", get(health_scm))
         .route("/ws", get(ws_upgrade))
@@ -417,8 +424,36 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/health/ready", get(health_ready))
         .merge(protected)
         .fallback(not_found)
+        .layer(axum::extract::DefaultBodyLimit::max(1_048_576))
+        .layer(middleware::from_fn(request_id))
         .with_state(state)
 }
+
+async fn request_id(mut request: Request, next: Next) -> Response {
+    let id = request
+        .headers()
+        .get("x-request-id")
+        .and_then(|value| value.to_str().ok())
+        .map_or_else(
+            || {
+                format!(
+                    "{:x}",
+                    chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
+                )
+            },
+            ToOwned::to_owned,
+        );
+    request.extensions_mut().insert(RequestId(id.clone()));
+    let mut response = next.run(request).await;
+    if let Ok(value) = axum::http::HeaderValue::from_str(&id) {
+        response.headers_mut().insert("x-request-id", value);
+    }
+    response
+}
+
+/// Request correlation id.
+#[derive(Debug, Clone)]
+pub struct RequestId(pub String);
 
 async fn auth(State(state): State<AppState>, request: Request, next: Next) -> Response {
     let Some(expected) = state.auth.as_ref() else {
@@ -515,6 +550,71 @@ fn problem(error: DomainError) -> Response {
         .into_response()
 }
 
+const B64_ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+
+fn b64encode(input: &[u8]) -> String {
+    let mut output = String::new();
+    for chunk in input.chunks(3) {
+        let b = [
+            chunk[0],
+            *chunk.get(1).unwrap_or(&0),
+            *chunk.get(2).unwrap_or(&0),
+        ];
+        let n = (u32::from(b[0]) << 16) | (u32::from(b[1]) << 8) | u32::from(b[2]);
+        let chars = [
+            B64_ALPHABET[((n >> 18) & 63) as usize],
+            B64_ALPHABET[((n >> 12) & 63) as usize],
+            B64_ALPHABET[((n >> 6) & 63) as usize],
+            B64_ALPHABET[(n & 63) as usize],
+        ];
+        output.push(chars[0] as char);
+        output.push(chars[1] as char);
+        if chunk.len() > 1 {
+            output.push(chars[2] as char);
+        }
+        if chunk.len() > 2 {
+            output.push(chars[3] as char);
+        }
+    }
+    output
+}
+
+fn b64decode(input: &str) -> Option<Vec<u8>> {
+    let mut values = Vec::new();
+    for byte in input.bytes() {
+        let value = B64_ALPHABET
+            .iter()
+            .position(|&candidate| candidate == byte)?;
+        values.push(u8::try_from(value).ok()?);
+    }
+    let mut output = Vec::new();
+    for chunk in values.chunks(4) {
+        if chunk.len() < 2 {
+            return None;
+        }
+        let mut n = 0_u32;
+        for (index, value) in chunk.iter().enumerate() {
+            n |= u32::from(*value) << (18 - 6 * index);
+        }
+        output.push(u8::try_from((n >> 16) & 0xff).ok()?);
+        if chunk.len() > 2 {
+            output.push(u8::try_from((n >> 8) & 0xff).ok()?);
+        }
+        if chunk.len() > 3 {
+            output.push(u8::try_from(n & 0xff).ok()?);
+        }
+    }
+    Some(output)
+}
+
+fn encode_cursor(offset: usize) -> String {
+    b64encode(offset.to_string().as_bytes())
+}
+
+fn decode_cursor(cursor: &str) -> Option<usize> {
+    std::str::from_utf8(&b64decode(cursor)?).ok()?.parse().ok()
+}
+
 fn rate_key(headers: &HeaderMap) -> String {
     if std::env::var("AILAB_TRUSTED_PROXY").is_err() {
         return "local".to_owned();
@@ -558,6 +658,26 @@ fn enforce(state: &AppState, headers: &HeaderMap, kind: RateLimitKind) -> Result
 
 async fn health_live() -> StatusCode {
     StatusCode::OK
+}
+
+async fn not_implemented() -> Response {
+    let mut details = ProblemDetails::from(DomainError::validation(
+        "endpoint",
+        "this endpoint is not implemented yet",
+    ));
+    details.status = 501;
+    "NOT_IMPLEMENTED".clone_into(&mut details.code);
+    details.trace_id = Some(format!(
+        "{:x}",
+        chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
+    ));
+    details.instance = Some("about:blank".to_owned());
+    (
+        StatusCode::NOT_IMPLEMENTED,
+        [(axum::http::header::CONTENT_TYPE, "application/problem+json")],
+        Json(details),
+    )
+        .into_response()
 }
 
 async fn health_providers() -> Response {
@@ -702,11 +822,20 @@ async fn list_runs(
         Ok(limit) => limit,
         Err(message) => return problem(DomainError::validation("limit", message)),
     };
-    let offset = query
-        .cursor
-        .and_then(|cursor| cursor.parse::<usize>().ok())
-        .unwrap_or(0);
-    Json(state.store.list_by_lab(&id, limit, offset).await).into_response()
+    let offset = match query.cursor.as_deref() {
+        Some(cursor) => match decode_cursor(cursor) {
+            Some(offset) => offset,
+            None => {
+                return problem(DomainError::validation("cursor", "invalid cursor"));
+            }
+        },
+        None => 0,
+    };
+    let mut page = state.store.list_by_lab(&id, limit, offset).await;
+    page.next_cursor = page
+        .next_cursor
+        .map(|_| encode_cursor(offset + usize::try_from(limit).unwrap_or(0)));
+    Json(page).into_response()
 }
 
 async fn enqueue_run(

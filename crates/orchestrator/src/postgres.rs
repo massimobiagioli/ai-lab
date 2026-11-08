@@ -65,8 +65,11 @@ impl PostgresScheduler {
         let queued = sqlx::query(
             "SELECT r.id, r.card_id, r.agent_id, r.attempt, r.lab_id FROM runs r \
              JOIN cards c ON c.id = r.card_id JOIN agents a ON a.id = r.agent_id \
+             JOIN projects p ON p.id = c.project_id JOIN labs l ON l.id = p.lab_id \
              WHERE r.status = 'queued' AND r.created_at <= $1 AND r.attempt <= 4 \
                AND c.blocked_reason IS NULL AND c.spent_microusd < c.budget_microusd \
+               AND (SELECT COALESCE(SUM(cl.cost_microusd), 0) FROM cost_ledger cl WHERE cl.lab_id = l.id) < l.monthly_budget_microusd \
+               AND (SELECT COUNT(*) FROM runs r2 WHERE r2.agent_id = a.id AND r2.status = 'running') < a.max_concurrent_cards \
                AND a.status IN ('idle','working') AND a.retired_at IS NULL \
              ORDER BY r.created_at FOR UPDATE OF r SKIP LOCKED LIMIT $2",
         )
@@ -110,9 +113,12 @@ impl PostgresScheduler {
         let cards = sqlx::query(
             "SELECT c.id, c.project_id, c.assignee_id FROM cards c \
              JOIN agents a ON a.id = c.assignee_id \
+             JOIN projects p ON p.id = c.project_id JOIN labs l ON l.id = p.lab_id \
              WHERE c.column_name = 'READY' AND c.assignee_id IS NOT NULL \
                AND c.blocked_reason IS NULL AND c.priority <> 'wont' \
                AND c.spent_microusd < c.budget_microusd \
+               AND (SELECT COALESCE(SUM(cl.cost_microusd), 0) FROM cost_ledger cl WHERE cl.lab_id = l.id) < l.monthly_budget_microusd \
+               AND (SELECT COUNT(*) FROM runs r2 WHERE r2.agent_id = a.id AND r2.status = 'running') < a.max_concurrent_cards \
                AND a.status IN ('idle','working') AND a.retired_at IS NULL \
                AND COALESCE((SELECT MAX(r.attempt) FROM runs r WHERE r.card_id = c.id), 0) <= 4 \
              ORDER BY c.due_date NULLS LAST FOR UPDATE OF c SKIP LOCKED LIMIT $1",
@@ -546,7 +552,8 @@ impl PostgresWorker {
             if let Some((run_id, merge_sha, _lab_id, attempt)) =
                 self.scheduler.latest_run(*card).await?
             {
-                if merge_sha.is_some() {
+                let action = self.executor.recover(*card, run_id).await;
+                if merge_sha.is_some() || action == Some(crate::pipeline::RecoveryAction::Done) {
                     self.scheduler
                         .complete_success(run_id, merge_sha.as_deref(), now)
                         .await?;
