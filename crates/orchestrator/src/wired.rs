@@ -126,7 +126,7 @@ impl WiredExecutor {
                     "run budget exhausted",
                     Utc::now(),
                 );
-                return Err(ExecError::Terminal("BUDGET_EXCEEDED".to_owned()));
+                return Err(ExecError::Budget);
             }
             if response.tool_calls.is_empty() {
                 return Ok(());
@@ -289,7 +289,11 @@ impl RunExecutor for WiredExecutor {
     ) -> Option<RecoveryAction> {
         let branch = self.branch().ok()?;
         match self.scm.find_pull_request(&self.repo, &branch).await {
-            Ok(Some(_)) => Some(RecoveryAction::ResumeReview),
+            Ok(Some(pr)) => Some(if self.scm.is_merged(&self.repo, pr.number).await {
+                RecoveryAction::Done
+            } else {
+                RecoveryAction::ResumeReview
+            }),
             Ok(None) => Some(RecoveryAction::Retry),
             Err(_) => None,
         }

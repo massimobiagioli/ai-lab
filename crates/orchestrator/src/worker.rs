@@ -57,6 +57,9 @@ pub enum ExecError {
     /// The run was cancelled at a tool boundary.
     #[error("run cancelled")]
     Cancelled,
+    /// The run budget was exhausted.
+    #[error("budget exhausted")]
+    Budget,
 }
 
 impl ExecError {

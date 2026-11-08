@@ -308,6 +308,10 @@ pub trait ScmProvider: Send + Sync {
     ) -> Result<PullRequest, ScmError>;
     /// Read checks for a commit.
     async fn get_checks(&self, repo: &RepoRef, sha: &str) -> Result<CheckSummary, ScmError>;
+    /// True when the PR has been merged.
+    async fn is_merged(&self, _repo: &RepoRef, _pr_number: u64) -> bool {
+        false
+    }
     /// Submit a review.
     async fn submit_review(
         &self,
@@ -487,6 +491,12 @@ impl ScmProvider for FakeScm {
             failed: 0,
             pending: 0,
         })
+    }
+
+    async fn is_merged(&self, _repo: &RepoRef, pr_number: u64) -> bool {
+        self.inner
+            .lock()
+            .is_ok_and(|state| state.merges.iter().any(|(number, _)| *number == pr_number))
     }
 
     async fn submit_review(
@@ -1102,6 +1112,23 @@ impl ScmProvider for GitHubClient {
             failed,
             pending,
         })
+    }
+
+    async fn is_merged(&self, repo: &RepoRef, pr_number: u64) -> bool {
+        let Ok(response) = self
+            .send(self.request(
+                Method::Get,
+                &format!("/repos/{}/pulls/{pr_number}", repo.full_name()),
+                None,
+            ))
+            .await
+        else {
+            return false;
+        };
+        serde_json::from_str::<Value>(&response.body)
+            .ok()
+            .and_then(|value| value["merged"].as_bool())
+            .unwrap_or(false)
     }
 
     async fn submit_review(

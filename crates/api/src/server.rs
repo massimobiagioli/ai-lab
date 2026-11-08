@@ -425,8 +425,9 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/health/ready", get(health_ready))
         .merge(protected)
         .fallback(not_found)
-        .layer(axum::extract::DefaultBodyLimit::max(1_048_576))
+        .layer(axum::extract::DefaultBodyLimit::max(2_097_152))
         .layer(middleware::from_fn(request_id))
+        .layer(middleware::from_fn(origin_guard))
         .with_state(state)
 }
 
@@ -443,7 +444,7 @@ where
         axum::Json::<T>::from_request(request, state)
             .await
             .map(|axum::Json(value)| Self(value))
-            .map_err(|rejection| problem(DomainError::validation("body", rejection.body_text())))
+            .map_err(|rejection| bad_request(rejection.body_text()))
     }
 }
 
@@ -460,7 +461,7 @@ where
         Query::<T>::from_request_parts(parts, state)
             .await
             .map(|Query(value)| Self(value))
-            .map_err(|rejection| problem(DomainError::validation("query", rejection.body_text())))
+            .map_err(|rejection| bad_request(rejection.body_text()))
     }
 }
 
@@ -567,6 +568,65 @@ fn replay(status: u16, body: serde_json::Value) -> Response {
         Json(body),
     )
         .into_response()
+}
+
+fn bad_request(detail: impl Into<String>) -> Response {
+    let mut details = ProblemDetails::from(DomainError::validation("request", detail));
+    details.status = 400;
+    "BAD_REQUEST".clone_into(&mut details.code);
+    details.trace_id = Some(format!(
+        "{:x}",
+        chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
+    ));
+    details.instance = Some("about:blank".to_owned());
+    (
+        StatusCode::BAD_REQUEST,
+        [(axum::http::header::CONTENT_TYPE, "application/problem+json")],
+        Json(details),
+    )
+        .into_response()
+}
+
+async fn origin_guard(request: Request, next: Next) -> Response {
+    let mutation = matches!(
+        *request.method(),
+        axum::http::Method::POST
+            | axum::http::Method::PUT
+            | axum::http::Method::PATCH
+            | axum::http::Method::DELETE
+    );
+    if mutation {
+        let origin = request
+            .headers()
+            .get("origin")
+            .and_then(|value| value.to_str().ok());
+        let host = request
+            .headers()
+            .get("host")
+            .and_then(|value| value.to_str().ok());
+        let same_origin = match (origin, host) {
+            (None, _) => true,
+            (Some(origin), Some(host)) => {
+                origin == format!("http://{host}") || origin == format!("https://{host}")
+            }
+            (Some(_), None) => false,
+        };
+        let configured = std::env::var("AILAB_ALLOWED_ORIGINS")
+            .map(|value| {
+                value
+                    .split(',')
+                    .map(|origin| origin.trim().to_owned())
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default();
+        if !same_origin && !origin.is_some_and(|origin| configured.iter().any(|c| c == origin)) {
+            return problem(DomainError::policy(
+                "ORIGIN_FORBIDDEN",
+                "origin is not allowed",
+            ));
+        }
+    }
+    next.run(request).await
 }
 
 fn problem(error: DomainError) -> Response {
@@ -776,10 +836,15 @@ async fn get_steps(
     let Some(steps) = state.store.steps(&id).await else {
         return problem(DomainError::NotFound);
     };
-    let offset = query
-        .cursor
-        .and_then(|cursor| cursor.parse::<usize>().ok())
-        .unwrap_or(0);
+    let offset = match query.cursor.as_deref() {
+        Some(cursor) => match decode_cursor(cursor) {
+            Some(offset) => offset,
+            None => {
+                return problem(DomainError::validation("cursor", "invalid cursor"));
+            }
+        },
+        None => 0,
+    };
     let data: Vec<StepView> = steps
         .iter()
         .skip(offset)
@@ -790,7 +855,7 @@ async fn get_steps(
     let total = u64::try_from(steps.len()).unwrap_or(u64::MAX);
     Json(Page {
         data,
-        next_cursor: (next < steps.len()).then(|| next.to_string()),
+        next_cursor: (next < steps.len()).then(|| encode_cursor(next)),
         total_estimate: total,
     })
     .into_response()
@@ -1057,7 +1122,7 @@ async fn handle_socket(mut socket: WebSocket, state: AppState, query: WsQuery) {
     let backfill = state.store.events_after(&lab_id, query.since).await;
     let mut seq = backfill.last().map_or(query.since, |event| event.seq);
     let mut topics: Vec<String> = vec!["system".to_owned()];
-    let handshake = hello(Utc::now(), seq, topics.clone());
+    let handshake = hello(Utc::now(), query.since, topics.clone());
     if let Ok(text) = serde_json::to_string(&handshake)
         && socket.send(Message::Text(text.into())).await.is_err()
     {

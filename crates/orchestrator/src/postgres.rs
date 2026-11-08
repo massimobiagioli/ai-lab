@@ -271,6 +271,28 @@ impl PostgresScheduler {
         Ok(())
     }
 
+    /// Persist a typed error code on a run.
+    pub async fn set_error(&self, run_id: RunId, code: &str) -> Result<(), sqlx::Error> {
+        sqlx::query("UPDATE runs SET error_code = $2 WHERE id = $1")
+            .bind(run_id.as_uuid())
+            .bind(code)
+            .execute(&self.pool)
+            .await?;
+        Ok(())
+    }
+
+    /// Pause a lab (persisted in `labs.settings`).
+    pub async fn pause_lab(&self, lab_id: LabId) -> Result<(), sqlx::Error> {
+        sqlx::query(
+            "UPDATE labs SET settings = jsonb_set(settings, '{paused}', 'true'::jsonb, true) \
+             WHERE id = $1",
+        )
+        .bind(lab_id.as_uuid())
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
     /// Dead-letter a run after the retry limit and move its card to ICEBOX.
     pub async fn dead_letter(&self, run_id: RunId, card_id: CardId) -> Result<(), sqlx::Error> {
         let mut tx = self.pool.begin().await?;
@@ -628,6 +650,17 @@ impl PostgresWorker {
                         .emit_event("delivery.run.cancelled", &run, now)
                         .await?;
                     report.cancelled += 1;
+                }
+                Err(crate::worker::ExecError::Budget) => {
+                    self.scheduler
+                        .set_error(run.run_id, "BUDGET_EXCEEDED")
+                        .await?;
+                    self.scheduler.finish(run.run_id, "failed", now).await?;
+                    self.scheduler.pause_lab(run.lab_id).await?;
+                    self.scheduler
+                        .emit_event("system.budget.exhausted", &run, now)
+                        .await?;
+                    report.failed += 1;
                 }
                 Err(error) if error.retryable() => {
                     if run.attempt < 4 {

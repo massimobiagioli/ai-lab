@@ -8,7 +8,13 @@ use std::time::Duration;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
-    let bind = std::env::var("AILAB_BIND").unwrap_or_else(|_| "127.0.0.1".to_owned());
+    let listen = std::env::var("AILAB_API_LISTEN").unwrap_or_else(|_| {
+        let bind = std::env::var("AILAB_BIND").unwrap_or_else(|_| "127.0.0.1".to_owned());
+        format!("{bind}:3000")
+    });
+    let bind = listen
+        .rsplit_once(':')
+        .map_or_else(|| listen.clone(), |(host, _)| host.to_owned());
     let token = std::env::var("AILAB_API_TOKEN").ok();
     let master_key = std::env::var("AILAB_MASTER_KEY").ok();
 
@@ -39,7 +45,6 @@ fn main() {
         std::process::exit(78);
     }
 
-    let listen = std::env::var("AILAB_API_LISTEN").unwrap_or_else(|_| "0.0.0.0:3000".to_owned());
     let runtime = match tokio::runtime::Runtime::new() {
         Ok(runtime) => runtime,
         Err(error) => {
