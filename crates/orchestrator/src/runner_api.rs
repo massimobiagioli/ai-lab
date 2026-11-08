@@ -42,6 +42,9 @@ pub struct CreateSandboxRequest {
     /// Optional short-lived SCM token (write-only).
     #[serde(default)]
     pub scm_token: Option<String>,
+    /// Acting role (`tech_lead` | `analyst` | `dev` | `qa`).
+    #[serde(default)]
+    pub role: Option<String>,
 }
 
 /// Create-sandbox response.
@@ -83,6 +86,15 @@ pub struct ApiErrorBody {
     pub code: &'static str,
     /// Message.
     pub message: String,
+    /// Denied rule.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rule: Option<String>,
+    /// Denied tool.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tool: Option<String>,
+    /// Denied argument.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub argument: Option<String>,
 }
 
 /// API error.
@@ -91,6 +103,9 @@ pub struct ApiError {
     status: StatusCode,
     code: &'static str,
     message: String,
+    rule: Option<String>,
+    tool: Option<String>,
+    argument: Option<String>,
 }
 
 impl ApiError {
@@ -99,6 +114,9 @@ impl ApiError {
             status: StatusCode::UNAUTHORIZED,
             code: "UNAUTHORIZED",
             message: "missing or invalid runner token".to_owned(),
+            rule: None,
+            tool: None,
+            argument: None,
         }
     }
 
@@ -107,6 +125,9 @@ impl ApiError {
             status: StatusCode::UNPROCESSABLE_ENTITY,
             code: "VALIDATION_FAILED",
             message: message.into(),
+            rule: None,
+            tool: None,
+            argument: None,
         }
     }
 
@@ -115,6 +136,31 @@ impl ApiError {
             status: StatusCode::FORBIDDEN,
             code: "POLICY_DENIED",
             message: message.into(),
+            rule: None,
+            tool: None,
+            argument: None,
+        }
+    }
+
+    fn policy_denial(denial: crate::tools::ToolDenial) -> Self {
+        Self {
+            status: StatusCode::FORBIDDEN,
+            code: "POLICY_DENIED",
+            message: denial.reason,
+            rule: Some(denial.rule),
+            tool: Some(denial.tool),
+            argument: Some(denial.argument),
+        }
+    }
+
+    fn unsupported_tool(tool: &str) -> Self {
+        Self {
+            status: StatusCode::UNPROCESSABLE_ENTITY,
+            code: "UNSUPPORTED_TOOL",
+            message: format!("tool `{tool}` has no runner executor"),
+            rule: None,
+            tool: None,
+            argument: None,
         }
     }
 
@@ -123,6 +169,9 @@ impl ApiError {
             status: StatusCode::INTERNAL_SERVER_ERROR,
             code: "INTERNAL",
             message: message.into(),
+            rule: None,
+            tool: None,
+            argument: None,
         }
     }
 }
@@ -134,6 +183,9 @@ impl IntoResponse for ApiError {
             Json(ApiErrorBody {
                 code: self.code,
                 message: self.message,
+                rule: self.rule,
+                tool: self.tool,
+                argument: self.argument,
             }),
         )
             .into_response()
@@ -144,20 +196,22 @@ impl From<BackendError> for ApiError {
     fn from(error: BackendError) -> Self {
         match error {
             BackendError::Validation(message) => Self::validation(message),
-            BackendError::Policy(message) => Self {
-                status: StatusCode::FORBIDDEN,
-                code: "POLICY_DENIED",
-                message,
-            },
+            BackendError::Policy(message) => Self::policy(message),
             BackendError::NotFound => Self {
                 status: StatusCode::NOT_FOUND,
                 code: "NOT_FOUND",
                 message: "sandbox not found".to_owned(),
+                rule: None,
+                tool: None,
+                argument: None,
             },
             BackendError::Timeout => Self {
                 status: StatusCode::GATEWAY_TIMEOUT,
                 code: "TOOL_TIMEOUT",
                 message: "tool execution timed out".to_owned(),
+                rule: None,
+                tool: None,
+                argument: None,
             },
             BackendError::Internal(message) => Self::internal(message),
         }
@@ -169,6 +223,7 @@ impl From<BackendError> for ApiError {
 pub struct RunnerState {
     backend: Arc<dyn SandboxBackend>,
     token: Secret<String>,
+    roles: Arc<std::sync::Mutex<std::collections::BTreeMap<String, AgentRole>>>,
 }
 
 impl RunnerState {
@@ -181,7 +236,25 @@ impl RunnerState {
     /// Build the state with a specific backend.
     #[must_use]
     pub fn with_backend(token: Secret<String>, backend: Arc<dyn SandboxBackend>) -> Self {
-        Self { backend, token }
+        Self {
+            backend,
+            token,
+            roles: Arc::new(std::sync::Mutex::new(std::collections::BTreeMap::new())),
+        }
+    }
+
+    fn set_role(&self, sandbox_id: &str, role: AgentRole) {
+        if let Ok(mut roles) = self.roles.lock() {
+            roles.insert(sandbox_id.to_owned(), role);
+        }
+    }
+
+    fn role_of(&self, sandbox_id: &str) -> AgentRole {
+        self.roles
+            .lock()
+            .ok()
+            .and_then(|roles| roles.get(sandbox_id).copied())
+            .unwrap_or(AgentRole::Dev)
     }
 
     fn authorize(&self, headers: &HeaderMap) -> Result<(), ApiError> {
@@ -242,11 +315,13 @@ async fn create_sandbox(
     if let Some(token) = request.scm_token {
         spec = spec.with_scm_token(ailab_application::Secret::new(token));
     }
+    let role = parse_role(request.role.as_deref());
     let created = state
         .backend
-        .create(&spec, AgentRole::Dev)
+        .create(&spec, role)
         .await
         .map_err(ApiError::from)?;
+    state.set_role(&created.sandbox_id, role);
     Ok((StatusCode::CREATED, Json(created)))
 }
 
@@ -301,14 +376,21 @@ async fn exec_command(
     state.authorize(&headers)?;
     let start = Instant::now();
     let tool = request.tool.as_deref().unwrap_or("shell.run");
+    if tool != "shell.run" {
+        return Err(ApiError::unsupported_tool(tool));
+    }
+    let role = state.role_of(&id);
     let registry = crate::tools::ToolRegistry::v1();
     registry
         .authorize(
-            AgentRole::Dev,
-            tool,
+            role,
+            "shell.run",
             &serde_json::json!({"argv": request.argv, "path": request.cwd}),
         )
-        .map_err(|denial| ApiError::policy(denial.reason))?;
+        .map_err(ApiError::policy_denial)?;
+    let timeout = request
+        .timeout_s
+        .min(registry.get("shell.run").map_or(600, |spec| spec.timeout_s));
     let call = ToolCall {
         argv: request.argv,
         cwd: request.cwd,
@@ -316,11 +398,20 @@ async fn exec_command(
     };
     let mut outcome = state
         .backend
-        .exec(&id, &call, request.timeout_s)
+        .exec(&id, &call, timeout)
         .await
         .map_err(ApiError::from)?;
     outcome.duration_ms = u64::try_from(start.elapsed().as_millis()).unwrap_or(u64::MAX);
     Ok(Json(outcome))
+}
+
+fn parse_role(value: Option<&str>) -> AgentRole {
+    match value.unwrap_or("dev") {
+        "tech_lead" | "techlead" => AgentRole::TechLead,
+        "analyst" => AgentRole::Analyst,
+        "qa" => AgentRole::Qa,
+        _ => AgentRole::Dev,
+    }
 }
 
 #[cfg(test)]
@@ -439,7 +530,8 @@ mod tests {
 
     #[tokio::test]
     async fn status_logs_exec_and_delete() {
-        let router = router(state());
+        let state = state();
+        let router = router(state.clone());
         let created = router
             .clone()
             .oneshot(request("POST", "/v1/sandboxes", Some(&create_body())))
@@ -488,6 +580,82 @@ mod tests {
             .await
             .expect("response");
         assert_eq!(missing.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn exec_enforces_role_and_tool_mapping() {
+        let state = state();
+        let router = router(state.clone());
+        let created = router
+            .clone()
+            .oneshot(request("POST", "/v1/sandboxes", Some(&create_body())))
+            .await
+            .expect("response");
+        let id = body_json(created).await["sandbox_id"]
+            .as_str()
+            .expect("id")
+            .to_owned();
+
+        // A non-shell tool must not smuggle arbitrary argv through.
+        let bypass = router
+            .clone()
+            .oneshot(request(
+                "POST",
+                &format!("/v1/sandboxes/{id}/exec"),
+                Some(r#"{"argv":["curl","https://example.test"],"cwd":"workspace","timeout_s":10,"tool":"git.status"}"#),
+            ))
+            .await
+            .expect("response");
+        assert_eq!(bypass.status(), StatusCode::UNPROCESSABLE_ENTITY);
+
+        let curl = router
+            .clone()
+            .oneshot(request(
+                "POST",
+                &format!("/v1/sandboxes/{id}/exec"),
+                Some(
+                    r#"{"argv":["curl","https://example.test"],"cwd":"workspace","timeout_s":10}"#,
+                ),
+            ))
+            .await
+            .expect("response");
+        assert_eq!(curl.status(), StatusCode::FORBIDDEN);
+
+        // An analyst may not run shell commands.
+        let analyst_body = serde_json::json!({
+            "run_id": "run-2",
+            "image": "ailab/runner@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+            "worktree_ref": "worktrees/run-2",
+            "cpu": 1000,
+            "memory_mb": 1024,
+            "timeout_s": 900,
+            "egress": {"Allowlist": ["crates.io"]},
+            "role": "analyst"
+        })
+        .to_string();
+        let analyst = router
+            .clone()
+            .oneshot(request("POST", "/v1/sandboxes", Some(&analyst_body)))
+            .await
+            .expect("response");
+        let analyst_id = body_json(analyst).await["sandbox_id"]
+            .as_str()
+            .expect("id")
+            .to_owned();
+        assert_eq!(state.role_of(&analyst_id), AgentRole::Analyst);
+        let denied = router
+            .oneshot(request(
+                "POST",
+                &format!("/v1/sandboxes/{analyst_id}/exec"),
+                Some(r#"{"argv":["cargo","test"],"cwd":"workspace","timeout_s":10}"#),
+            ))
+            .await
+            .expect("response");
+        assert_eq!(denied.status(), StatusCode::FORBIDDEN);
+        let body = denied.into_body().collect().await.expect("body").to_bytes();
+        let value: serde_json::Value = serde_json::from_slice(&body).expect("json");
+        assert_eq!(value["code"], "POLICY_DENIED");
+        assert_eq!(value["rule"], "ROLE_NOT_ALLOWED");
     }
 
     #[tokio::test]

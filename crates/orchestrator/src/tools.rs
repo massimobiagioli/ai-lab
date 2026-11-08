@@ -365,6 +365,39 @@ impl ToolRegistry {
                 }
             }
         }
+        for (field, expected) in [
+            ("path", "string"),
+            ("dir", "string"),
+            ("content", "string"),
+            ("query", "string"),
+            ("patch", "string"),
+            ("message", "string"),
+            ("title", "string"),
+            ("body", "string"),
+            ("text", "string"),
+            ("branch", "string"),
+            ("sha", "string"),
+            ("verdict", "string"),
+            ("to", "string"),
+            ("reason", "string"),
+            ("argv", "array"),
+        ] {
+            if let Some(value) = args.get(field) {
+                let ok = match expected {
+                    "string" => value.is_string(),
+                    "array" => value.is_array(),
+                    _ => true,
+                };
+                if !ok {
+                    return Err(ToolDenial::new(
+                        "INVALID_ARGUMENT_TYPE",
+                        tool,
+                        field,
+                        format!("{field} must be a {expected}"),
+                    ));
+                }
+            }
+        }
         if let Some(path) = args.get("path").and_then(Value::as_str) {
             check_path(tool, "path", path)?;
         }
