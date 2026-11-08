@@ -572,9 +572,20 @@ async fn health_ready(State(state): State<AppState>) -> Response {
     if state.store.ready().await {
         StatusCode::OK.into_response()
     } else {
+        let mut details = ProblemDetails::from(DomainError::policy(
+            "NOT_READY",
+            "a required dependency is unavailable",
+        ));
+        details.status = 503;
+        details.trace_id = Some(format!(
+            "{:x}",
+            chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
+        ));
+        details.instance = Some("about:blank".to_owned());
         (
             StatusCode::SERVICE_UNAVAILABLE,
-            Json(serde_json::json!({"status": "unavailable"})),
+            [(axum::http::header::CONTENT_TYPE, "application/problem+json")],
+            Json(details),
         )
             .into_response()
     }
@@ -726,7 +737,7 @@ async fn enqueue_run(
                 state.idempotency.put(key, 201, body.clone());
                 state.idempotency.finish(key);
             }
-            (StatusCode::CREATED, Json(body)).into_response()
+            (StatusCode::ACCEPTED, Json(body)).into_response()
         }
         Err(StoreError::NotFound) => {
             if let Some(key) = key.as_deref() {
@@ -1102,7 +1113,7 @@ mod tests {
             .oneshot(request("POST", "/api/v1/cards/card-1/runs"))
             .await
             .expect("response");
-        assert_eq!(enqueued.status(), StatusCode::CREATED);
+        assert_eq!(enqueued.status(), StatusCode::ACCEPTED);
         let runs = app
             .oneshot(request("GET", "/api/v1/labs/lab-1/runs"))
             .await
@@ -1236,7 +1247,7 @@ mod tests {
             ))
             .await
             .expect("response");
-        assert_eq!(first.status(), StatusCode::CREATED);
+        assert_eq!(first.status(), StatusCode::ACCEPTED);
         let first_body = first.into_body().collect().await.expect("body").to_bytes();
         let first_value: serde_json::Value = serde_json::from_slice(&first_body).expect("json");
         let second = app

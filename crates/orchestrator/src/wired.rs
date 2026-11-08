@@ -109,7 +109,9 @@ impl WiredExecutor {
                 })
                 .await
                 .map_err(|error| ExecError::Transient(error.to_string()))?;
-            let cost = Money::from_microusd(1_000).unwrap_or(Money::ZERO);
+            let cost = self.budget.lock().map_or(Money::ZERO, |budget| {
+                Money::from_microusd((budget.limit.microusd() / 20).max(1)).unwrap_or(Money::ZERO)
+            });
             let exhausted = self
                 .budget
                 .lock()
