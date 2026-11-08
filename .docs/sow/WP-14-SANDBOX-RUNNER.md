@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | WP ID | `WP-14` |
-| Status | **done** |
+| Status | **progress** |
 | Owner | Dev |
 | Milestone | M5 |
 | Estimate | 21 points |
@@ -278,3 +278,4 @@ Evaluation order for every call:
 2026-11-07 | T01 | crates/orchestrator/src/sandbox.rs | spec/isolation/egress/lifecycle; 5 tests | — | T02
 2026-11-07 | T02 | crates/orchestrator/src/sandbox.rs | role tool policy, forbidden commands, protected paths | — | T03
 2026-11-07 | T03 | .docs/product/sandbox.md, .docs/product/tools.md | doc link check | runner service/escape suite deferred WP-14 follow-up | WP-16
+2026-11-07 | review | .docs/sow/WP-14-SANDBOX-RUNNER-review-plan.md | policy types/egress/tool-policy only; runner is a health placeholder | BLOCKED: HTTP control plane, exec/logs, escape suite, egress runtime (CR-0009) | build phase
