@@ -8,6 +8,7 @@ use ailab_domain::{AgentId, CardId, LabId, RunId};
 use serde_json::json;
 
 use crate::pipeline::RunStep;
+use crate::worker::CancelProbe;
 use chrono::{DateTime, Duration, Utc};
 use sqlx::{PgPool, Row};
 use uuid::Uuid;
@@ -363,6 +364,35 @@ pub struct PostgresTickReport {
     pub completed: usize,
     /// Runs finished as failed.
     pub failed: usize,
+    /// Runs cancelled at a tool boundary.
+    pub cancelled: usize,
+}
+
+/// Cancellation probe backed by the `runs` table.
+#[derive(Clone)]
+pub struct PostgresCancelProbe {
+    pool: PgPool,
+}
+
+impl PostgresCancelProbe {
+    /// Build the probe.
+    #[must_use]
+    pub const fn new(pool: PgPool) -> Self {
+        Self { pool }
+    }
+}
+
+#[async_trait::async_trait]
+impl CancelProbe for PostgresCancelProbe {
+    async fn is_cancelled(&self, run_id: RunId) -> bool {
+        sqlx::query_scalar::<_, String>("SELECT status FROM runs WHERE id = $1")
+            .bind(run_id.as_uuid())
+            .fetch_optional(&self.pool)
+            .await
+            .ok()
+            .flatten()
+            .is_some_and(|status| status == "cancelled")
+    }
 }
 
 /// Worker that leases and dispatches durable runs.
@@ -409,6 +439,13 @@ impl PostgresWorker {
                         .emit_event("delivery.run.completed", &run, now)
                         .await?;
                     report.completed += 1;
+                }
+                Err(crate::worker::ExecError::Cancelled) => {
+                    self.scheduler.finish(run.run_id, "cancelled", now).await?;
+                    self.scheduler
+                        .emit_event("delivery.run.failed", &run, now)
+                        .await?;
+                    report.cancelled += 1;
                 }
                 Err(error) if error.retryable() => {
                     self.scheduler.requeue(run.run_id, run.card_id).await?;

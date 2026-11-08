@@ -54,6 +54,9 @@ pub enum ExecError {
     /// Terminal; dead-letter.
     #[error("terminal failure: {0}")]
     Terminal(String),
+    /// The run was cancelled at a tool boundary.
+    #[error("run cancelled")]
+    Cancelled,
 }
 
 impl ExecError {
@@ -69,6 +72,13 @@ impl ExecError {
 pub trait RunExecutor: Send + Sync {
     /// Execute a queued run and return its pipeline.
     async fn execute(&self, run: &QueuedRun) -> Result<RunPipeline, ExecError>;
+}
+
+/// Probe used to cancel a running run at a tool boundary.
+#[async_trait]
+pub trait CancelProbe: Send + Sync {
+    /// True when the run was cancelled.
+    async fn is_cancelled(&self, run_id: RunId) -> bool;
 }
 
 /// Worker failure.
@@ -90,6 +100,8 @@ pub struct TickReport {
     pub failed: usize,
     /// Requeued runs.
     pub requeued: usize,
+    /// Cancelled runs.
+    pub cancelled: usize,
     /// Expired leases reaped.
     pub reaped: usize,
 }
@@ -163,6 +175,7 @@ impl Worker {
                             self.enqueue(retry)?;
                             report.requeued += 1;
                         }
+                        Err(ExecError::Cancelled) => report.cancelled += 1,
                         Err(_) => report.failed += 1,
                     }
                     self.leases.release(card_id);

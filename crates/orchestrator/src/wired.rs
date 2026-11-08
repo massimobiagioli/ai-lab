@@ -17,7 +17,7 @@ use crate::context::{ContextSection, build_context};
 use crate::orchestration::RunBudget;
 use crate::pipeline::{Handoff, HandoffState, RunPipeline, VerifyOutcome};
 use crate::sandbox::{EgressPolicy, SandboxSpec, ToolCall};
-use crate::worker::{ExecError, QueuedRun, RunExecutor};
+use crate::worker::{CancelProbe, ExecError, QueuedRun, RunExecutor};
 
 const IMAGE: &str =
     "ailab/runner@sha256:0000000000000000000000000000000000000000000000000000000000000000";
@@ -32,6 +32,7 @@ pub struct WiredExecutor {
     author: String,
     reviewer: String,
     budget: Mutex<RunBudget>,
+    cancel_probe: Option<Arc<dyn CancelProbe>>,
     last: Mutex<Option<RunPipeline>>,
 }
 
@@ -57,8 +58,16 @@ impl WiredExecutor {
             budget: Mutex::new(RunBudget::new(
                 Money::from_microusd(5_000_000).unwrap_or(Money::ZERO),
             )),
+            cancel_probe: None,
             last: Mutex::new(None),
         }
+    }
+
+    /// Attach a cancellation probe checked at tool boundaries.
+    #[must_use]
+    pub fn with_cancel_probe(mut self, probe: Arc<dyn CancelProbe>) -> Self {
+        self.cancel_probe = Some(probe);
+        self
     }
 
     /// Last completed pipeline (tests/observability).
@@ -77,9 +86,15 @@ impl WiredExecutor {
         pipeline: &mut RunPipeline,
         sandbox_id: &str,
         prompt: &str,
+        run_id: ailab_domain::RunId,
     ) -> Result<(), ExecError> {
         let mut user = prompt.to_owned();
         loop {
+            if let Some(probe) = &self.cancel_probe
+                && probe.is_cancelled(run_id).await
+            {
+                return Err(ExecError::Cancelled);
+            }
             pipeline
                 .next_iteration(Utc::now())
                 .map_err(|error| ExecError::Terminal(error.to_string()))?;
@@ -304,8 +319,20 @@ impl RunExecutor for WiredExecutor {
             .create(&spec, AgentRole::Dev)
             .await
             .map_err(|error| ExecError::Transient(error.to_string()))?;
-        self.run_agent_loop(&mut pipeline, &sandbox.sandbox_id, &bundle.render())
-            .await?;
+        if let Err(error) = self
+            .run_agent_loop(
+                &mut pipeline,
+                &sandbox.sandbox_id,
+                &bundle.render(),
+                run.run_id,
+            )
+            .await
+        {
+            if matches!(error, ExecError::Cancelled) {
+                let _ = self.sandbox.delete(&sandbox.sandbox_id).await;
+            }
+            return Err(error);
+        }
 
         advance(&mut pipeline)?; // Verify
         let mut reworks = 0_u8;
@@ -326,6 +353,7 @@ impl RunExecutor for WiredExecutor {
                                 &mut pipeline,
                                 &sandbox.sandbox_id,
                                 &format!("Verification failed:\n{output}"),
+                                run.run_id,
                             )
                             .await?;
                             advance(&mut pipeline)?; // Implement -> Verify
@@ -600,6 +628,37 @@ mod tests {
         assert_eq!(scm.commit_count(), 1);
         assert_eq!(scm.pr_count(), 1);
         assert_eq!(scm.merge_count(), 1);
+    }
+
+    struct CancelledProbe;
+
+    #[async_trait]
+    impl CancelProbe for CancelledProbe {
+        async fn is_cancelled(&self, _run_id: RunId) -> bool {
+            true
+        }
+    }
+
+    #[tokio::test]
+    async fn cancellation_stops_before_the_first_tool() {
+        let executor = WiredExecutor::new(
+            Arc::new(FakeLlm::new(vec!["done".to_owned()])),
+            Arc::new(FakeScm::default()),
+            Arc::new(InMemoryBackend::new()),
+            RepoRef::parse("example/ai-lab").expect("repo"),
+            "AIL-1",
+            "dev",
+            "qa",
+        )
+        .with_cancel_probe(Arc::new(CancelledProbe));
+        let run = QueuedRun::new(
+            RunId::generate(),
+            CardId::generate(),
+            AgentId::generate(),
+            Utc::now(),
+        );
+        let error = executor.execute(&run).await.expect_err("cancelled");
+        assert!(matches!(error, ExecError::Cancelled));
     }
 
     #[test]

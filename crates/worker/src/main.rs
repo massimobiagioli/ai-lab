@@ -6,7 +6,7 @@ use std::time::Duration;
 
 use ailab_llm::{FakeLlm, LlmProvider};
 use ailab_orchestrator::backend::{InMemoryBackend, SandboxBackend};
-use ailab_orchestrator::postgres::{PostgresScheduler, PostgresWorker};
+use ailab_orchestrator::postgres::{PostgresCancelProbe, PostgresScheduler, PostgresWorker};
 use ailab_orchestrator::wired::WiredExecutor;
 use ailab_orchestrator::worker::RunExecutor;
 use ailab_scm::{FakeScm, RepoRef, ScmProvider};
@@ -31,15 +31,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let llm: Arc<dyn LlmProvider> = Arc::new(FakeLlm::new(Vec::new()));
     let scm: Arc<dyn ScmProvider> = Arc::new(FakeScm::default());
     let sandbox: Arc<dyn SandboxBackend> = Arc::new(InMemoryBackend::new());
-    let executor: Arc<dyn RunExecutor> = Arc::new(WiredExecutor::new(
-        llm,
-        scm,
-        sandbox,
-        RepoRef::parse("ai-lab/demo")?,
-        "WP-00",
-        "agent-dev",
-        "agent-qa",
-    ));
+    let probe = Arc::new(PostgresCancelProbe::new(scheduler.pool().clone()));
+    let executor: Arc<dyn RunExecutor> = Arc::new(
+        WiredExecutor::new(
+            llm,
+            scm,
+            sandbox,
+            RepoRef::parse("ai-lab/demo")?,
+            "WP-00",
+            "agent-dev",
+            "agent-qa",
+        )
+        .with_cancel_probe(probe),
+    );
     let worker = PostgresWorker::new(scheduler, executor, 4);
     loop {
         if let Err(error) = worker.tick(chrono::Utc::now()).await {
