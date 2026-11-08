@@ -352,7 +352,8 @@ async fn create_sandbox(
     if let Some(token) = request.scm_token {
         spec = spec.with_scm_token(ailab_application::Secret::new(token));
     }
-    let role = parse_role(request.role.as_deref());
+    let role =
+        parse_role(request.role.as_deref()).ok_or_else(|| ApiError::validation("unknown role"))?;
     let created = state
         .backend
         .create(&spec, role)
@@ -445,12 +446,13 @@ async fn exec_command(
     Ok(Json(outcome))
 }
 
-fn parse_role(value: Option<&str>) -> AgentRole {
-    match value.unwrap_or("dev") {
-        "tech_lead" | "techlead" => AgentRole::TechLead,
-        "analyst" => AgentRole::Analyst,
-        "qa" => AgentRole::Qa,
-        _ => AgentRole::Dev,
+fn parse_role(value: Option<&str>) -> Option<AgentRole> {
+    match value {
+        None | Some("dev") => Some(AgentRole::Dev),
+        Some("tech_lead" | "techlead") => Some(AgentRole::TechLead),
+        Some("analyst") => Some(AgentRole::Analyst),
+        Some("qa") => Some(AgentRole::Qa),
+        Some(_) => None,
     }
 }
 

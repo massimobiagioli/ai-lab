@@ -336,4 +336,5 @@ networks:
   sandbox-control:
     internal: true
   sandbox-egress:
+    internal: true
   observability:

@@ -499,6 +499,28 @@ fn check_command(tool: &str, args: &Value) -> Result<(), ToolDenial> {
             format!("command `{binary}` is not allowlisted"),
         ));
     }
+    for operand in command_args.iter().filter(|arg| !arg.starts_with('-')) {
+        let lowered = operand.to_ascii_lowercase();
+        let extension = std::path::Path::new(&lowered)
+            .extension()
+            .and_then(|extension| extension.to_str());
+        let protected = lowered.starts_with(".env")
+            || lowered.contains("/.env")
+            || lowered.contains(".github/workflows")
+            || lowered == "codeowners"
+            || lowered.contains("/codeowners")
+            || lowered.contains("secrets")
+            || matches!(extension, Some("pem" | "key"))
+            || lowered.contains(".git/hooks");
+        if protected {
+            return Err(ToolDenial::new(
+                "PATH_FORBIDDEN",
+                tool,
+                "argv",
+                format!("argument `{operand}` touches a protected path"),
+            ));
+        }
+    }
     let joined: BTreeSet<&str> = command_args.iter().copied().collect();
     for denied in ["--force", "-f", "--hard", "--no-verify", "publish"] {
         if joined.contains(denied) {
@@ -613,6 +635,22 @@ mod tests {
                 .authorize(AgentRole::Dev, "fs.read", &json!({"path": "src/lib.rs"}))
                 .is_ok()
         );
+    }
+
+    #[test]
+    fn shell_run_denies_protected_argv_paths() {
+        let registry = ToolRegistry::v1();
+        for argv in [
+            json!(["cat", ".env"]),
+            json!(["sed", "-i", ".github/workflows/ci.yml"]),
+            json!(["patch", "secrets/credentials.patch"]),
+            json!(["cat", "certs/server.pem"]),
+        ] {
+            let denial = registry
+                .authorize(AgentRole::Dev, "shell.run", &json!({"argv": argv}))
+                .expect_err("denied");
+            assert_eq!(denial.rule, "PATH_FORBIDDEN", "{argv}");
+        }
     }
 
     #[test]

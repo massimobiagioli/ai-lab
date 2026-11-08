@@ -15,7 +15,7 @@ The sandbox is the only place agent code runs. The specification, egress policy,
 - `run_id` is non-empty and cannot contain `/` or `..`.
 - `image` must be digest-pinned (`@sha256:` + 64 hex).
 - `worktree_ref` cannot escape the workspace.
-- CPU 100–4000 millicores, memory 128–8192 MB, timeout 1–7200 s.
+- CPU 1000–4000 millicores, memory 1024–8192 MB, timeout 1–2700 s; the container is force-removed at the timeout.
 - Egress is `Disabled` or an allowlist of domains.
 
 ## 2. Isolation
@@ -46,7 +46,7 @@ The sandbox is the only place agent code runs. The specification, egress policy,
 
 ## 7. Runner control plane
 
-`POST /v1/sandboxes` (idempotent by `run_id`), `GET/DELETE /v1/sandboxes/{id}`, SSE logs, allowlisted `POST /exec`, and health endpoints. Auth is `Bearer AILAB_RUNNER_TOKEN` (constant-time compare). The Docker backend creates the container with `readonly_rootfs`, `cap_drop=ALL`, `no-new-privileges`, non-root 10001, PID/memory/CPU limits, a `tmpfs` `/tmp`, only the run worktree bind-mounted at `/workspace`, and `network_mode=none` unless the egress allowlist is enabled. With egress enabled it injects `HTTP_PROXY`/`HTTPS_PROXY`/`NO_PROXY`; a short-lived SCM token is injected only into the `exec` environment as `AILAB_SCM_TOKEN` (never the whole sandbox, never serialized/logged). Exec output is capped at 20 KB per stream; a timeout returns `TOOL_TIMEOUT`. An ignored live escape suite checks the Docker socket and `/etc/shadow` are unreachable.
+`POST /v1/sandboxes` (idempotent by `run_id`), `GET/DELETE /v1/sandboxes/{id}`, SSE logs, allowlisted `POST /exec`, and health endpoints. Auth is `Bearer AILAB_RUNNER_TOKEN` (constant-time compare). The Docker backend creates the container with `readonly_rootfs`, `cap_drop=ALL`, `no-new-privileges`, non-root 10001, PID/memory/CPU limits, a `tmpfs` `/tmp`, only the run worktree bind-mounted at `/workspace`, and `network_mode=none` unless the egress allowlist is enabled. With egress enabled it injects `HTTP_PROXY`/`HTTPS_PROXY`/`NO_PROXY` on the internal `sandbox-egress` network; a short-lived SCM token is injected only into the `exec` environment as `AILAB_SCM_TOKEN` (never the whole sandbox, never serialized/logged). Exec output is capped at 20 KB per stream; a timeout returns `TOOL_TIMEOUT`. An ignored live escape suite checks the Docker socket and `/etc/shadow` are unreachable.
 
 ## 8. Deferred to the WP-14 follow-up
 

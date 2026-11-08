@@ -206,6 +206,26 @@ impl SandboxBackend for DockerBackend {
             .start_container(&created.id, None::<StartContainerOptions<String>>)
             .await
             .map_err(map_docker_error)?;
+        if let Some(token) = &spec.scm_token
+            && let Ok(mut tokens) = self.tokens.lock()
+        {
+            tokens.insert(created.id.clone(), token.clone());
+        }
+        let docker = self.docker.clone();
+        let container = created.id.clone();
+        let ttl = spec.timeout_s;
+        tokio::spawn(async move {
+            tokio::time::sleep(std::time::Duration::from_secs(ttl)).await;
+            let _ = docker
+                .remove_container(
+                    &container,
+                    Some(RemoveContainerOptions {
+                        force: true,
+                        ..Default::default()
+                    }),
+                )
+                .await;
+        });
         Ok(CreatedSandbox {
             sandbox_id: created.id.clone(),
             container_id: created.id,
@@ -214,9 +234,10 @@ impl SandboxBackend for DockerBackend {
     }
 
     async fn status(&self, sandbox_id: &str) -> Result<SandboxView, BackendError> {
+        let sandbox_id = self.container(sandbox_id).await?;
         let info = self
             .docker
-            .inspect_container(sandbox_id, None)
+            .inspect_container(&sandbox_id, None)
             .await
             .map_err(map_docker_error)?;
         let state = info.state.unwrap_or_default();
@@ -235,7 +256,7 @@ impl SandboxBackend for DockerBackend {
             | None => SandboxState::Creating,
         };
         Ok(SandboxView {
-            sandbox_id: sandbox_id.to_owned(),
+            sandbox_id: sandbox_id.clone(),
             status,
             exit_code: state.exit_code.and_then(|code| i32::try_from(code).ok()),
             started_at: Utc::now(),
