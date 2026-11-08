@@ -40,6 +40,8 @@ pub struct ContextBundle {
     pub token_budget: u32,
     /// Approximate tokens used.
     pub used_tokens: u32,
+    /// Source citations backing the packet.
+    pub citations: Vec<String>,
 }
 
 impl ContextBundle {
@@ -55,6 +57,13 @@ impl ContextBundle {
             output.push_str("\n\n");
         }
         output
+    }
+
+    /// Attach source citations.
+    #[must_use]
+    pub fn with_citations(mut self, citations: Vec<String>) -> Self {
+        self.citations = citations;
+        self
     }
 
     /// True when the task packet is present.
@@ -98,6 +107,7 @@ pub fn build_context(mut sections: Vec<ContextSection>, token_budget: u32) -> Co
         omitted,
         token_budget,
         used_tokens: used,
+        citations: Vec::new(),
     }
 }
 

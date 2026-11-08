@@ -223,6 +223,27 @@ impl PostgresScheduler {
         Ok(())
     }
 
+    /// Dead-letter a run after the retry limit and move its card to ICEBOX.
+    pub async fn dead_letter(&self, run_id: RunId, card_id: CardId) -> Result<(), sqlx::Error> {
+        let mut tx = self.pool.begin().await?;
+        sqlx::query(
+            "UPDATE runs SET status = 'failed', lease_id = NULL, ended_at = now() WHERE id = $1",
+        )
+        .bind(run_id.as_uuid())
+        .execute(&mut *tx)
+        .await?;
+        sqlx::query(
+            "UPDATE cards SET column_name = 'ICEBOX', \
+             blocked_reason = jsonb_build_object('category','risk','text','retry limit reached') \
+             WHERE id = $1",
+        )
+        .bind(card_id.as_uuid())
+        .execute(&mut *tx)
+        .await?;
+        tx.commit().await?;
+        Ok(())
+    }
+
     /// Requeue a retryable run and return its card to READY.
     pub async fn requeue(&self, run_id: RunId, card_id: CardId) -> Result<(), sqlx::Error> {
         let mut tx = self.pool.begin().await?;
@@ -448,7 +469,11 @@ impl PostgresWorker {
                     report.cancelled += 1;
                 }
                 Err(error) if error.retryable() => {
-                    self.scheduler.requeue(run.run_id, run.card_id).await?;
+                    if run.attempt < 4 {
+                        self.scheduler.requeue(run.run_id, run.card_id).await?;
+                    } else {
+                        self.scheduler.dead_letter(run.run_id, run.card_id).await?;
+                    }
                     self.scheduler
                         .emit_event("delivery.run.failed", &run, now)
                         .await?;

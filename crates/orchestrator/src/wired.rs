@@ -286,7 +286,11 @@ impl RunExecutor for WiredExecutor {
                 ContextSection::new("conventions", "follow AGENTS.md", 2),
             ],
             8_000,
-        );
+        )
+        .with_citations(vec![
+            format!("card:{}", self.card_key),
+            format!("run:{}", run.run_id),
+        ]);
         pipeline.record_step("context", "context", 0, Some(0), bundle.render());
 
         advance(&mut pipeline)?; // Plan
