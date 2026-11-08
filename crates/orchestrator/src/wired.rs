@@ -23,6 +23,24 @@ use crate::worker::{CancelProbe, ExecError, QueuedRun, RunExecutor};
 const IMAGE: &str =
     "ailab/runner@sha256:0000000000000000000000000000000000000000000000000000000000000000";
 
+struct SandboxGuard {
+    backend: Arc<dyn SandboxBackend>,
+    id: String,
+    armed: bool,
+}
+
+impl Drop for SandboxGuard {
+    fn drop(&mut self) {
+        if self.armed {
+            let backend = self.backend.clone();
+            let id = self.id.clone();
+            tokio::spawn(async move {
+                let _ = backend.delete(&id).await;
+            });
+        }
+    }
+}
+
 /// Pipeline executor wired to the real ports (fakes in tests).
 pub struct WiredExecutor {
     llm: Arc<dyn LlmProvider>,
@@ -388,6 +406,11 @@ impl RunExecutor for WiredExecutor {
             .create(&spec, AgentRole::Dev)
             .await
             .map_err(|error| ExecError::Transient(error.to_string()))?;
+        let mut sandbox_guard = SandboxGuard {
+            backend: self.sandbox.clone(),
+            id: sandbox.sandbox_id.clone(),
+            armed: true,
+        };
         if let Err(error) = self
             .run_agent_loop(
                 &mut pipeline,
@@ -635,6 +658,7 @@ impl RunExecutor for WiredExecutor {
         advance(&mut pipeline)?; // Done
         advance(&mut pipeline)?; // Reflect
         let _ = self.sandbox.delete(&sandbox.sandbox_id).await;
+        sandbox_guard.armed = false;
         if let Ok(mut last) = self.last.lock() {
             *last = Some(pipeline.clone());
         }

@@ -41,6 +41,7 @@ This registry is the index of all architecture decisions. Every ADR is immutable
 | ADR-0022 | Version pinning, Renovate, SBOM and no EOL dependencies | accepted | 2026-11-07 | — | — | [adr-0022.md](./adr-0022.md) |
 | ADR-0023 | Runner control-plane API | accepted | 2026-11-07 | — | — | [adr-0023.md](./adr-0023.md) |
 | ADR-0024 | TypeScript 6.0.x for Angular 22.2 compatibility | accepted | 2026-11-07 | — | — | [adr-0024.md](./adr-0024.md) |
+| ADR-0025 | Orchestrator as the delivery-card coordinator | accepted | 2026-11-07 | — | — | [adr-0025-orchestrator-card-coordinator.md](./adr-0025-orchestrator-card-coordinator.md) |
 
 ## Rules
 

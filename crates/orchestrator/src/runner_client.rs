@@ -123,7 +123,24 @@ impl SandboxBackend for HttpSandboxBackend {
             .send()
             .await
             .map_err(|error| BackendError::Internal(error.to_string()))?;
-        Self::parse(response).await
+        let status = response.status();
+        if !status.is_success() {
+            return Err(match status.as_u16() {
+                403 => BackendError::Policy("logs denied".to_owned()),
+                404 => BackendError::NotFound,
+                504 => BackendError::Timeout,
+                _ => BackendError::Internal(format!("runner {status}")),
+            });
+        }
+        let body = response
+            .text()
+            .await
+            .map_err(|error| BackendError::Internal(error.to_string()))?;
+        Ok(body
+            .lines()
+            .filter_map(|line| line.strip_prefix("data: "))
+            .map(ToOwned::to_owned)
+            .collect())
     }
 
     async fn exec(
@@ -217,6 +234,8 @@ mod tests {
         assert_eq!(outcome.exit_code, 0);
         let view = backend.status(&created.sandbox_id).await.expect("status");
         assert_eq!(view.sandbox_id, created.sandbox_id);
+        let logs = backend.logs(&created.sandbox_id).await.expect("logs");
+        assert!(logs.iter().any(|line| line.contains("exec")));
         backend.delete(&created.sandbox_id).await.expect("delete");
     }
 }

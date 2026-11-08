@@ -23,6 +23,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         std::process::exit(if healthy { 0 } else { 1 });
     }
 
+    if std::env::var("AILAB_DEV_FAKES").is_err() {
+        return Err(
+            "real LLM/SCM adapters are not wired; set AILAB_DEV_FAKES=1 for the in-memory harness"
+                .into(),
+        );
+    }
     let Ok(database_url) = std::env::var("AILAB_DATABASE_URL") else {
         loop {
             tokio::time::sleep(Duration::from_secs(3_600)).await;
