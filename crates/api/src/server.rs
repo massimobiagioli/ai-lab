@@ -6,6 +6,7 @@ use std::time::{Duration, Instant};
 
 use ailab_application::{ProblemDetails, Secret};
 use ailab_domain::{DomainError, RunId};
+use async_trait::async_trait;
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use axum::extract::{Path, Query, Request, State};
 use axum::http::{HeaderMap, StatusCode};
@@ -68,22 +69,23 @@ pub enum StoreError {
     Conflict,
 }
 
-/// Run store port (the Postgres adapter is WP-13).
+/// Run store port (in-memory or Postgres).
+#[async_trait]
 pub trait RunStore: Send + Sync {
     /// Read a run.
-    fn get(&self, id: &str) -> Option<RunView>;
+    async fn get(&self, id: &str) -> Option<RunView>;
     /// Read the ordered steps.
-    fn steps(&self, id: &str) -> Option<Vec<StepView>>;
+    async fn steps(&self, id: &str) -> Option<Vec<StepView>>;
     /// Cancel a queued/running run.
-    fn cancel(&self, id: &str) -> Result<RunView, StoreError>;
+    async fn cancel(&self, id: &str) -> Result<RunView, StoreError>;
     /// List runs for a lab.
-    fn list_by_lab(&self, lab_id: &str, limit: u32, offset: usize) -> Page<RunView>;
+    async fn list_by_lab(&self, lab_id: &str, limit: u32, offset: usize) -> Page<RunView>;
     /// Enqueue a run for a card.
-    fn enqueue_card(&self, card_id: &str) -> Result<RunView, StoreError>;
+    async fn enqueue_card(&self, card_id: &str) -> Result<RunView, StoreError>;
     /// Events after a sequence.
-    fn events_after(&self, since: i64) -> Vec<EventEnvelope>;
+    async fn events_after(&self, since: i64) -> Vec<EventEnvelope>;
     /// Append an event to the backfill buffer.
-    fn append_event(&self, event: EventEnvelope);
+    async fn append_event(&self, event: EventEnvelope);
 }
 
 #[derive(Default)]
@@ -115,16 +117,17 @@ impl InMemoryRunStore {
     }
 }
 
+#[async_trait]
 impl RunStore for InMemoryRunStore {
-    fn get(&self, id: &str) -> Option<RunView> {
+    async fn get(&self, id: &str) -> Option<RunView> {
         self.data.lock().ok()?.runs.get(id).cloned()
     }
 
-    fn steps(&self, id: &str) -> Option<Vec<StepView>> {
+    async fn steps(&self, id: &str) -> Option<Vec<StepView>> {
         self.data.lock().ok()?.steps.get(id).cloned()
     }
 
-    fn cancel(&self, id: &str) -> Result<RunView, StoreError> {
+    async fn cancel(&self, id: &str) -> Result<RunView, StoreError> {
         let mut data = self.data.lock().map_err(|_| StoreError::Conflict)?;
         let run = data.runs.get_mut(id).ok_or(StoreError::NotFound)?;
         if run.state != "queued" && run.state != "running" {
@@ -137,7 +140,7 @@ impl RunStore for InMemoryRunStore {
         Ok(view)
     }
 
-    fn list_by_lab(&self, lab_id: &str, limit: u32, offset: usize) -> Page<RunView> {
+    async fn list_by_lab(&self, lab_id: &str, limit: u32, offset: usize) -> Page<RunView> {
         let Some(data) = self.data.lock().ok() else {
             return Page {
                 data: Vec::new(),
@@ -161,7 +164,7 @@ impl RunStore for InMemoryRunStore {
         }
     }
 
-    fn enqueue_card(&self, card_id: &str) -> Result<RunView, StoreError> {
+    async fn enqueue_card(&self, card_id: &str) -> Result<RunView, StoreError> {
         let mut data = self.data.lock().map_err(|_| StoreError::Conflict)?;
         let run = RunView {
             id: RunId::generate().as_uuid().to_string(),
@@ -179,14 +182,14 @@ impl RunStore for InMemoryRunStore {
         Ok(run)
     }
 
-    fn events_after(&self, since: i64) -> Vec<EventEnvelope> {
+    async fn events_after(&self, since: i64) -> Vec<EventEnvelope> {
         let Some(data) = self.data.lock().ok() else {
             return Vec::new();
         };
         crate::events_after(&data.events, since)
     }
 
-    fn append_event(&self, event: EventEnvelope) {
+    async fn append_event(&self, event: EventEnvelope) {
         if let Ok(mut data) = self.data.lock()
             && !data
                 .events
@@ -286,12 +289,24 @@ impl Default for AppState {
 }
 
 impl AppState {
-    /// Build with the in-memory store and the environment token.
+    /// Build with the Postgres store when `AILAB_DATABASE_URL` is set, else the
+    /// in-memory store, and the environment token.
     #[must_use]
     pub fn new() -> Self {
         let token = std::env::var("AILAB_API_TOKEN")
             .ok()
             .filter(|value| !value.is_empty());
+        if let Ok(url) = std::env::var("AILAB_DATABASE_URL")
+            && !url.is_empty()
+            && let Ok(pool) = sqlx::postgres::PgPoolOptions::new()
+                .max_connections(10)
+                .connect_lazy(&url)
+        {
+            return Self::with_store_and_token(
+                Arc::new(crate::postgres_store::PostgresRunStore::new(pool)),
+                token,
+            );
+        }
         Self::with_store_and_token(Arc::new(InMemoryRunStore::new()), token)
     }
 
@@ -326,8 +341,8 @@ impl AppState {
     }
 
     /// Persist an event for backfill and broadcast it to live subscribers.
-    pub fn ingest(&self, event: EventEnvelope) -> usize {
-        self.store.append_event(event.clone());
+    pub async fn ingest(&self, event: EventEnvelope) -> usize {
+        self.store.append_event(event.clone()).await;
         self.hub.send(event).unwrap_or(0)
     }
 }
@@ -340,14 +355,16 @@ pub async fn relay_once(
     let pending = outbox.pending().await.map_err(|error| error.to_string())?;
     let mut published = 0;
     for event in &pending {
-        state.ingest(EventEnvelope {
-            event_id: event.event_id,
-            event: event.event_type.clone(),
-            seq: event.seq.unwrap_or(0),
-            lab_id: event.lab_id,
-            occurred_at: event.occurred_at,
-            payload: event.payload.clone(),
-        });
+        state
+            .ingest(EventEnvelope {
+                event_id: event.event_id,
+                event: event.event_type.clone(),
+                seq: event.seq.unwrap_or(0),
+                lab_id: event.lab_id,
+                occurred_at: event.occurred_at,
+                payload: event.payload.clone(),
+            })
+            .await;
         outbox
             .acknowledge(event.event_id.as_uuid())
             .await
@@ -461,7 +478,7 @@ async fn get_run(
     if let Err(response) = enforce(&state, &headers, RateLimitKind::Read) {
         return response;
     }
-    state.store.get(&id).map_or_else(
+    state.store.get(&id).await.map_or_else(
         || problem(DomainError::NotFound),
         |run| Json(run).into_response(),
     )
@@ -480,7 +497,7 @@ async fn get_steps(
         Ok(limit) => limit,
         Err(message) => return problem(DomainError::validation("limit", message)),
     };
-    let Some(steps) = state.store.steps(&id) else {
+    let Some(steps) = state.store.steps(&id).await else {
         return problem(DomainError::NotFound);
     };
     let offset = query
@@ -518,7 +535,7 @@ async fn cancel_run(
         let status = StatusCode::from_u16(status).unwrap_or(StatusCode::OK);
         return (status, Json(body)).into_response();
     }
-    match state.store.cancel(&id) {
+    match state.store.cancel(&id).await {
         Ok(run) => {
             let body = serde_json::to_value(&run).unwrap_or(serde_json::Value::Null);
             if let Some(key) = key.as_deref() {
@@ -551,7 +568,7 @@ async fn list_runs(
         .cursor
         .and_then(|cursor| cursor.parse::<usize>().ok())
         .unwrap_or(0);
-    Json(state.store.list_by_lab(&id, limit, offset)).into_response()
+    Json(state.store.list_by_lab(&id, limit, offset).await).into_response()
 }
 
 async fn enqueue_run(
@@ -569,7 +586,7 @@ async fn enqueue_run(
         let status = StatusCode::from_u16(status).unwrap_or(StatusCode::OK);
         return (status, Json(body)).into_response();
     }
-    match state.store.enqueue_card(&id) {
+    match state.store.enqueue_card(&id).await {
         Ok(run) => {
             let body = serde_json::to_value(&run).unwrap_or(serde_json::Value::Null);
             if let Some(key) = key.as_deref() {
@@ -641,7 +658,7 @@ async fn list_events(
     if let Err(response) = enforce(&state, &headers, RateLimitKind::Read) {
         return response;
     }
-    Json(state.store.events_after(query.since)).into_response()
+    Json(state.store.events_after(query.since).await).into_response()
 }
 
 async fn get_metrics(
@@ -652,7 +669,11 @@ async fn get_metrics(
     if let Err(response) = enforce(&state, &headers, RateLimitKind::Read) {
         return response;
     }
-    let runs = state.store.list_by_lab(&id, u32::MAX, 0).total_estimate;
+    let runs = state
+        .store
+        .list_by_lab(&id, u32::MAX, 0)
+        .await
+        .total_estimate;
     Json(serde_json::json!({ "lab_id": id, "runs": runs })).into_response()
 }
 
@@ -665,6 +686,7 @@ async fn handle_socket(mut socket: WebSocket, state: AppState) {
     let seq = state
         .store
         .events_after(0)
+        .await
         .last()
         .map_or(0, |event| event.seq);
     let handshake = hello(Utc::now(), seq, vec!["system".to_owned()]);

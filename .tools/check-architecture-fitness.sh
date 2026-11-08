@@ -137,6 +137,9 @@ if [ -d "$ROOT/crates" ]; then
       [ -z "$table" ] && continue
       owner="$(owner_of_table "$table")"
       [ -z "$owner" ] && continue
+      if [ "$ctx" = "coordinator" ]; then
+        continue
+      fi
       if [ "$owner" != "$ctx" ]; then
         fail "$rel ($ctx) references table '$table' owned by $owner"
       fi

@@ -32,7 +32,7 @@
 - [x] Crash recovery/reconciliation — `reconcile`, `reconcile_stale`, `ExternalPrState::recovery`, `PostgresScheduler::reap` (45s).
 - [x] Cancellation/pause — `request_cancel`, checkpoints; sandbox destruction is WP-14.
 - [x] Escalation ladder + human intervention records — `escalate`, `HumanDecision`.
-- [x] Run events mapping + trace/step recording — `PipelineStage::event`, `RunStep`.
+- [x] Run events + step trace — `PostgresWorker` emits `delivery.run.*` to the outbox; `relay_outbox` persists them; `RunStep`/`trace_id`.
 - [x] Integration/idempotency/bounds/wiring tests — 43 orchestrator tests including the FakeLlm/FakeScm E2E; load/chaos in WP-21.
 - [x] `.docs/product/orchestration.md` — present, but it documents the deferrals.
 
@@ -42,7 +42,7 @@
 - [x] AC2 45 s heartbeat timeout requeues with backoff — `reconcile` + `retry_decision`.
 - [x] AC3 agent loop stops at 40 tool calls / 25 iterations / 45 min — `RunPipeline` bounds.
 - [x] AC4 failed verification loops ≤ 3 — `fail_verification`.
-- [x] AC5 exactly one PR/review/merge; retries dedupe — `WiredExecutor` opens one PR, one review and one merge; idempotency keys + handoff; adapter dedupe WP-12/WP-16.
+- [x] AC5 exactly one PR/review/merge; retries dedupe — `WiredExecutor` reuses an existing PR via `find_pull_request` and the fake merge is idempotent by PR number; commit dedupe by tree hash remains open.
 - [x] AC6 worker kill recovers from external PR state — `ExternalPrState::recovery`.
 - [x] AC7 budget exhaustion stops with `BUDGET_EXCEEDED` and pauses the lab — `RunBudget::charge` typed code + `lab_paused`; test.
 - [x] AC8 cancellation stops at a tool boundary — `request_cancel` + checkpoint.

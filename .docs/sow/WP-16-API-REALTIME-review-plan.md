@@ -26,6 +26,7 @@
 - [x] WS hub with live event broadcast and 20 s heartbeat.
 - [x] Outbox relay → API backfill store + live hub (`/api/v1/events`, `relay_once`) — test.
 - [x] `GET /api/v1/openapi.json` serves the generated spec; `POST /api/v1/telemetry` ingests frontend telemetry with validation — tests.
+- [x] Postgres run store (`PostgresRunStore`) selected when `AILAB_DATABASE_URL` is set; events read from `domain_events`.
 - [ ] Full DTO/OpenAPI annotations, Redis idempotency, WS backpressure, Swagger UI assets, contract/perf tests.
 
 ## 3. Deliverables

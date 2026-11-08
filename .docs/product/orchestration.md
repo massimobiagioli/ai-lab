@@ -45,7 +45,7 @@ A card is eligible when it is `READY`, the agent is active, the budget is availa
 
 ## 8. Worker loop
 
-`crates/orchestrator/src/worker.rs` implements the in-memory scheduler tick; `crates/orchestrator/src/postgres.rs` implements the durable one. `PostgresScheduler::acquire_batch` selects READY cards `FOR UPDATE SKIP LOCKED`, inserts a running `runs` row with a lease and moves the card to DOING in one transaction; `heartbeat` refreshes the run, `reap` times out runs with a heartbeat older than 45 s, and `PostgresWorker::tick` leases up to the concurrency and records succeeded/failed. The in-memory worker requeues retryable failures with the same bounds.
+`crates/orchestrator/src/worker.rs` implements the in-memory scheduler tick; `crates/orchestrator/src/postgres.rs` implements the durable one. `PostgresScheduler::acquire_batch` selects READY cards `FOR UPDATE SKIP LOCKED`, inserts a running `runs` row with a lease and moves the card to DOING in one transaction; `heartbeat` refreshes the run, `reap` times out runs with a heartbeat older than 45 s, and `PostgresWorker::tick` leases up to the concurrency and records succeeded/failed. The in-memory worker requeues retryable failures with the same bounds. `PostgresWorker` emits `delivery.run.started|completed|failed` into the `outbox`; `relay_outbox` moves unpublished rows into `domain_events` with a per-lab `seq` (the API reads them for backfill/WS).
 
 ## 9. Port wiring
 

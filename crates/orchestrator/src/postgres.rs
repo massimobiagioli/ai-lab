@@ -4,7 +4,7 @@
 //! card's `DOING` transition in the same transaction, so two workers cannot
 //! lease the same card.
 
-use ailab_domain::{AgentId, CardId, RunId};
+use ailab_domain::{AgentId, CardId, LabId, RunId};
 use chrono::{DateTime, Duration, Utc};
 use sqlx::{PgPool, Row};
 use uuid::Uuid;
@@ -20,6 +20,8 @@ pub struct ScheduledRun {
     pub agent_id: AgentId,
     /// Attempt.
     pub attempt: u8,
+    /// Lab scope.
+    pub lab_id: LabId,
 }
 
 /// Durable scheduler over Postgres.
@@ -53,15 +55,50 @@ impl PostgresScheduler {
     ) -> Result<Vec<ScheduledRun>, sqlx::Error> {
         let limit = i64::try_from(limit).unwrap_or(1);
         let mut tx = self.pool.begin().await?;
+        let mut scheduled = Vec::new();
+        // Claim explicitly queued runs first (API `POST /cards/{id}/runs`).
+        let queued = sqlx::query(
+            "SELECT id, card_id, agent_id, attempt FROM runs \
+             WHERE status = 'queued' ORDER BY created_at FOR UPDATE SKIP LOCKED LIMIT $1",
+        )
+        .bind(limit)
+        .fetch_all(&mut *tx)
+        .await?;
+        for run in queued {
+            let run_id: Uuid = run.get("id");
+            let card_id: Uuid = run.get("card_id");
+            let agent_id: Uuid = run.get("agent_id");
+            let attempt: i16 = run.get("attempt");
+            let lab_id: Uuid = run.get("lab_id");
+            sqlx::query(
+                "UPDATE runs SET status = 'running', lease_id = $2, started_at = $3, heartbeat_at = $3 WHERE id = $1",
+            )
+            .bind(run_id)
+            .bind(Uuid::new_v4())
+            .bind(now)
+            .execute(&mut *tx)
+            .await?;
+            scheduled.push(ScheduledRun {
+                run_id: RunId::new(run_id).map_err(|_| sqlx::Error::RowNotFound)?,
+                card_id: CardId::new(card_id).map_err(|_| sqlx::Error::RowNotFound)?,
+                agent_id: AgentId::new(agent_id).map_err(|_| sqlx::Error::RowNotFound)?,
+                attempt: u8::try_from(attempt).unwrap_or(1),
+                lab_id: LabId::new(lab_id).map_err(|_| sqlx::Error::RowNotFound)?,
+            });
+        }
+        let remaining = limit.saturating_sub(i64::try_from(scheduled.len()).unwrap_or(0));
+        if remaining <= 0 {
+            tx.commit().await?;
+            return Ok(scheduled);
+        }
         let cards = sqlx::query(
             "SELECT id, project_id, assignee_id FROM cards \
              WHERE column_name = 'READY' AND assignee_id IS NOT NULL \
              ORDER BY due_date NULLS LAST FOR UPDATE SKIP LOCKED LIMIT $1",
         )
-        .bind(limit)
+        .bind(remaining)
         .fetch_all(&mut *tx)
         .await?;
-        let mut scheduled = Vec::new();
         for card in cards {
             let card_id: Uuid = card.get("id");
             let project_id: Uuid = card.get("project_id");
@@ -102,6 +139,7 @@ impl PostgresScheduler {
                 card_id: CardId::new(card_id).map_err(|_| sqlx::Error::RowNotFound)?,
                 agent_id: AgentId::new(agent_id).map_err(|_| sqlx::Error::RowNotFound)?,
                 attempt: u8::try_from(attempt).unwrap_or(1),
+                lab_id: LabId::new(lab_id).map_err(|_| sqlx::Error::RowNotFound)?,
             });
         }
         tx.commit().await?;
@@ -153,6 +191,85 @@ impl PostgresScheduler {
             }
         }
         Ok(cards)
+    }
+
+    /// Insert a `delivery.run.*` event into the outbox for the relay.
+    pub async fn emit_event(
+        &self,
+        event_type: &str,
+        run: &ScheduledRun,
+        now: DateTime<Utc>,
+    ) -> Result<(), sqlx::Error> {
+        sqlx::query(
+            "INSERT INTO outbox (id, aggregate_type, aggregate_id, event_type, payload, available_at) \
+             VALUES ($1, 'run', $2, $3, jsonb_build_object('run_id', $2::text, 'lab_id', $4::text, 'card_id', $5::text), $6)",
+        )
+        .bind(Uuid::new_v4())
+        .bind(run.run_id.as_uuid())
+        .bind(event_type)
+        .bind(run.lab_id.as_uuid())
+        .bind(run.card_id.as_uuid())
+        .bind(now)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    /// Relay unpublished outbox rows into `domain_events` with a per-lab `seq`.
+    pub async fn relay_outbox(&self, limit: usize) -> Result<usize, sqlx::Error> {
+        let limit = i64::try_from(limit).unwrap_or(50);
+        let mut tx = self.pool.begin().await?;
+        let rows = sqlx::query(
+            "SELECT id, aggregate_type, aggregate_id, event_type, payload FROM outbox \
+             WHERE published_at IS NULL ORDER BY created_at FOR UPDATE SKIP LOCKED LIMIT $1",
+        )
+        .bind(limit)
+        .fetch_all(&mut *tx)
+        .await?;
+        let mut published = 0;
+        for row in &rows {
+            let id: Uuid = row.get("id");
+            let aggregate_type: String = row.get("aggregate_type");
+            let aggregate_id: Uuid = row.get("aggregate_id");
+            let event_type: String = row.get("event_type");
+            let payload: serde_json::Value = row.get("payload");
+            let Some(lab_id) = payload["lab_id"]
+                .as_str()
+                .and_then(|value| Uuid::parse_str(value).ok())
+            else {
+                continue;
+            };
+            sqlx::query("SELECT id FROM labs WHERE id = $1 FOR UPDATE")
+                .bind(lab_id)
+                .fetch_optional(&mut *tx)
+                .await?;
+            let seq: i64 = sqlx::query_scalar(
+                "SELECT COALESCE(MAX(seq), 0) + 1 FROM domain_events WHERE lab_id = $1",
+            )
+            .bind(lab_id)
+            .fetch_one(&mut *tx)
+            .await?;
+            sqlx::query(
+                "INSERT INTO domain_events (id, lab_id, seq, event_type, aggregate_type, aggregate_id, actor_type, payload) \
+                 VALUES ($1, $2, $3, $4, $5, $6, 'system', $7)",
+            )
+            .bind(id)
+            .bind(lab_id)
+            .bind(seq)
+            .bind(&event_type)
+            .bind(&aggregate_type)
+            .bind(aggregate_id)
+            .bind(&payload)
+            .execute(&mut *tx)
+            .await?;
+            sqlx::query("UPDATE outbox SET published_at = now() WHERE id = $1")
+                .bind(id)
+                .execute(&mut *tx)
+                .await?;
+            published += 1;
+        }
+        tx.commit().await?;
+        Ok(published)
     }
 
     /// Return the pool for the run store.
@@ -234,6 +351,7 @@ mod tests {
             card_id: CardId::generate(),
             agent_id: AgentId::generate(),
             attempt: 1,
+            lab_id: LabId::generate(),
         };
         assert_eq!(run.attempt, 1);
     }

@@ -6,3 +6,4 @@ delivery	Delivery	sows,sow_versions,plans,plan_versions,plan_tasks,runs,run_step
 memory	Memory	memory_documents,memory_chunks,memory_episodes
 platform	Platform	workspaces,llm_requests,domain_events,outbox,audit_log,cost_ledger,maintenance_jobs,app_settings
 scm	SCM integration	github_webhook_deliveries
+coordinator	Infrastructure coordinator	

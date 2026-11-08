@@ -294,6 +294,12 @@ pub trait ScmProvider: Send + Sync {
         message: &str,
         files: &[FileChange],
     ) -> Result<String, ScmError>;
+    /// Find an existing pull request for a head branch.
+    async fn find_pull_request(
+        &self,
+        repo: &RepoRef,
+        head: &BranchName,
+    ) -> Result<Option<PullRequest>, ScmError>;
     /// Open a pull request.
     async fn open_pull_request(
         &self,
@@ -336,7 +342,7 @@ struct FakeScmState {
     commits: Vec<String>,
     prs: Vec<PullRequest>,
     reviews: Vec<(u64, ReviewVerdict)>,
-    merges: Vec<String>,
+    merges: Vec<(u64, String)>,
     comments: Vec<String>,
 }
 
@@ -417,6 +423,22 @@ impl ScmProvider for FakeScm {
         Ok(sha)
     }
 
+    async fn find_pull_request(
+        &self,
+        _repo: &RepoRef,
+        head: &BranchName,
+    ) -> Result<Option<PullRequest>, ScmError> {
+        let state = self
+            .inner
+            .lock()
+            .map_err(|_| ScmError::Transport("fake scm lock poisoned".to_owned()))?;
+        Ok(state
+            .prs
+            .iter()
+            .find(|pr| pr.head == head.as_str())
+            .cloned())
+    }
+
     async fn open_pull_request(
         &self,
         _repo: &RepoRef,
@@ -495,8 +517,17 @@ impl ScmProvider for FakeScm {
             .inner
             .lock()
             .map_err(|_| ScmError::Transport("fake scm lock poisoned".to_owned()))?;
+        if let Some((_, sha)) = state
+            .merges
+            .iter()
+            .find(|(number, _)| *number == _pr_number)
+        {
+            return Ok(MergeOutcome {
+                merge_sha: sha.clone(),
+            });
+        }
         let sha = format!("merge-{}", state.merges.len() + 1);
-        state.merges.push(sha.clone());
+        state.merges.push((_pr_number, sha.clone()));
         drop(state);
         Ok(MergeOutcome { merge_sha: sha })
     }
@@ -913,6 +944,39 @@ impl ScmProvider for GitHubClient {
                 .to_owned();
         }
         Ok(last_sha)
+    }
+
+    async fn find_pull_request(
+        &self,
+        repo: &RepoRef,
+        head: &BranchName,
+    ) -> Result<Option<PullRequest>, ScmError> {
+        let path = format!(
+            "/repos/{}/pulls?state=all&head={}:{}",
+            repo.full_name(),
+            repo.owner(),
+            head.as_str()
+        );
+        let response = self.send(self.request(Method::Get, &path, None)).await?;
+        let value: Value = serde_json::from_str(&response.body)
+            .map_err(|error| ScmError::Validation(error.to_string()))?;
+        let Some(pr) = value.as_array().and_then(|items| items.first()) else {
+            return Ok(None);
+        };
+        Ok(Some(PullRequest {
+            number: pr["number"]
+                .as_u64()
+                .ok_or_else(|| ScmError::Validation("missing PR number".to_owned()))?,
+            url: pr["html_url"]
+                .as_str()
+                .ok_or_else(|| ScmError::Validation("missing PR url".to_owned()))?
+                .to_owned(),
+            head: pr["head"]["ref"]
+                .as_str()
+                .unwrap_or(head.as_str())
+                .to_owned(),
+            base: pr["base"]["ref"].as_str().unwrap_or("main").to_owned(),
+        }))
     }
 
     async fn open_pull_request(

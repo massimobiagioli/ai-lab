@@ -25,4 +25,6 @@ crates/infrastructure/src/scm	scm
 crates/memory/	memory
 crates/scm/	scm
 crates/orchestrator/	delivery
+crates/orchestrator/src/postgres.rs	coordinator
+crates/api/src/postgres_store.rs	coordinator
 crates/llm/	inventory

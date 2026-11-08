@@ -2,6 +2,7 @@
 //! WebSocket envelope with resumable sequencing and event backfill.
 #![forbid(unsafe_code)]
 
+pub mod postgres_store;
 pub mod server;
 
 use ailab_domain::{EventId, LabId};

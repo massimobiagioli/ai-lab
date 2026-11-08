@@ -312,21 +312,29 @@ impl RunExecutor for WiredExecutor {
 
         advance(&mut pipeline)?; // Push
         advance(&mut pipeline)?; // Pr
-        let pr = self
+        let pr = match self
             .scm
-            .open_pull_request(
-                &self.repo,
-                &PullRequestRequest {
-                    title: format!("[{}] wired run", self.card_key),
-                    body: "AI-Lab trace".to_owned(),
-                    head: branch,
-                    base: "main".to_owned(),
-                    author: self.author.clone(),
-                    reviewer: self.reviewer.clone(),
-                },
-            )
+            .find_pull_request(&self.repo, &branch)
             .await
-            .map_err(|error| ExecError::Transient(error.to_string()))?;
+            .map_err(|error| ExecError::Transient(error.to_string()))?
+        {
+            Some(existing) => existing,
+            None => self
+                .scm
+                .open_pull_request(
+                    &self.repo,
+                    &PullRequestRequest {
+                        title: format!("[{}] wired run", self.card_key),
+                        body: "AI-Lab trace".to_owned(),
+                        head: branch.clone(),
+                        base: "main".to_owned(),
+                        author: self.author.clone(),
+                        reviewer: self.reviewer.clone(),
+                    },
+                )
+                .await
+                .map_err(|error| ExecError::Transient(error.to_string()))?,
+        };
         pipeline.record_step("pr", "pr", 0, Some(0), pr.url.clone());
 
         advance(&mut pipeline)?; // Transition
