@@ -357,11 +357,12 @@ impl RunExecutor for WiredExecutor {
             .await
             .map_err(|error| ExecError::Transient(error.to_string()))?;
         let message = format!(
-            "feat({}): run implementation\n\nAI-Lab-Run: {}\nAI-Lab-Card: {}\nAI-Lab-Agent: {}",
+            "feat({}): run implementation\n\nAI-Lab-Run: {}\nAI-Lab-Card: {}\nAI-Lab-Agent: {}\n\n<!-- ailab:run:{}:commit -->",
             self.card_key.to_lowercase(),
             run.run_id,
             self.card_key,
-            run.agent_id
+            run.agent_id,
+            run.run_id
         );
         let commit = self
             .scm

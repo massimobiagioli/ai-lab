@@ -342,6 +342,8 @@ struct FakeScmState {
     commits: Vec<String>,
     prs: Vec<PullRequest>,
     reviews: Vec<(u64, ReviewVerdict)>,
+    review_keys: std::collections::BTreeSet<(u64, String)>,
+    commit_markers: std::collections::BTreeMap<String, String>,
     merges: Vec<(u64, String)>,
     comments: Vec<String>,
 }
@@ -413,12 +415,24 @@ impl ScmProvider for FakeScm {
             return Err(ScmError::Validation("no files to commit".to_owned()));
         }
         ensure_commit_trailers(message)?;
+        let marker = message
+            .lines()
+            .find(|line| line.trim_start().starts_with("<!-- ailab:"))
+            .map(ToOwned::to_owned);
         let mut state = self
             .inner
             .lock()
             .map_err(|_| ScmError::Transport("fake scm lock poisoned".to_owned()))?;
+        if let Some(marker) = &marker
+            && let Some(sha) = state.commit_markers.get(marker)
+        {
+            return Ok(sha.clone());
+        }
         let sha = format!("commit-{}", state.commits.len() + 1);
         state.commits.push(sha.clone());
+        if let Some(marker) = marker {
+            state.commit_markers.insert(marker, sha.clone());
+        }
         drop(state);
         Ok(sha)
     }
@@ -492,6 +506,9 @@ impl ScmProvider for FakeScm {
             .inner
             .lock()
             .map_err(|_| ScmError::Transport("fake scm lock poisoned".to_owned()))?;
+        if !state.review_keys.insert((pr_number, reviewer.to_owned())) {
+            return Ok(());
+        }
         state.reviews.push((pr_number, verdict));
         drop(state);
         Ok(())
@@ -1254,6 +1271,38 @@ mod tests {
         assert!(BranchName::for_card("AIL-1", "fix").is_ok());
         assert!(BranchName::parse("../evil").is_err());
         assert!(FileChange::new("../secret", "x").is_err());
+    }
+
+    #[test]
+    fn commit_marker_and_review_are_idempotent() {
+        let scm = FakeScm::default();
+        let branch = BranchName::for_card("AIL-1", "run").expect("branch");
+        let files = vec![FileChange::new("src/lib.rs", "// x").expect("file")];
+        let message = "feat: x\n\nAI-Lab-Run: r\nAI-Lab-Card: AIL-1\nAI-Lab-Agent: dev\n\n<!-- ailab:run:r:commit -->";
+        let first =
+            futures::executor::block_on(scm.commit_files(&repo(), &branch, message, &files))
+                .expect("commit");
+        let second =
+            futures::executor::block_on(scm.commit_files(&repo(), &branch, message, &files))
+                .expect("commit");
+        assert_eq!(first, second);
+        assert_eq!(scm.commit_count(), 1);
+        futures::executor::block_on(scm.submit_review(
+            &repo(),
+            1,
+            ReviewVerdict::Approved,
+            "dev",
+            "qa",
+        ))
+        .expect("review");
+        futures::executor::block_on(scm.submit_review(
+            &repo(),
+            1,
+            ReviewVerdict::Approved,
+            "dev",
+            "qa",
+        ))
+        .expect("review");
     }
 
     #[test]
