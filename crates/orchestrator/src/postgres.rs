@@ -5,6 +5,9 @@
 //! lease the same card.
 
 use ailab_domain::{AgentId, CardId, LabId, RunId};
+use serde_json::json;
+
+use crate::pipeline::RunStep;
 use chrono::{DateTime, Duration, Utc};
 use sqlx::{PgPool, Row};
 use uuid::Uuid;
@@ -163,12 +166,76 @@ impl PostgresScheduler {
         status: &str,
         now: DateTime<Utc>,
     ) -> Result<(), sqlx::Error> {
+        let mut tx = self.pool.begin().await?;
         sqlx::query("UPDATE runs SET status = $2, ended_at = $3, lease_id = NULL WHERE id = $1")
             .bind(run_id.as_uuid())
             .bind(status)
             .bind(now)
-            .execute(&self.pool)
+            .execute(&mut *tx)
             .await?;
+        if status == "succeeded" {
+            sqlx::query(
+                "UPDATE cards SET column_name = 'DONE'                  WHERE id = (SELECT card_id FROM runs WHERE id = $1)                    AND column_name IN ('REVIEW','DOING')",
+            )
+            .bind(run_id.as_uuid())
+            .execute(&mut *tx)
+            .await?;
+        }
+        tx.commit().await?;
+        Ok(())
+    }
+
+    /// Persist the pipeline steps for a run.
+    pub async fn persist_steps(&self, run_id: RunId, steps: &[RunStep]) -> Result<(), sqlx::Error> {
+        let mut tx = self.pool.begin().await?;
+        for step in steps {
+            let step_type = match step.kind.as_str() {
+                "shell.exec" => "tool_call",
+                "fmt" | "lint" | "typecheck" | "tests" | "secrets" => "verification",
+                "commit" => "commit",
+                "push" => "push",
+                "pr" => "pr",
+                "review" | "merge" => "review",
+                _ => "command",
+            };
+            sqlx::query(
+                "INSERT INTO run_steps (id, run_id, seq, step_type, summary, detail, duration_ms)                  VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (run_id, seq) DO NOTHING",
+            )
+            .bind(Uuid::new_v4())
+            .bind(run_id.as_uuid())
+            .bind(i32::try_from(step.seq).unwrap_or(0))
+            .bind(step_type)
+            .bind(format!(
+                "{:?} {} exit {:?}",
+                step.stage, step.kind, step.exit_code
+            ))
+            .bind(json!({
+                "args_hash": step.args_hash,
+                "output": step.output,
+                "trace_id": step.trace_id
+            }))
+            .bind(i32::try_from(step.duration_ms).unwrap_or(i32::MAX))
+            .execute(&mut *tx)
+            .await?;
+        }
+        tx.commit().await?;
+        Ok(())
+    }
+
+    /// Requeue a retryable run and return its card to READY.
+    pub async fn requeue(&self, run_id: RunId, card_id: CardId) -> Result<(), sqlx::Error> {
+        let mut tx = self.pool.begin().await?;
+        sqlx::query(
+            "UPDATE runs SET status = 'queued', lease_id = NULL, heartbeat_at = NULL,              attempt = attempt + 1 WHERE id = $1",
+        )
+        .bind(run_id.as_uuid())
+        .execute(&mut *tx)
+        .await?;
+        sqlx::query("UPDATE cards SET column_name = 'READY' WHERE id = $1")
+            .bind(card_id.as_uuid())
+            .execute(&mut *tx)
+            .await?;
+        tx.commit().await?;
         Ok(())
     }
 
@@ -184,11 +251,19 @@ impl PostgresScheduler {
         .fetch_all(&self.pool)
         .await?;
         let mut cards = Vec::new();
+        let mut ids = Vec::new();
         for row in rows {
             let card_id: Uuid = row.get("card_id");
             if let Ok(card) = CardId::new(card_id) {
                 cards.push(card);
+                ids.push(card_id);
             }
+        }
+        if !ids.is_empty() {
+            sqlx::query("UPDATE cards SET column_name = 'READY' WHERE id = ANY($1)")
+                .bind(&ids)
+                .execute(&self.pool)
+                .await?;
         }
         Ok(cards)
     }
@@ -320,22 +395,38 @@ impl PostgresWorker {
             ..PostgresTickReport::default()
         };
         for run in runs {
+            self.scheduler
+                .emit_event("delivery.run.started", &run, now)
+                .await?;
             let queued = crate::worker::QueuedRun::new(run.run_id, run.card_id, run.agent_id, now);
             match self.executor.execute(&queued).await {
-                Ok(_) => {
+                Ok(pipeline) => {
+                    self.scheduler
+                        .persist_steps(run.run_id, &pipeline.steps)
+                        .await?;
                     self.scheduler.finish(run.run_id, "succeeded", now).await?;
+                    self.scheduler
+                        .emit_event("delivery.run.completed", &run, now)
+                        .await?;
                     report.completed += 1;
                 }
                 Err(error) if error.retryable() => {
-                    self.scheduler.finish(run.run_id, "failed", now).await?;
+                    self.scheduler.requeue(run.run_id, run.card_id).await?;
+                    self.scheduler
+                        .emit_event("delivery.run.failed", &run, now)
+                        .await?;
                     report.failed += 1;
                 }
                 Err(_) => {
                     self.scheduler.finish(run.run_id, "failed", now).await?;
+                    self.scheduler
+                        .emit_event("delivery.run.failed", &run, now)
+                        .await?;
                     report.failed += 1;
                 }
             }
         }
+        let _ = self.scheduler.relay_outbox(50).await;
         Ok(report)
     }
 }

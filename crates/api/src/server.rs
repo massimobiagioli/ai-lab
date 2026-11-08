@@ -611,6 +611,14 @@ async fn enqueue_run(
 }
 
 #[derive(Debug, Clone, Deserialize, Default)]
+struct WsQuery {
+    #[serde(default)]
+    lab_id: String,
+    #[serde(default)]
+    since: i64,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
 struct EventsQuery {
     #[serde(default)]
     lab_id: String,
@@ -692,30 +700,46 @@ async fn get_metrics(
     Json(serde_json::json!({ "lab_id": id, "runs": runs })).into_response()
 }
 
-async fn ws_upgrade(ws: WebSocketUpgrade, State(state): State<AppState>) -> Response {
-    ws.on_upgrade(move |socket| handle_socket(socket, state))
+async fn ws_upgrade(
+    ws: WebSocketUpgrade,
+    State(state): State<AppState>,
+    Query(query): Query<WsQuery>,
+) -> Response {
+    ws.on_upgrade(move |socket| handle_socket(socket, state, query))
 }
 
-async fn handle_socket(mut socket: WebSocket, state: AppState) {
-    let mut events = state.subscribe();
-    let seq = state
-        .store
-        .events_after("default", 0)
-        .await
-        .last()
-        .map_or(0, |event| event.seq);
+async fn handle_socket(mut socket: WebSocket, state: AppState, query: WsQuery) {
+    let lab_id = if query.lab_id.is_empty() {
+        "default".to_owned()
+    } else {
+        query.lab_id
+    };
+    let backfill = state.store.events_after(&lab_id, query.since).await;
+    let seq = backfill.last().map_or(query.since, |event| event.seq);
+    for event in &backfill {
+        let message = WsServerMessage::event(event);
+        let Ok(body) = serde_json::to_string(&message) else {
+            continue;
+        };
+        if socket.send(Message::Text(body.into())).await.is_err() {
+            return;
+        }
+    }
     let handshake = hello(Utc::now(), seq, vec!["system".to_owned()]);
     if let Ok(text) = serde_json::to_string(&handshake)
         && socket.send(Message::Text(text.into())).await.is_err()
     {
         return;
     }
+    let mut events = state.subscribe();
     let mut heartbeat = interval(Duration::from_secs(20));
+    let mut last_seen = Instant::now();
     loop {
         tokio::select! {
             message = socket.recv() => {
                 match message {
                     Some(Ok(Message::Text(text))) => {
+                        last_seen = Instant::now();
                         if let Ok(WsClientMessage::Subscribe { topics }) =
                             serde_json::from_str(text.as_str())
                         {
@@ -725,19 +749,47 @@ async fn handle_socket(mut socket: WebSocket, state: AppState) {
                             }
                         }
                     }
+                    Some(Ok(Message::Pong(_))) => last_seen = Instant::now(),
                     Some(Ok(Message::Close(_))) | None => break,
                     _ => {}
                 }
             }
             event = events.recv() => {
-                if let Ok(event) = event
-                    && let Ok(body) = serde_json::to_string(&WsServerMessage::Event { event })
-                    && socket.send(Message::Text(body.into())).await.is_err()
-                {
-                    break;
+                match event {
+                    Ok(event) => {
+                        let message = WsServerMessage::event(&event);
+                        if let Ok(body) = serde_json::to_string(&message)
+                            && socket.send(Message::Text(body.into())).await.is_err()
+                        {
+                            break;
+                        }
+                    }
+                    Err(tokio::sync::broadcast::error::RecvError::Lagged(skipped)) => {
+                        let resync = WsServerMessage::Resync { skipped };
+                        if let Ok(body) = serde_json::to_string(&resync) {
+                            let _ = socket.send(Message::Text(body.into())).await;
+                        }
+                        let _ = socket
+                            .send(Message::Close(Some(axum::extract::ws::CloseFrame {
+                                code: 1013,
+                                reason: "resync".into(),
+                            })))
+                            .await;
+                        break;
+                    }
+                    Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
                 }
             }
             _ = heartbeat.tick() => {
+                if last_seen.elapsed() > Duration::from_secs(30) {
+                    let _ = socket
+                        .send(Message::Close(Some(axum::extract::ws::CloseFrame {
+                            code: 1013,
+                            reason: "heartbeat timeout".into(),
+                        })))
+                        .await;
+                    break;
+                }
                 if socket.send(Message::Ping(Vec::new().into())).await.is_err() {
                     break;
                 }

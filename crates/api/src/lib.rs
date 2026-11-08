@@ -137,6 +137,7 @@ pub enum WsClientMessage {
 /// Server WebSocket message.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
+#[allow(clippy::derive_partial_eq_without_eq)]
 pub enum WsServerMessage {
     /// Initial handshake.
     Hello {
@@ -147,16 +148,46 @@ pub enum WsServerMessage {
         /// Topics.
         topics: Vec<String>,
     },
-    /// State event.
+    /// State event (flat envelope).
     Event {
-        /// Envelope.
-        event: EventEnvelope,
+        /// Event id.
+        event_id: String,
+        /// Event name.
+        event: String,
+        /// Per-lab sequence.
+        seq: i64,
+        /// Lab id.
+        lab_id: String,
+        /// Occurred at.
+        occurred_at: DateTime<Utc>,
+        /// Payload.
+        payload: serde_json::Value,
+    },
+    /// Resync request after a lag.
+    Resync {
+        /// Number of skipped events.
+        skipped: u64,
     },
     /// Health snapshot.
     Health {
         /// Components.
         components: serde_json::Value,
     },
+}
+
+impl WsServerMessage {
+    /// Flatten an event envelope for the wire.
+    #[must_use]
+    pub fn event(envelope: &EventEnvelope) -> Self {
+        Self::Event {
+            event_id: envelope.event_id.to_string(),
+            event: envelope.event.clone(),
+            seq: envelope.seq,
+            lab_id: envelope.lab_id.to_string(),
+            occurred_at: envelope.occurred_at,
+            payload: envelope.payload.clone(),
+        }
+    }
 }
 
 /// Persisted event envelope.

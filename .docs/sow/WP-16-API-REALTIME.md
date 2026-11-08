@@ -320,3 +320,4 @@ Server → client:
 2026-11-07 | build | crates/api/src/server.rs | GET /api/v1/openapi.json; POST /api/v1/telemetry (deny unknown fields, 1-64 event); 13 API + 2 contract tests | Redis/backpressure/Swagger/perf open (CR-0010) | build phase
 2026-11-07 | build | crates/api/src/postgres_store.rs | Postgres run store selected by AILAB_DATABASE_URL; events from domain_events | WS backpressure/Swagger/perf open | build phase
 2026-11-07 | build | crates/application/src/problem.rs, crates/api/src/{server,postgres_store}.rs | trace_id/instance; 429 + Retry-After; lab-scoped /events; 13 API tests | full surface/WS/Redis/OpenAPI generation open | QA review
+2026-11-07 | build | crates/api/src/{lib,server}.rs | WS since-backfill; flat event envelope; resync/1013; 30 s pong timeout; 13 API tests | full surface/cursor/idempotency/Redis/OpenAPI open | QA review
