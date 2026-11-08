@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | WP ID | `WP-15` |
-| Status | **done** |
+| Status | **progress** |
 | Owner | QA |
 | Milestone | M5 |
 | Estimate | 13 points |
@@ -281,3 +281,4 @@ Gate states are visible on the card and in the office ("awaiting operator"). The
 
 2026-11-07 | T01 | crates/application/src/qa.rs | verdicts, separation, merge checks, autonomy; 4 tests | — | T02
 2026-11-07 | T02 | .docs/product/qa.md | 13 application tests; clippy green | CI/API/E2E integration deferred WP-16/WP-21 | WP-17
+2026-11-07 | review | .docs/sow/WP-15-QA-MERGE-review-plan.md, crates/application/src/qa.rs | verdict validator; findings; 10 merge conditions; 11 hard stops; rework loop; idempotent merge; 18 application tests | API/events/audit WP-16, live E2E WP-21 | QA review

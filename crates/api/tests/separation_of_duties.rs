@@ -72,12 +72,17 @@ fn merge_policy_rejects_author_as_reviewer() {
         dod_complete: true,
         p0p1_open: false,
         budget_remaining: true,
+        head_sha: "sha-1".to_owned(),
+        reviewed_sha: "sha-1".to_owned(),
+        branch_protected: false,
+        human_approved: true,
+        already_merged: false,
     };
     let decision = evaluate_merge(
         "agent-dev",
         "agent-dev",
         ReviewVerdict::Approved,
-        checks,
+        &checks,
         AutonomyLevel::A2,
     );
     assert!(!decision.allowed);
