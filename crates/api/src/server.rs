@@ -8,7 +8,8 @@ use ailab_application::{ProblemDetails, Secret};
 use ailab_domain::{DomainError, RunId};
 use async_trait::async_trait;
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
-use axum::extract::{Path, Query, Request, State};
+use axum::extract::{FromRequest, FromRequestParts, Path, Query, Request, State};
+use axum::http::request::Parts;
 use axum::http::{HeaderMap, StatusCode};
 use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
@@ -429,6 +430,40 @@ pub fn router(state: AppState) -> Router {
         .with_state(state)
 }
 
+struct AppJson<T>(T);
+
+impl<T, S> FromRequest<S> for AppJson<T>
+where
+    T: serde::de::DeserializeOwned,
+    S: Send + Sync,
+{
+    type Rejection = Response;
+
+    async fn from_request(request: Request, state: &S) -> Result<Self, Self::Rejection> {
+        axum::Json::<T>::from_request(request, state)
+            .await
+            .map(|axum::Json(value)| Self(value))
+            .map_err(|rejection| problem(DomainError::validation("body", rejection.body_text())))
+    }
+}
+
+struct AppQuery<T>(T);
+
+impl<T, S> FromRequestParts<S> for AppQuery<T>
+where
+    T: serde::de::DeserializeOwned,
+    S: Send + Sync,
+{
+    type Rejection = Response;
+
+    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+        Query::<T>::from_request_parts(parts, state)
+            .await
+            .map(|Query(value)| Self(value))
+            .map_err(|rejection| problem(DomainError::validation("query", rejection.body_text())))
+    }
+}
+
 async fn request_id(mut request: Request, next: Next) -> Response {
     let id = request
         .headers()
@@ -729,7 +764,7 @@ async fn get_steps(
     State(state): State<AppState>,
     headers: HeaderMap,
     Path(id): Path<String>,
-    Query(query): Query<PageQuery>,
+    AppQuery(query): AppQuery<PageQuery>,
 ) -> Response {
     if let Err(response) = enforce(&state, &headers, RateLimitKind::Read) {
         return response;
@@ -813,7 +848,7 @@ async fn list_runs(
     State(state): State<AppState>,
     headers: HeaderMap,
     Path(id): Path<String>,
-    Query(query): Query<PageQuery>,
+    AppQuery(query): AppQuery<PageQuery>,
 ) -> Response {
     if let Err(response) = enforce(&state, &headers, RateLimitKind::Read) {
         return response;
@@ -943,7 +978,7 @@ pub struct TelemetryEvent {
 async fn ingest_telemetry(
     State(state): State<AppState>,
     headers: HeaderMap,
-    Json(body): Json<TelemetryEvent>,
+    AppJson(body): AppJson<TelemetryEvent>,
 ) -> Response {
     if let Err(response) = enforce(&state, &headers, RateLimitKind::Write) {
         return response;
@@ -972,7 +1007,7 @@ async fn ingest_telemetry(
 async fn list_events(
     State(state): State<AppState>,
     headers: HeaderMap,
-    Query(query): Query<EventsQuery>,
+    AppQuery(query): AppQuery<EventsQuery>,
 ) -> Response {
     if let Err(response) = enforce(&state, &headers, RateLimitKind::Read) {
         return response;
@@ -1008,7 +1043,7 @@ async fn get_metrics(
 async fn ws_upgrade(
     ws: WebSocketUpgrade,
     State(state): State<AppState>,
-    Query(query): Query<WsQuery>,
+    AppQuery(query): AppQuery<WsQuery>,
 ) -> Response {
     ws.on_upgrade(move |socket| handle_socket(socket, state, query))
 }

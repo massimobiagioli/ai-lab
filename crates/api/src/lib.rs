@@ -336,6 +336,28 @@ mod tests {
     }
 
     #[test]
+    fn ws_protocol_messages_match_the_contract() {
+        let ack = serde_json::to_value(WsServerMessage::Ack {
+            topics: vec!["system".to_owned()],
+        })
+        .expect("ack");
+        assert_eq!(ack["type"], "ack");
+        let ping: WsClientMessage =
+            serde_json::from_str(r#"{"type":"ping","ts":123}"#).expect("ping");
+        assert_eq!(ping, WsClientMessage::Ping { ts: 123 });
+        let pong_value = serde_json::to_value(WsServerMessage::Pong { ts: 123 }).expect("pong");
+        assert_eq!(pong_value["ts"], 123);
+        let resync = serde_json::to_value(WsServerMessage::Resync { after: 5 }).expect("resync");
+        assert_eq!(resync["after"], 5);
+        let error = serde_json::to_value(WsServerMessage::Error {
+            code: "BAD_MESSAGE".to_owned(),
+            detail: "invalid".to_owned(),
+        })
+        .expect("error");
+        assert_eq!(error["detail"], "invalid");
+    }
+
+    #[test]
     fn events_after_filters_dedupes_and_sorts() {
         let events = vec![event(3, 1), event(1, 2), event(3, 1), event(4, 3)];
         let filtered = events_after(&events, 1);
