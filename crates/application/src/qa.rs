@@ -89,6 +89,8 @@ pub struct ReviewRecord {
     pub findings: Vec<Finding>,
     /// Acceptance results.
     pub acceptance: Vec<AcceptanceResult>,
+    /// Expected acceptance criteria (completeness check).
+    pub expected: Vec<String>,
 }
 
 impl ReviewRecord {
@@ -96,7 +98,25 @@ impl ReviewRecord {
     /// P0/P1/P2 finding.
     pub fn validate(&self) -> Result<(), MergeViolation> {
         if self.verdict == ReviewVerdict::Blocked {
+            if self
+                .blocked_reason
+                .as_deref()
+                .unwrap_or_default()
+                .trim()
+                .is_empty()
+            {
+                return Err(MergeViolation::new(
+                    "BLOCKED_WITHOUT_REASON",
+                    "a blocked review must record a reason",
+                ));
+            }
             return Err(MergeViolation::new("QA_BLOCKED", "the review is blocked"));
+        }
+        if self.verdict == ReviewVerdict::ChangesRequested && self.findings.is_empty() {
+            return Err(MergeViolation::new(
+                "CHANGES_REQUESTED_WITHOUT_FINDING",
+                "a changes-requested review must record at least one finding",
+            ));
         }
         if self.verdict != ReviewVerdict::Approved {
             return Err(MergeViolation::new(
@@ -132,6 +152,16 @@ impl ReviewRecord {
                 "every acceptance criterion must appear exactly once",
             ));
         }
+        if !self.expected.is_empty() {
+            let expected: std::collections::BTreeSet<&str> =
+                self.expected.iter().map(String::as_str).collect();
+            if unique != expected {
+                return Err(MergeViolation::new(
+                    "AC_INCOMPLETE",
+                    "the review matrix must cover every expected acceptance criterion",
+                ));
+            }
+        }
         if self
             .findings
             .iter()
@@ -154,10 +184,10 @@ impl ReviewRecord {
             .any(|finding| finding.severity == FindingSeverity::P0)
         {
             ReviewVerdict::Blocked
-        } else if self
-            .findings
-            .iter()
-            .any(|finding| matches!(finding.severity, FindingSeverity::P1 | FindingSeverity::P2))
+        } else if self.acceptance.is_empty()
+            || self.findings.iter().any(|finding| {
+                matches!(finding.severity, FindingSeverity::P1 | FindingSeverity::P2)
+            })
             || self
                 .acceptance
                 .iter()
@@ -175,6 +205,7 @@ impl ReviewRecord {
 pub struct ReviewPipeline {
     acceptance: Vec<AcceptanceResult>,
     findings: Vec<Finding>,
+    expected: Vec<String>,
     next_finding: u32,
 }
 
@@ -229,6 +260,13 @@ impl ReviewPipeline {
         });
     }
 
+    /// Declare the expected acceptance criteria for completeness.
+    #[must_use]
+    pub fn with_expected(mut self, expected: Vec<String>) -> Self {
+        self.expected = expected;
+        self
+    }
+
     /// Finish the review and compute the verdict.
     #[must_use]
     pub fn finish(
@@ -240,6 +278,7 @@ impl ReviewPipeline {
     ) -> ReviewRecord {
         let acceptance = self.acceptance;
         let findings = self.findings;
+        let expected = self.expected;
         let mut record = ReviewRecord {
             review_id: review_id.into(),
             run_id: run_id.into(),
@@ -250,6 +289,7 @@ impl ReviewPipeline {
             verdict: ReviewVerdict::Approved,
             findings,
             acceptance,
+            expected,
         };
         record.verdict = record.compute_verdict();
         if record.verdict == ReviewVerdict::Blocked {
@@ -723,7 +763,9 @@ mod tests {
     fn review() -> ReviewRecord {
         let mut pipeline = ReviewPipeline::new();
         pipeline.check("works", Some("test"));
-        pipeline.finish("review-1", "run-1", "qa", "sha-1")
+        pipeline
+            .with_expected(vec!["works".to_owned()])
+            .finish("review-1", "run-1", "qa", "sha-1")
     }
 
     #[test]
@@ -860,7 +902,7 @@ mod tests {
         assert_eq!(record.verdict, ReviewVerdict::ChangesRequested);
         assert_eq!(
             record.validate().expect_err("invalid").code,
-            "QA_NOT_APPROVED"
+            "CHANGES_REQUESTED_WITHOUT_FINDING"
         );
 
         let mut pipeline = ReviewPipeline::new();
@@ -899,6 +941,26 @@ mod tests {
             blocking.validate().expect_err("invalid").code,
             "BLOCKING_FINDING"
         );
+    }
+
+    #[test]
+    fn review_matrix_must_cover_every_expected_criterion() {
+        let mut pipeline = ReviewPipeline::new();
+        pipeline.check("first", Some("test"));
+        let record = pipeline
+            .with_expected(vec!["first".to_owned(), "second".to_owned()])
+            .finish("r", "run", "qa", "sha");
+        assert_eq!(
+            record.validate().expect_err("incomplete").code,
+            "AC_INCOMPLETE"
+        );
+        let mut pipeline = ReviewPipeline::new();
+        pipeline.check("first", Some("test"));
+        pipeline.check("second", Some("test"));
+        let record = pipeline
+            .with_expected(vec!["first".to_owned(), "second".to_owned()])
+            .finish("r", "run", "qa", "sha");
+        record.validate().expect("complete");
     }
 
     #[test]
