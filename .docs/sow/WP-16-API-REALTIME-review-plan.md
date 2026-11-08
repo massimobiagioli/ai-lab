@@ -25,7 +25,8 @@
 - [x] In-memory idempotency store (24 h) for the POST endpoints.
 - [x] WS hub with live event broadcast and 20 s heartbeat.
 - [x] Outbox relay → API backfill store + live hub (`/api/v1/events`, `relay_once`) — test.
-- [ ] Full DTO/OpenAPI annotations, Redis idempotency, WS backpressure, telemetry ingest, Swagger UI, contract/perf tests.
+- [x] `GET /api/v1/openapi.json` serves the generated spec; `POST /api/v1/telemetry` ingests frontend telemetry with validation — tests.
+- [ ] Full DTO/OpenAPI annotations, Redis idempotency, WS backpressure, Swagger UI assets, contract/perf tests.
 
 ## 3. Deliverables
 
@@ -34,8 +35,8 @@
 - [x] Pagination, rate limiting, origin/JSON guards — increment.
 - [x] WS hello/subscribe + `events_after` — increment.
 - [x] OpenAPI determinism with the run paths — `make openapi`.
-- [x] Auth middleware, idempotency store, WS broadcast + heartbeat, outbox relay/backfill — increment.
-- [ ] Full DTO surface, Redis idempotency, WS backpressure, telemetry ingest, Swagger UI — open.
+- [x] Auth middleware, idempotency store, WS broadcast + heartbeat, outbox relay/backfill, OpenAPI endpoint, telemetry ingest — increment.
+- [ ] Full DTO surface, Redis idempotency, WS backpressure, Swagger UI assets — open.
 
 ## 4. Acceptance criteria
 
@@ -46,11 +47,12 @@
 - [x] Idempotency replay for POST — test.
 - [x] WS hello/subscribe + live broadcast + heartbeat — implementation.
 - [x] Outbox relay drains the outbox, persists for backfill and broadcasts live — test.
-- [ ] WS backpressure under load, Redis idempotency, telemetry ingest, perf — open.
+- [x] OpenAPI endpoint and frontend telemetry ingest — tests.
+- [ ] WS backpressure under load, Redis idempotency, Swagger UI assets, perf — open.
 
 ## 5. Implementation and tests
 
-- [x] `server.rs` router, in-memory `RunStore`, Problem Details, rate limiter, auth, idempotency, WS hub/heartbeat, outbox relay/backfill — 12 API tests + 2 contract tests.
+- [x] `server.rs` router, in-memory `RunStore`, Problem Details, rate limiter, auth, idempotency, WS hub/heartbeat, outbox relay/backfill, OpenAPI endpoint, telemetry ingest — 13 API tests + 2 contract tests.
 - [ ] Postgres/Redis adapters, full DTOs, WS hub — build phase.
 
 ## 6. Security and quality gates

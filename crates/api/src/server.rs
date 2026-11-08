@@ -367,6 +367,8 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/labs/{id}/metrics", get(get_metrics))
         .route("/api/v1/cards/{id}/runs", post(enqueue_run))
         .route("/api/v1/events", get(list_events))
+        .route("/api/v1/openapi.json", get(openapi))
+        .route("/api/v1/telemetry", post(ingest_telemetry))
         .route("/ws", get(ws_upgrade))
         .layer(middleware::from_fn_with_state(state.clone(), auth));
     Router::new()
@@ -589,6 +591,48 @@ struct EventsQuery {
     since: i64,
 }
 
+/// The generated `OpenAPI` document.
+const OPENAPI: &str = include_str!("../../../.docs/product/api/openapi.json");
+
+async fn openapi(State(state): State<AppState>, headers: HeaderMap) -> Response {
+    if let Err(response) = enforce(&state, &headers, RateLimitKind::Read) {
+        return response;
+    }
+    (
+        [(axum::http::header::CONTENT_TYPE, "application/json")],
+        OPENAPI,
+    )
+        .into_response()
+}
+
+/// Frontend telemetry payload.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TelemetryEvent {
+    /// Event name.
+    pub event: String,
+    /// Event properties.
+    #[serde(default)]
+    pub properties: serde_json::Value,
+}
+
+async fn ingest_telemetry(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(body): Json<TelemetryEvent>,
+) -> Response {
+    if let Err(response) = enforce(&state, &headers, RateLimitKind::Write) {
+        return response;
+    }
+    if body.event.is_empty() || body.event.len() > 64 {
+        return problem(DomainError::validation(
+            "telemetry.event",
+            "must be 1-64 characters",
+        ));
+    }
+    StatusCode::ACCEPTED.into_response()
+}
+
 async fn list_events(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -764,6 +808,47 @@ mod tests {
         let body = runs.into_body().collect().await.expect("body").to_bytes();
         let value: serde_json::Value = serde_json::from_slice(&body).expect("json");
         assert!(value["data"].is_array());
+    }
+
+    #[tokio::test]
+    async fn openapi_and_telemetry_endpoints() {
+        let app = router(seeded());
+        let spec = app
+            .clone()
+            .oneshot(request("GET", "/api/v1/openapi.json"))
+            .await
+            .expect("response");
+        assert_eq!(spec.status(), StatusCode::OK);
+        let body = spec.into_body().collect().await.expect("body").to_bytes();
+        let value: serde_json::Value = serde_json::from_slice(&body).expect("json");
+        assert_eq!(value["openapi"], "3.1.0");
+        let telemetry = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/v1/telemetry")
+                    .header("content-type", "application/json")
+                    .body(Body::from(
+                        r#"{"event":"ui.render","properties":{"ms":12}}"#,
+                    ))
+                    .expect("request"),
+            )
+            .await
+            .expect("response");
+        assert_eq!(telemetry.status(), StatusCode::ACCEPTED);
+        let invalid = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/v1/telemetry")
+                    .header("content-type", "application/json")
+                    .body(Body::from(r#"{"event":"","properties":{}}"#))
+                    .expect("request"),
+            )
+            .await
+            .expect("response");
+        assert_eq!(invalid.status(), StatusCode::UNPROCESSABLE_ENTITY);
     }
 
     #[tokio::test]
