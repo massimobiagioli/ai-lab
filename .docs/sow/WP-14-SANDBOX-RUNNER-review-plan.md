@@ -40,6 +40,7 @@
 - [x] Policy types and denial tests — 5 sandbox tests.
 - [x] HTTP API auth/idempotency/exec policy/delete/health — verified in tests.
 - [x] Docker isolation host config (read-only, cap drop, non-root, PIDs, no socket, worktree-only bind) and output caps — unit test.
+- [x] Tool registry: unknown tool, role, missing argument, path and command denials — 5 registry tests.
 - [ ] AC live escape/egress/token-load execution — Docker host suite WP-21 and token/egress wiring WP-13.
 
 ## 5. Implementation and tests

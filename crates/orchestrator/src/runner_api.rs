@@ -57,6 +57,9 @@ pub struct ExecRequest {
     /// Environment allowlist (names only).
     #[serde(default)]
     pub env_allowlist: Vec<String>,
+    /// Optional registry tool name (defaults to `shell.run`).
+    #[serde(default)]
+    pub tool: Option<String>,
 }
 
 /// Log query.
@@ -97,6 +100,14 @@ impl ApiError {
         Self {
             status: StatusCode::UNPROCESSABLE_ENTITY,
             code: "VALIDATION_FAILED",
+            message: message.into(),
+        }
+    }
+
+    fn policy(message: impl Into<String>) -> Self {
+        Self {
+            status: StatusCode::FORBIDDEN,
+            code: "POLICY_DENIED",
             message: message.into(),
         }
     }
@@ -272,6 +283,15 @@ async fn exec_command(
 ) -> Result<Json<ExecResponse>, ApiError> {
     state.authorize(&headers)?;
     let start = Instant::now();
+    let tool = request.tool.as_deref().unwrap_or("shell.run");
+    let registry = crate::tools::ToolRegistry::v1();
+    registry
+        .authorize(
+            AgentRole::Dev,
+            tool,
+            &serde_json::json!({"argv": request.argv, "path": request.cwd}),
+        )
+        .map_err(|denial| ApiError::policy(denial.reason))?;
     let call = ToolCall {
         argv: request.argv,
         cwd: request.cwd,

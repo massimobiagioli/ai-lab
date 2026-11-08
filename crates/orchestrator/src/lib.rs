@@ -10,5 +10,6 @@ pub mod pipeline;
 pub mod postgres;
 pub mod runner_api;
 pub mod sandbox;
+pub mod tools;
 pub mod wired;
 pub mod worker;
