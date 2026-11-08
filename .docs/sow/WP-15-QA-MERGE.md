@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | WP ID | `WP-15` |
-| Status | **done** |
+| Status | **progress** |
 | Owner | QA |
 | Milestone | M5 |
 | Estimate | 13 points |

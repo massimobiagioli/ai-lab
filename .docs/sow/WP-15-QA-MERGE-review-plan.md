@@ -7,7 +7,7 @@
 | Review branch | `review/wp-15-qa-merge` |
 | Reviewer | Chief Software Engineer (agent) |
 | QA reviewer | qa-review-agent (independent subagent) |
-| Status | `in_review` |
+| Status | `blocked` |
 
 ## 1. Contract completeness
 
@@ -69,8 +69,9 @@
 
 ## 8. QA review
 
-- [ ] QA subagent verdict: `APPROVED`.
-- [ ] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 146, 18 application tests, clippy, policy matrix).
+- [x] QA subagent verdict: `CHANGES_REQUESTED` (HEAD `f6fae06`).
+- [x] QA evidence: harness 16, sow-lint 31, doc links 146, 18 application tests, clippy clean.
+- [x] Blocking defects: hard-stop set mismatches §3.7; hard stops/rework not wired to escalation; no review pipeline/matrix/persistence; verdict schema lacks `BLOCKED`/`not_tested`/finding locations; merge engine omits PR-state/forbidden-diff/merger-operand/effective-autonomy conditions; `.docs/product/qa-merge.md` missing; the claimed `WiredExecutor` E2E does not exercise the policy; policy test matrix incomplete.
 
 ## 9. Deferred items and residual risks
 
