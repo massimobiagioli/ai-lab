@@ -3,7 +3,9 @@
 #![forbid(unsafe_code)]
 
 pub mod backend;
+pub mod context;
 pub mod docker_backend;
 pub mod orchestration;
+pub mod pipeline;
 pub mod runner_api;
 pub mod sandbox;
