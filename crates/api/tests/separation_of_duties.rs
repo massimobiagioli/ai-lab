@@ -68,6 +68,10 @@ fn merge_policy_rejects_author_as_reviewer() {
     let checks = MergeChecks {
         ci_green: true,
         pr_merged: true,
+        pr_open: true,
+        pr_draft: false,
+        base_is_default: true,
+        diff_clean: true,
         merge_sha: true,
         dod_complete: true,
         p0p1_open: false,
@@ -81,6 +85,7 @@ fn merge_policy_rejects_author_as_reviewer() {
     let decision = evaluate_merge(
         "agent-dev",
         "agent-dev",
+        "agent-qa",
         ReviewVerdict::Approved,
         &checks,
         AutonomyLevel::A2,

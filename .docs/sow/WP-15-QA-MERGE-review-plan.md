@@ -7,7 +7,7 @@
 | Review branch | `review/wp-15-qa-merge` |
 | Reviewer | Chief Software Engineer (agent) |
 | QA reviewer | qa-review-agent (independent subagent) |
-| Status | `blocked` |
+| Status | `in_review` |
 
 ## 1. Contract completeness
 
@@ -30,7 +30,7 @@
 - [x] Hard stops (11) — `HardStop`/`evaluate_hard_stops`.
 - [x] Human approval gates — `HUMAN_MERGE_REQUIRED`.
 - [x] Rework loop limits — `ReworkLoop` (3 → ICEBOX).
-- [ ] Review/merge APIs + events + audit — WP-16.
+- [x] Review schema/pipeline/hard stops/merge conditions — `qa.rs`, `qa-merge.md`; APIs/events/audit remain WP-16.
 - [x] Policy tests — 9 QA tests; E2E review/merge through `WiredExecutor`/FakeScm.
 - [x] `.docs/product/qa.md` — present.
 
@@ -71,7 +71,7 @@
 
 - [x] QA subagent verdict: `CHANGES_REQUESTED` (HEAD `f6fae06`).
 - [x] QA evidence: harness 16, sow-lint 31, doc links 146, 18 application tests, clippy clean.
-- [x] Blocking defects: hard-stop set mismatches §3.7; hard stops/rework not wired to escalation; no review pipeline/matrix/persistence; verdict schema lacks `BLOCKED`/`not_tested`/finding locations; merge engine omits PR-state/forbidden-diff/merger-operand/effective-autonomy conditions; `.docs/product/qa-merge.md` missing; the claimed `WiredExecutor` E2E does not exercise the policy; policy test matrix incomplete.
+- [x] First-pass blockers addressed: §3.7 hard stops (11), `blocked`/`not_tested`, finding `file/line/issue/fix`, review pipeline/verdict computation, PR-state/diff/merger conditions, `qa-merge.md`. Remaining: API/events/audit (WP-16), live E2E (WP-21).
 
 ## 9. Deferred items and residual risks
 

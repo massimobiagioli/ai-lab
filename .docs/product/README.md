@@ -19,6 +19,7 @@ This directory holds product documentation. Program control (technical specifica
 | [realtime.md](./realtime.md) | WebSocket envelope, resume, backfill and backpressure |
 | [orchestration.md](./orchestration.md) | Scheduler eligibility, leases, run state, retries and recovery |
 | [qa.md](./qa.md) | Review verdicts, separation of duties and autonomy merge policy |
+| [qa-merge.md](./qa-merge.md) | Review pipeline, merge conditions, hard stops and error codes |
 | [frontend.md](./frontend.md) | Angular shell, pixel tokens, status badge and accessibility |
 | [office.md](./office.md) | Canvas office, A* pathfinding, state mapping and accessibility |
 | [product-ui.md](./product-ui.md) | Dashboard, surfaces, UX states and accessibility |

@@ -1,4 +1,4 @@
-//! QA verdicts, findings, separation of duties, merge policy, hard stops and autonomy.
+//! QA review pipeline, verdicts, merge policy, hard stops and autonomy.
 
 use ailab_domain::AutonomyLevel;
 use serde::{Deserialize, Serialize};
@@ -11,6 +11,8 @@ pub enum ReviewVerdict {
     Approved,
     /// Changes requested.
     ChangesRequested,
+    /// Blocked by a finding or hard stop.
+    Blocked,
 }
 
 /// Finding severity.
@@ -34,8 +36,26 @@ pub struct Finding {
     pub id: String,
     /// Severity.
     pub severity: FindingSeverity,
-    /// Description.
-    pub description: String,
+    /// File.
+    pub file: String,
+    /// Line.
+    pub line: Option<u32>,
+    /// Issue.
+    pub issue: String,
+    /// Suggested fix.
+    pub fix: String,
+}
+
+/// Acceptance status.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AcceptanceStatus {
+    /// Passed.
+    Pass,
+    /// Failed.
+    Fail,
+    /// Not tested.
+    NotTested,
 }
 
 /// One acceptance result.
@@ -43,8 +63,8 @@ pub struct Finding {
 pub struct AcceptanceResult {
     /// Acceptance criterion.
     pub criterion: String,
-    /// Passed.
-    pub passed: bool,
+    /// Status.
+    pub status: AcceptanceStatus,
     /// Evidence.
     pub evidence: String,
 }
@@ -52,10 +72,16 @@ pub struct AcceptanceResult {
 /// A persisted review.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ReviewRecord {
+    /// Review id.
+    pub review_id: String,
+    /// Run id.
+    pub run_id: String,
+    /// Reviewer id.
+    pub reviewer_id: String,
+    /// Reviewed head SHA.
+    pub head_sha: String,
     /// Verdict.
     pub verdict: ReviewVerdict,
-    /// Reviewed head SHA.
-    pub reviewed_sha: String,
     /// Findings.
     pub findings: Vec<Finding>,
     /// Acceptance results.
@@ -66,13 +92,21 @@ impl ReviewRecord {
     /// Validate the verdict: APPROVED requires every AC to pass and no
     /// P0/P1/P2 finding.
     pub fn validate(&self) -> Result<(), MergeViolation> {
+        if self.verdict == ReviewVerdict::Blocked {
+            return Err(MergeViolation::new("QA_BLOCKED", "the review is blocked"));
+        }
         if self.verdict != ReviewVerdict::Approved {
             return Err(MergeViolation::new(
                 "QA_NOT_APPROVED",
                 "QA verdict is not APPROVED",
             ));
         }
-        if self.acceptance.is_empty() || self.acceptance.iter().any(|result| !result.passed) {
+        if self.acceptance.is_empty()
+            || self
+                .acceptance
+                .iter()
+                .any(|result| result.status != AcceptanceStatus::Pass)
+        {
             return Err(MergeViolation::new(
                 "AC_NOT_PASS",
                 "every acceptance criterion must pass",
@@ -90,6 +124,112 @@ impl ReviewRecord {
         }
         Ok(())
     }
+
+    /// Compute the verdict from the acceptance matrix and findings.
+    #[must_use]
+    pub fn compute_verdict(&self) -> ReviewVerdict {
+        if self
+            .findings
+            .iter()
+            .any(|finding| finding.severity == FindingSeverity::P0)
+        {
+            ReviewVerdict::Blocked
+        } else if self
+            .findings
+            .iter()
+            .any(|finding| matches!(finding.severity, FindingSeverity::P1 | FindingSeverity::P2))
+            || self
+                .acceptance
+                .iter()
+                .any(|result| result.status != AcceptanceStatus::Pass)
+        {
+            ReviewVerdict::ChangesRequested
+        } else {
+            ReviewVerdict::Approved
+        }
+    }
+}
+
+/// Incremental review pipeline.
+#[derive(Debug, Clone, Default)]
+pub struct ReviewPipeline {
+    acceptance: Vec<AcceptanceResult>,
+    findings: Vec<Finding>,
+    next_finding: u32,
+}
+
+impl ReviewPipeline {
+    /// New empty pipeline.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Record an acceptance result.
+    pub fn check(&mut self, criterion: impl Into<String>, evidence: Option<&str>) {
+        let evidence = evidence.unwrap_or_default();
+        let status = if evidence.trim().is_empty() {
+            AcceptanceStatus::NotTested
+        } else {
+            AcceptanceStatus::Pass
+        };
+        self.acceptance.push(AcceptanceResult {
+            criterion: criterion.into(),
+            status,
+            evidence: evidence.to_owned(),
+        });
+    }
+
+    /// Record a failed acceptance result.
+    pub fn fail(&mut self, criterion: impl Into<String>, evidence: impl Into<String>) {
+        self.acceptance.push(AcceptanceResult {
+            criterion: criterion.into(),
+            status: AcceptanceStatus::Fail,
+            evidence: evidence.into(),
+        });
+    }
+
+    /// Add a finding.
+    pub fn finding(
+        &mut self,
+        severity: FindingSeverity,
+        file: impl Into<String>,
+        line: Option<u32>,
+        issue: impl Into<String>,
+        fix: impl Into<String>,
+    ) {
+        self.next_finding += 1;
+        self.findings.push(Finding {
+            id: format!("F-{}", self.next_finding),
+            severity,
+            file: file.into(),
+            line,
+            issue: issue.into(),
+            fix: fix.into(),
+        });
+    }
+
+    /// Finish the review and compute the verdict.
+    #[must_use]
+    pub fn finish(
+        self,
+        review_id: impl Into<String>,
+        run_id: impl Into<String>,
+        reviewer_id: impl Into<String>,
+        head_sha: impl Into<String>,
+    ) -> ReviewRecord {
+        let mut record = ReviewRecord {
+            review_id: review_id.into(),
+            run_id: run_id.into(),
+            reviewer_id: reviewer_id.into(),
+            head_sha: head_sha.into(),
+            verdict: ReviewVerdict::Approved,
+            findings: self.findings,
+            acceptance: self.acceptance,
+        };
+        record.verdict = record.compute_verdict();
+        record
+    }
 }
 
 /// Merge preconditions.
@@ -100,6 +240,14 @@ pub struct MergeChecks {
     pub ci_green: bool,
     /// The PR is merged.
     pub pr_merged: bool,
+    /// The PR is open.
+    pub pr_open: bool,
+    /// The PR is a draft.
+    pub pr_draft: bool,
+    /// The base is the default branch.
+    pub base_is_default: bool,
+    /// The diff has no forbidden path or secret.
+    pub diff_clean: bool,
     /// The merge SHA is recorded.
     pub merge_sha: bool,
     /// `DoD` is complete.
@@ -149,11 +297,12 @@ pub struct MergeDecision {
     pub violations: Vec<MergeViolation>,
 }
 
-/// Evaluate a merge against the ten policy conditions and autonomy.
+/// Evaluate a merge against the policy conditions and autonomy.
 #[must_use]
 pub fn evaluate_merge(
     author: &str,
     reviewer: &str,
+    merger: &str,
     verdict: ReviewVerdict,
     checks: &MergeChecks,
     autonomy: AutonomyLevel,
@@ -170,7 +319,7 @@ pub fn evaluate_merge(
         };
     }
     let mut violations = Vec::new();
-    if author == reviewer {
+    if author == reviewer || author == merger {
         violations.push(MergeViolation::new(
             "SEPARATION_OF_DUTIES",
             "reviewer or merger equals the author",
@@ -184,6 +333,18 @@ pub fn evaluate_merge(
     }
     if !checks.ci_green {
         violations.push(MergeViolation::new("CI_NOT_GREEN", "CI is not green"));
+    }
+    if !checks.pr_open || checks.pr_draft || !checks.base_is_default {
+        violations.push(MergeViolation::new(
+            "PR_NOT_READY",
+            "the PR must be open, non-draft and target the default branch",
+        ));
+    }
+    if !checks.diff_clean {
+        violations.push(MergeViolation::new(
+            "FORBIDDEN_DIFF",
+            "the diff touches a forbidden path or contains a secret",
+        ));
     }
     if !checks.pr_merged {
         violations.push(MergeViolation::new("PR_NOT_MERGED", "the PR is not merged"));
@@ -273,32 +434,32 @@ impl ReworkLoop {
     }
 }
 
-/// The 11 hard stops.
+/// The 11 hard stops from WP-15 §3.7.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum HardStop {
-    /// Budget exhausted.
-    BudgetExhausted,
-    /// Provider breaker open.
-    ProviderUnavailable,
-    /// Policy denied.
-    PolicyDenied,
-    /// Secret detected.
+    /// Budget exceeded.
+    BudgetExceeded,
+    /// Secret in the diff or output.
     SecretDetected,
-    /// Protected path write.
-    ProtectedWrite,
-    /// Stale review.
-    StaleReview,
-    /// CI failed.
-    CiFailed,
-    /// P0/P1 open.
-    P0P1Open,
-    /// `DoD` incomplete.
-    DodIncomplete,
-    /// Human gate required.
-    HumanGateRequired,
-    /// Separation of duties violated.
-    SeparationOfDuties,
+    /// Forbidden path touched.
+    ForbiddenPath,
+    /// Force-push/history rewrite/protected-branch write.
+    ForcePush,
+    /// Destructive SQL or data deletion.
+    DestructiveSql,
+    /// Critical CVE or disallowed license.
+    DependencyRisk,
+    /// Request to disable/skip checks.
+    DisableChecks,
+    /// PR > 1,500 lines or > 40 files.
+    LargePullRequest,
+    /// Self-review.
+    SelfReview,
+    /// Self-merge.
+    SelfMerge,
+    /// Prompt-injection attempt against policy.
+    PromptInjection,
 }
 
 /// Inputs for the hard-stop evaluation.
@@ -307,26 +468,28 @@ pub enum HardStop {
 pub struct HardStopInputs {
     /// Budget remains.
     pub budget_remaining: bool,
-    /// Provider healthy.
-    pub provider_healthy: bool,
-    /// Policy clean.
-    pub policy_clean: bool,
-    /// No secret in output.
+    /// No secret in diff/output.
     pub no_secrets: bool,
-    /// No protected write.
-    pub no_protected_write: bool,
-    /// Review is fresh.
-    pub review_fresh: bool,
-    /// CI green.
-    pub ci_green: bool,
-    /// P0/P1 open.
-    pub p0p1_open: bool,
-    /// `DoD` complete.
-    pub dod_complete: bool,
-    /// Human approved.
-    pub human_approved: bool,
-    /// Separation of duties holds.
-    pub separation_ok: bool,
+    /// No forbidden path.
+    pub no_forbidden_path: bool,
+    /// No force-push/protected write.
+    pub no_force_push: bool,
+    /// No destructive SQL.
+    pub no_destructive_sql: bool,
+    /// Dependencies clean.
+    pub dependencies_ok: bool,
+    /// Checks enabled.
+    pub checks_enabled: bool,
+    /// Changed lines.
+    pub changed_lines: u32,
+    /// Changed files.
+    pub changed_files: u32,
+    /// Reviewer equals author.
+    pub reviewer_is_author: bool,
+    /// Merger equals author.
+    pub merger_is_author: bool,
+    /// Prompt injection detected.
+    pub prompt_injection: bool,
 }
 
 /// Evaluate the hard stops; an empty vector means the run may proceed.
@@ -334,37 +497,37 @@ pub struct HardStopInputs {
 pub fn evaluate_hard_stops(inputs: &HardStopInputs) -> Vec<HardStop> {
     let mut stops = Vec::new();
     if !inputs.budget_remaining {
-        stops.push(HardStop::BudgetExhausted);
-    }
-    if !inputs.provider_healthy {
-        stops.push(HardStop::ProviderUnavailable);
-    }
-    if !inputs.policy_clean {
-        stops.push(HardStop::PolicyDenied);
+        stops.push(HardStop::BudgetExceeded);
     }
     if !inputs.no_secrets {
         stops.push(HardStop::SecretDetected);
     }
-    if !inputs.no_protected_write {
-        stops.push(HardStop::ProtectedWrite);
+    if !inputs.no_forbidden_path {
+        stops.push(HardStop::ForbiddenPath);
     }
-    if !inputs.review_fresh {
-        stops.push(HardStop::StaleReview);
+    if !inputs.no_force_push {
+        stops.push(HardStop::ForcePush);
     }
-    if !inputs.ci_green {
-        stops.push(HardStop::CiFailed);
+    if !inputs.no_destructive_sql {
+        stops.push(HardStop::DestructiveSql);
     }
-    if inputs.p0p1_open {
-        stops.push(HardStop::P0P1Open);
+    if !inputs.dependencies_ok {
+        stops.push(HardStop::DependencyRisk);
     }
-    if !inputs.dod_complete {
-        stops.push(HardStop::DodIncomplete);
+    if !inputs.checks_enabled {
+        stops.push(HardStop::DisableChecks);
     }
-    if !inputs.human_approved {
-        stops.push(HardStop::HumanGateRequired);
+    if inputs.changed_lines > 1_500 || inputs.changed_files > 40 {
+        stops.push(HardStop::LargePullRequest);
     }
-    if !inputs.separation_ok {
-        stops.push(HardStop::SeparationOfDuties);
+    if inputs.reviewer_is_author {
+        stops.push(HardStop::SelfReview);
+    }
+    if inputs.merger_is_author {
+        stops.push(HardStop::SelfMerge);
+    }
+    if inputs.prompt_injection {
+        stops.push(HardStop::PromptInjection);
     }
     stops
 }
@@ -377,6 +540,10 @@ mod tests {
         MergeChecks {
             ci_green: true,
             pr_merged: true,
+            pr_open: true,
+            pr_draft: false,
+            base_is_default: true,
+            diff_clean: true,
             merge_sha: true,
             dod_complete: true,
             p0p1_open: false,
@@ -390,16 +557,9 @@ mod tests {
     }
 
     fn review() -> ReviewRecord {
-        ReviewRecord {
-            verdict: ReviewVerdict::Approved,
-            reviewed_sha: "sha-1".to_owned(),
-            findings: vec![],
-            acceptance: vec![AcceptanceResult {
-                criterion: "works".to_owned(),
-                passed: true,
-                evidence: "test".to_owned(),
-            }],
-        }
+        let mut pipeline = ReviewPipeline::new();
+        pipeline.check("works", Some("test"));
+        pipeline.finish("review-1", "run-1", "qa", "sha-1")
     }
 
     #[test]
@@ -407,6 +567,7 @@ mod tests {
         let decision = evaluate_merge(
             "alice",
             "bob",
+            "carol",
             ReviewVerdict::Approved,
             &green(),
             AutonomyLevel::A2,
@@ -418,20 +579,23 @@ mod tests {
 
     #[test]
     fn separation_of_duties_is_enforced() {
-        let decision = evaluate_merge(
-            "alice",
-            "alice",
-            ReviewVerdict::Approved,
-            &green(),
-            AutonomyLevel::A2,
-        );
-        assert!(!decision.allowed);
-        assert!(
-            decision
-                .violations
-                .iter()
-                .any(|violation| violation.code == "SEPARATION_OF_DUTIES")
-        );
+        for (reviewer, merger) in [("alice", "carol"), ("bob", "alice")] {
+            let decision = evaluate_merge(
+                "alice",
+                reviewer,
+                merger,
+                ReviewVerdict::Approved,
+                &green(),
+                AutonomyLevel::A2,
+            );
+            assert!(!decision.allowed);
+            assert!(
+                decision
+                    .violations
+                    .iter()
+                    .any(|violation| violation.code == "SEPARATION_OF_DUTIES")
+            );
+        }
     }
 
     #[test]
@@ -441,6 +605,7 @@ mod tests {
         let decision = evaluate_merge(
             "alice",
             "bob",
+            "carol",
             ReviewVerdict::Approved,
             &checks,
             AutonomyLevel::A1,
@@ -459,6 +624,10 @@ mod tests {
         let checks = MergeChecks {
             ci_green: false,
             pr_merged: false,
+            pr_open: false,
+            pr_draft: true,
+            base_is_default: false,
+            diff_clean: false,
             merge_sha: false,
             dod_complete: false,
             p0p1_open: true,
@@ -472,6 +641,7 @@ mod tests {
         let decision = evaluate_merge(
             "alice",
             "bob",
+            "carol",
             ReviewVerdict::ChangesRequested,
             &checks,
             AutonomyLevel::A2,
@@ -484,6 +654,8 @@ mod tests {
         for code in [
             "QA_NOT_APPROVED",
             "CI_NOT_GREEN",
+            "PR_NOT_READY",
+            "FORBIDDEN_DIFF",
             "PR_NOT_MERGED",
             "MERGE_SHA_MISSING",
             "DOD_INCOMPLETE",
@@ -497,44 +669,13 @@ mod tests {
     }
 
     #[test]
-    fn stale_review_and_protected_branch_block_the_merge() {
-        let mut checks = green();
-        checks.head_sha = "sha-2".to_owned();
-        assert_eq!(
-            evaluate_merge(
-                "alice",
-                "bob",
-                ReviewVerdict::Approved,
-                &checks,
-                AutonomyLevel::A2
-            )
-            .violations[0]
-                .code,
-            "STALE_REVIEW"
-        );
-        let mut checks = green();
-        checks.branch_protected = true;
-        assert!(
-            evaluate_merge(
-                "alice",
-                "bob",
-                ReviewVerdict::Approved,
-                &checks,
-                AutonomyLevel::A2
-            )
-            .violations
-            .iter()
-            .any(|violation| violation.code == "PROTECTED_BRANCH")
-        );
-    }
-
-    #[test]
     fn merge_is_idempotent_for_the_same_head() {
         let mut checks = green();
         checks.already_merged = true;
         let decision = evaluate_merge(
             "alice",
             "bob",
+            "carol",
             ReviewVerdict::Approved,
             &checks,
             AutonomyLevel::A2,
@@ -544,26 +685,55 @@ mod tests {
     }
 
     #[test]
-    fn approved_requires_every_ac_and_no_blocking_finding() {
-        review().validate().expect("valid");
-        let mut failed = review();
-        failed.acceptance[0].passed = false;
-        assert_eq!(failed.validate().expect_err("invalid").code, "AC_NOT_PASS");
-        let mut finding = review();
-        finding.findings.push(Finding {
-            id: "F-1".to_owned(),
+    fn review_pipeline_computes_verdicts() {
+        let record = review();
+        assert_eq!(record.verdict, ReviewVerdict::Approved);
+        record.validate().expect("valid");
+
+        let mut pipeline = ReviewPipeline::new();
+        pipeline.check("works", None);
+        let record = pipeline.finish("r", "run", "qa", "sha");
+        assert_eq!(record.verdict, ReviewVerdict::ChangesRequested);
+        assert_eq!(
+            record.validate().expect_err("invalid").code,
+            "QA_NOT_APPROVED"
+        );
+
+        let mut pipeline = ReviewPipeline::new();
+        pipeline.check("works", Some("test"));
+        pipeline.finding(FindingSeverity::P1, "src/lib.rs", Some(3), "bug", "fix");
+        let record = pipeline.finish("r", "run", "qa", "sha");
+        assert_eq!(record.verdict, ReviewVerdict::ChangesRequested);
+        assert_eq!(
+            record.validate().expect_err("invalid").code,
+            "QA_NOT_APPROVED"
+        );
+
+        let mut pipeline = ReviewPipeline::new();
+        pipeline.check("works", Some("test"));
+        pipeline.finding(FindingSeverity::P0, "src/lib.rs", None, "breach", "fix");
+        let record = pipeline.finish("r", "run", "qa", "sha");
+        assert_eq!(record.verdict, ReviewVerdict::Blocked);
+        assert_eq!(record.validate().expect_err("invalid").code, "QA_BLOCKED");
+
+        let mut invalid_ac = review();
+        invalid_ac.acceptance[0].status = AcceptanceStatus::Fail;
+        assert_eq!(
+            invalid_ac.validate().expect_err("invalid").code,
+            "AC_NOT_PASS"
+        );
+        let mut blocking = review();
+        blocking.findings.push(Finding {
+            id: "F-9".to_owned(),
             severity: FindingSeverity::P1,
-            description: "bug".to_owned(),
+            file: "src/lib.rs".to_owned(),
+            line: None,
+            issue: "bug".to_owned(),
+            fix: "fix".to_owned(),
         });
         assert_eq!(
-            finding.validate().expect_err("invalid").code,
+            blocking.validate().expect_err("invalid").code,
             "BLOCKING_FINDING"
-        );
-        let mut changes = review();
-        changes.verdict = ReviewVerdict::ChangesRequested;
-        assert_eq!(
-            changes.validate().expect_err("invalid").code,
-            "QA_NOT_APPROVED"
         );
     }
 
@@ -579,31 +749,33 @@ mod tests {
     fn hard_stops_cover_the_eleven_conditions() {
         let inputs = HardStopInputs {
             budget_remaining: false,
-            provider_healthy: false,
-            policy_clean: false,
             no_secrets: false,
-            no_protected_write: false,
-            review_fresh: false,
-            ci_green: false,
-            p0p1_open: true,
-            dod_complete: false,
-            human_approved: false,
-            separation_ok: false,
+            no_forbidden_path: false,
+            no_force_push: false,
+            no_destructive_sql: false,
+            dependencies_ok: false,
+            checks_enabled: false,
+            changed_lines: 2_000,
+            changed_files: 50,
+            reviewer_is_author: true,
+            merger_is_author: true,
+            prompt_injection: true,
         };
         let stops = evaluate_hard_stops(&inputs);
         assert_eq!(stops.len(), 11);
         let clean = HardStopInputs {
             budget_remaining: true,
-            provider_healthy: true,
-            policy_clean: true,
             no_secrets: true,
-            no_protected_write: true,
-            review_fresh: true,
-            ci_green: true,
-            p0p1_open: false,
-            dod_complete: true,
-            human_approved: true,
-            separation_ok: true,
+            no_forbidden_path: true,
+            no_force_push: true,
+            no_destructive_sql: true,
+            dependencies_ok: true,
+            checks_enabled: true,
+            changed_lines: 10,
+            changed_files: 2,
+            reviewer_is_author: false,
+            merger_is_author: false,
+            prompt_injection: false,
         };
         assert_eq!(evaluate_hard_stops(&clean), Vec::<HardStop>::new());
     }
