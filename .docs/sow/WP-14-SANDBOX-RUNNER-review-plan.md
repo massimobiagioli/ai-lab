@@ -62,8 +62,9 @@
 
 ## 8. QA review
 
-- [ ] QA subagent verdict: `PENDING`.
+- [x] QA subagent verdict: `CHANGES_REQUESTED` (HEAD `a18724a`).
 - [x] Author blocker: the contract's HTTP runner, exec/logs, escape suite and egress runtime are missing; the `done` claim is not evidence-backed (CR-0009).
+- [x] QA blocking defects: role is hard-coded to Dev (no run-policy/JSON-Schema tool registry); denial lacks tool/argument/audit; path policy misses `.env*`/`*.pem`/`*.key`/`.git/hooks`/symlinks and the API never authorizes writes; egress runtime/DNS/proxy not wired and the network name mismatches Compose; arbitrary container ids accepted; no 45-min container timeout; CPU/memory/timeout bounds too wide; output cap 1 MB vs 20 KB and no `TOOL_TIMEOUT`/process-group kill; no orphan reconciliation; no sandbox token injection/revocation; no live escape/resource/egress suite.
 
 ## 9. Deferred items and residual risks
 

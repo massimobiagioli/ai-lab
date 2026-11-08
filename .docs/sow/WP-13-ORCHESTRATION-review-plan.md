@@ -71,8 +71,9 @@
 
 ## 8. QA review
 
-- [ ] QA subagent verdict: `APPROVED`.
-- [ ] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 144, 28 orchestrator tests, clippy, pipeline/context/recovery).
+- [x] QA subagent verdict: `CHANGES_REQUESTED` (HEAD `a18724a`).
+- [x] QA evidence: harness 16, sow-lint 31, doc links 146, fmt/clippy clean, 43 orchestrator tests + 1 ignored.
+- [x] Blocking defects from QA: Postgres `SKIP LOCKED` leases/dispatch not implemented; worker does not apply 45 s stale/backoff; no iterative agent loop or ordered verification runner with raw-output rework; context builder lacks repo map/memory citations/files/conventions/feedback; SCM commit/PR/review/merge are not idempotent on retry; run APIs are an in-memory store disconnected from the worker; no event emission/metrics/OTel spans; no card DoD/transition integration or recovery/cancel wiring.
 - [x] Author fixes: 13-stage pipeline, context bundle, loop bounds, verification/review rework, handoff, recovery, cancellation, escalation, step trace, event mapping and the worker tick with retry/backoff delivered.
 
 ## 9. Deferred items and residual risks
