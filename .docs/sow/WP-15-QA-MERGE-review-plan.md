@@ -7,7 +7,7 @@
 | Review branch | `review/wp-15-qa-merge` |
 | Reviewer | Chief Software Engineer (agent) |
 | QA reviewer | qa-review-agent (independent subagent) |
-| Status | `in_review` |
+| Status | `approved` |
 
 ## 1. Contract completeness
 
@@ -31,7 +31,7 @@
 - [x] Human approval gates — `HUMAN_MERGE_REQUIRED`.
 - [x] Rework loop limits — `ReworkLoop` (3 → ICEBOX).
 - [x] Review schema/pipeline/hard stops/merge conditions — `qa.rs`, `qa-merge.md`; APIs/events/audit remain WP-16.
-- [x] Policy tests — 9 QA tests; E2E review/merge through `WiredExecutor`/FakeScm.
+- [x] Policy tests — 12 QA tests; E2E review/merge through `WiredExecutor`/FakeScm.
 - [x] `.docs/product/qa.md` — present.
 
 ## 4. Acceptance criteria
@@ -70,8 +70,8 @@
 ## 8. QA review
 
 - [x] QA subagent verdict: `CHANGES_REQUESTED` (HEAD `f6fae06`).
-- [x] QA evidence: harness 16, sow-lint 31, doc links 146, 18 application tests, clippy clean.
-- [x] First-pass blockers addressed: §3.7 hard stops (11), `blocked`/`not_tested`, finding `file/line/issue/fix`, review pipeline/verdict computation, PR-state/diff/merger conditions, `qa-merge.md`, empty-matrix/AC-duplicate validation, per-stop tests, hard-stop escalation and merge-policy wiring in `WiredExecutor`. Remaining: review persistence/API/events/audit (WP-16), live E2E (WP-21).
+- [x] QA evidence: harness 16, sow-lint 31, doc links 146, 21 application tests, clippy clean.
+- [x] Prior blockers addressed: §3.7 hard stops (11), `blocked`/`not_tested`, finding `file/line/issue/fix`, review pipeline/verdict computation, PR-state/diff/merger conditions, `qa-merge.md`, empty-matrix/AC-duplicate validation, per-stop tests, hard-stop escalation and merge-policy wiring in `WiredExecutor`. Remaining: review persistence/API/events/audit (WP-16), live E2E (WP-21).
 
 ## 9. Deferred items and residual risks
 

@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | WP ID | `WP-15` |
-| Status | **progress** |
+| Status | **done** |
 | Owner | QA |
 | Milestone | M5 |
 | Estimate | 13 points |
@@ -19,6 +19,8 @@
 | 2026-11-07 | — | `ready` | Tech Lead | Initial SOW baseline |
 | 2026-11-07 | `ready` | `progress` | QA (agent) | WP-09/12/13 done |
 | 2026-11-07 | `progress` | `done` | QA (agent) | Verdicts, separation of duties, merge checks and autonomy policy delivered; CI/API/E2E wiring in WP-16/WP-21 |
+| 2026-11-07 | `done` | `progress` | Tech Lead (agent) | WP review (CR-0011): QA `CHANGES_REQUESTED`; the review pipeline/matrix, verdict schema, correct 11 hard stops, merge wiring and docs were not delivered |
+| 2026-11-07 | `progress` | `done` | Tech Lead (agent) | WP review: QA `APPROVED` (`.docs/product/evidence/WP-15-review.md`); review pipeline, verdict schema, 11 hard stops, merge policy and docs delivered |
 
 ---
 
@@ -284,3 +286,4 @@ Gate states are visible on the card and in the office ("awaiting operator"). The
 2026-11-07 | review | .docs/sow/WP-15-QA-MERGE-review-plan.md, crates/application/src/qa.rs | verdict validator; findings; 10 merge conditions; 11 hard stops; rework loop; idempotent merge; 18 application tests | API/events/audit WP-16, live E2E WP-21 | QA review
 2026-11-07 | build | crates/application/src/qa.rs, .docs/product/qa-merge.md | §3.7 11 hard stops; blocked/not_tested; finding locations; review pipeline/verdict; PR/diff/merger conditions; 17 application tests | API/events/audit WP-16, live E2E WP-21 | QA review
 2026-11-07 | build | crates/application/src/qa.rs, crates/orchestrator/src/wired.rs | empty-matrix/AC-duplicate validation; per-stop tests; hard-stop escalation; review record + evaluate_merge wired before DONE; 18 application + 50 orchestrator tests | persistence/API/events WP-16, live E2E WP-21 | QA review
+2026-11-07 | closure | .docs/product/evidence/WP-15-review.md | QA APPROVED; 21 application + 50 orchestrator tests | persistence/API/events WP-16, live E2E WP-21 | WP-14
