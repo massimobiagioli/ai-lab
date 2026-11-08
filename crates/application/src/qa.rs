@@ -422,6 +422,86 @@ pub fn evaluate_merge(
     }
 }
 
+/// Evaluate a merge **before** merging: the PR is not merged yet, so the
+/// post-merge conditions are excluded.
+#[must_use]
+#[allow(clippy::too_many_arguments)]
+pub fn evaluate_pre_merge(
+    author: &str,
+    reviewer: &str,
+    merger: &str,
+    verdict: ReviewVerdict,
+    checks: &MergeChecks,
+    autonomy: AutonomyLevel,
+) -> MergeDecision {
+    let mut violations = Vec::new();
+    if author == reviewer || author == merger {
+        violations.push(MergeViolation::new(
+            "SEPARATION_OF_DUTIES",
+            "reviewer or merger equals the author",
+        ));
+    }
+    if verdict != ReviewVerdict::Approved {
+        violations.push(MergeViolation::new(
+            "QA_NOT_APPROVED",
+            "QA verdict is not APPROVED",
+        ));
+    }
+    if !checks.ci_green {
+        violations.push(MergeViolation::new("CI_NOT_GREEN", "CI is not green"));
+    }
+    if !checks.pr_open || checks.pr_draft || !checks.base_is_default {
+        violations.push(MergeViolation::new(
+            "PR_NOT_READY",
+            "the PR must be open, non-draft and target the default branch",
+        ));
+    }
+    if !checks.diff_clean {
+        violations.push(MergeViolation::new(
+            "FORBIDDEN_DIFF",
+            "the diff touches a forbidden path or contains a secret",
+        ));
+    }
+    if !checks.dod_complete {
+        violations.push(MergeViolation::new(
+            "DOD_INCOMPLETE",
+            "the Definition of Done is incomplete",
+        ));
+    }
+    if checks.p0p1_open {
+        violations.push(MergeViolation::new("P0_P1_OPEN", "a P0/P1 defect is open"));
+    }
+    if !checks.budget_remaining {
+        violations.push(MergeViolation::new(
+            "BUDGET_EXHAUSTED",
+            "the run budget is exhausted",
+        ));
+    }
+    if checks.head_sha != checks.reviewed_sha || checks.head_sha.is_empty() {
+        violations.push(MergeViolation::new(
+            "STALE_REVIEW",
+            "the head SHA differs from the reviewed SHA",
+        ));
+    }
+    if checks.branch_protected {
+        violations.push(MergeViolation::new(
+            "PROTECTED_BRANCH",
+            "the branch is protected",
+        ));
+    }
+    if matches!(autonomy, AutonomyLevel::A0 | AutonomyLevel::A1) && !checks.human_approved {
+        violations.push(MergeViolation::new(
+            "HUMAN_MERGE_REQUIRED",
+            "the autonomy level requires a human merger",
+        ));
+    }
+    MergeDecision {
+        allowed: violations.is_empty(),
+        idempotent: false,
+        violations,
+    }
+}
+
 /// Rework loop outcome.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReworkOutcome {
@@ -458,6 +538,63 @@ impl ReworkLoop {
         } else {
             ReworkOutcome::Rework
         }
+    }
+
+    /// Reason to attach when moving the card to ICEBOX.
+    #[must_use]
+    pub const fn icebox_reason() -> &'static str {
+        "review rework limit reached"
+    }
+}
+
+/// Human approval gate kinds.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum HumanGate {
+    /// SOW approval.
+    SowApproval,
+    /// Merge approval.
+    Merge,
+    /// Release approval.
+    Release,
+    /// Budget change.
+    Budget,
+    /// Autonomy change.
+    Autonomy,
+    /// Security exception.
+    Security,
+    /// Large pull request confirmation.
+    LargePullRequest,
+}
+
+/// Gate state contract (UI "awaiting operator").
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct GateState {
+    /// Gate.
+    pub gate: HumanGate,
+    /// Awaiting an operator decision.
+    pub awaiting: bool,
+    /// Recorded decision.
+    pub decision: Option<String>,
+}
+
+impl GateState {
+    /// Open a gate for the operator.
+    #[must_use]
+    pub const fn awaiting(gate: HumanGate) -> Self {
+        Self {
+            gate,
+            awaiting: true,
+            decision: None,
+        }
+    }
+
+    /// Record the operator decision.
+    #[must_use]
+    pub fn decide(mut self, decision: impl Into<String>) -> Self {
+        self.awaiting = false;
+        self.decision = Some(decision.into());
+        self
     }
 }
 
@@ -871,6 +1008,42 @@ mod tests {
         for (expected, inputs) in cases {
             assert_eq!(evaluate_hard_stops(&inputs), vec![expected], "{expected:?}");
         }
+    }
+
+    #[test]
+    fn autonomy_matrix_is_enforced() {
+        for (autonomy, human, allowed) in [
+            (AutonomyLevel::A0, false, false),
+            (AutonomyLevel::A0, true, true),
+            (AutonomyLevel::A1, false, false),
+            (AutonomyLevel::A1, true, true),
+            (AutonomyLevel::A2, false, true),
+            (AutonomyLevel::A2, true, true),
+            (AutonomyLevel::A3, false, true),
+            (AutonomyLevel::A3, true, true),
+        ] {
+            let mut checks = green();
+            checks.human_approved = human;
+            let decision = evaluate_merge(
+                "alice",
+                "bob",
+                "carol",
+                ReviewVerdict::Approved,
+                &checks,
+                autonomy,
+            );
+            assert_eq!(decision.allowed, allowed, "{autonomy:?} human={human}");
+        }
+    }
+
+    #[test]
+    fn human_gate_state_records_the_decision() {
+        let gate = GateState::awaiting(HumanGate::Merge);
+        assert!(gate.awaiting);
+        let gate = gate.decide("approved by operator");
+        assert!(!gate.awaiting);
+        assert_eq!(gate.decision.as_deref(), Some("approved by operator"));
+        assert_eq!(ReworkLoop::icebox_reason(), "review rework limit reached");
     }
 
     #[test]

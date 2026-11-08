@@ -284,9 +284,14 @@ impl RunExecutor for WiredExecutor {
             }
         }
 
+        let no_secrets = !ailab_llm::contains_secret(&plan.content)
+            && !pipeline
+                .steps
+                .iter()
+                .any(|step| ailab_llm::contains_secret(&step.output));
         let stops = ailab_application::evaluate_hard_stops(&ailab_application::HardStopInputs {
             budget_remaining: true,
-            no_secrets: true,
+            no_secrets,
             no_forbidden_path: true,
             no_force_push: true,
             no_destructive_sql: true,
@@ -335,6 +340,61 @@ impl RunExecutor for WiredExecutor {
             .map_err(|error| ExecError::Transient(error.to_string()))?;
         pipeline.record_step("commit", "commit", 0, Some(0), commit.clone());
 
+        let mut review_pipeline = ailab_application::ReviewPipeline::new();
+        for step in pipeline
+            .steps
+            .iter()
+            .filter(|step| step.kind == "verification")
+        {
+            let evidence = if step.output.trim().is_empty() {
+                format!("exit {:?}", step.exit_code)
+            } else {
+                step.output.clone()
+            };
+            review_pipeline.check(step.args_hash.as_str(), Some(evidence.as_str()));
+        }
+        let review = review_pipeline.finish(
+            format!("review-{}", run.run_id),
+            run.run_id.to_string(),
+            self.reviewer.clone(),
+            commit.clone(),
+        );
+        review
+            .validate()
+            .map_err(|violation| ExecError::Terminal(format!("review invalid: {violation:?}")))?;
+        let pre_checks = ailab_application::MergeChecks {
+            ci_green: true,
+            pr_merged: false,
+            pr_open: true,
+            pr_draft: false,
+            base_is_default: true,
+            diff_clean: true,
+            merge_sha: false,
+            dod_complete: true,
+            p0p1_open: false,
+            budget_remaining: true,
+            head_sha: commit.clone(),
+            reviewed_sha: commit.clone(),
+            branch_protected: false,
+            human_approved: true,
+            already_merged: false,
+        };
+        let pre_decision = ailab_application::evaluate_pre_merge(
+            &self.author,
+            &self.reviewer,
+            "tech-lead",
+            review.verdict,
+            &pre_checks,
+            ailab_domain::AutonomyLevel::A2,
+        );
+        if !pre_decision.allowed {
+            let _ = self.sandbox.delete(&sandbox.sandbox_id).await;
+            return Err(ExecError::Terminal(format!(
+                "pre-merge policy: {:?}",
+                pre_decision.violations
+            )));
+        }
+
         advance(&mut pipeline)?; // Push
         advance(&mut pipeline)?; // Pr
         let pr = match self
@@ -378,11 +438,16 @@ impl RunExecutor for WiredExecutor {
             .map_err(|error| ExecError::Terminal(error.to_string()))?;
 
         advance(&mut pipeline)?; // Review
+        let scm_verdict = if review.verdict == ailab_application::ReviewVerdict::Approved {
+            ReviewVerdict::Approved
+        } else {
+            ReviewVerdict::ChangesRequested
+        };
         self.scm
             .submit_review(
                 &self.repo,
                 pr.number,
-                ReviewVerdict::Approved,
+                scm_verdict,
                 &self.author,
                 &self.reviewer,
             )
@@ -409,61 +474,6 @@ impl RunExecutor for WiredExecutor {
             .map_err(|error| ExecError::Transient(error.to_string()))?;
         debug_assert_eq!(checks.status, CheckStatus::Green);
         pipeline.record_step("merge", "merge", 0, Some(0), merge.merge_sha.clone());
-
-        let mut review_pipeline = ailab_application::ReviewPipeline::new();
-        for step in pipeline
-            .steps
-            .iter()
-            .filter(|step| step.kind == "verification")
-        {
-            let evidence = if step.output.trim().is_empty() {
-                format!("exit {:?}", step.exit_code)
-            } else {
-                step.output.clone()
-            };
-            review_pipeline.check(step.args_hash.as_str(), Some(evidence.as_str()));
-        }
-        let review = review_pipeline.finish(
-            format!("review-{}", run.run_id),
-            run.run_id.to_string(),
-            self.reviewer.clone(),
-            commit.clone(),
-        );
-        review
-            .validate()
-            .map_err(|violation| ExecError::Terminal(format!("review invalid: {violation:?}")))?;
-        let merge_checks = ailab_application::MergeChecks {
-            ci_green: checks.status == CheckStatus::Green,
-            pr_merged: true,
-            pr_open: true,
-            pr_draft: false,
-            base_is_default: true,
-            diff_clean: true,
-            merge_sha: true,
-            dod_complete: true,
-            p0p1_open: false,
-            budget_remaining: true,
-            head_sha: commit.clone(),
-            reviewed_sha: commit,
-            branch_protected: false,
-            human_approved: true,
-            already_merged: false,
-        };
-        let decision = ailab_application::evaluate_merge(
-            &self.author,
-            &self.reviewer,
-            "tech-lead",
-            review.verdict,
-            &merge_checks,
-            ailab_domain::AutonomyLevel::A2,
-        );
-        if !decision.allowed {
-            let _ = self.sandbox.delete(&sandbox.sandbox_id).await;
-            return Err(ExecError::Terminal(format!(
-                "merge policy: {:?}",
-                decision.violations
-            )));
-        }
 
         advance(&mut pipeline)?; // Done
         advance(&mut pipeline)?; // Reflect

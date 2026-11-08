@@ -13,8 +13,9 @@ pub use ports::{
 };
 pub use problem::{ProblemDetails, Violation};
 pub use qa::{
-    AcceptanceResult, AcceptanceStatus, Finding, FindingSeverity, HardStop, HardStopInputs,
-    MergeChecks, MergeDecision, MergeViolation, ReviewPipeline, ReviewRecord, ReviewVerdict,
-    ReworkLoop, ReworkOutcome, evaluate_hard_stops, evaluate_merge,
+    AcceptanceResult, AcceptanceStatus, Finding, FindingSeverity, GateState, HardStop,
+    HardStopInputs, HumanGate, MergeChecks, MergeDecision, MergeViolation, ReviewPipeline,
+    ReviewRecord, ReviewVerdict, ReworkLoop, ReworkOutcome, evaluate_hard_stops, evaluate_merge,
+    evaluate_pre_merge,
 };
 pub use secret::Secret;
