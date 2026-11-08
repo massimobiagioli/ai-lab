@@ -72,6 +72,10 @@ pub enum StoreError {
 /// Run store port (in-memory or Postgres).
 #[async_trait]
 pub trait RunStore: Send + Sync {
+    /// Readiness probe (dependency check).
+    async fn ready(&self) -> bool {
+        true
+    }
     /// Read a run.
     async fn get(&self, id: &str) -> Option<RunView>;
     /// Read the ordered steps.
@@ -501,8 +505,16 @@ async fn health_live() -> StatusCode {
     StatusCode::OK
 }
 
-async fn health_ready() -> StatusCode {
-    StatusCode::OK
+async fn health_ready(State(state): State<AppState>) -> Response {
+    if state.store.ready().await {
+        StatusCode::OK.into_response()
+    } else {
+        (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(serde_json::json!({"status": "unavailable"})),
+        )
+            .into_response()
+    }
 }
 
 async fn get_run(
@@ -769,6 +781,7 @@ async fn ws_upgrade(
     ws.on_upgrade(move |socket| handle_socket(socket, state, query))
 }
 
+#[allow(clippy::too_many_lines)]
 async fn handle_socket(mut socket: WebSocket, state: AppState, query: WsQuery) {
     let lab_id = if query.lab_id.is_empty() {
         "default".to_owned()
@@ -786,7 +799,8 @@ async fn handle_socket(mut socket: WebSocket, state: AppState, query: WsQuery) {
             return;
         }
     }
-    let handshake = hello(Utc::now(), seq, vec!["system".to_owned()]);
+    let mut topics: Vec<String> = vec!["system".to_owned()];
+    let handshake = hello(Utc::now(), seq, topics.clone());
     if let Ok(text) = serde_json::to_string(&handshake)
         && socket.send(Message::Text(text.into())).await.is_err()
     {
@@ -801,10 +815,12 @@ async fn handle_socket(mut socket: WebSocket, state: AppState, query: WsQuery) {
                 match message {
                     Some(Ok(Message::Text(text))) => {
                         last_seen = Instant::now();
-                        if let Ok(WsClientMessage::Subscribe { topics }) =
-                            serde_json::from_str(text.as_str())
+                        if let Ok(WsClientMessage::Subscribe {
+                            topics: subscribed,
+                        }) = serde_json::from_str(text.as_str())
                         {
-                            let reply = hello(Utc::now(), seq, topics);
+                            topics.clone_from(&subscribed);
+                            let reply = hello(Utc::now(), seq, subscribed);
                             if let Ok(body) = serde_json::to_string(&reply) {
                                 let _ = socket.send(Message::Text(body.into())).await;
                             }
@@ -818,6 +834,16 @@ async fn handle_socket(mut socket: WebSocket, state: AppState, query: WsQuery) {
             event = events.recv() => {
                 match event {
                     Ok(event) => {
+                        let topic = if event.event.starts_with("delivery.run") {
+                            "run"
+                        } else if event.event.starts_with("kanban") {
+                            "kanban"
+                        } else {
+                            "system"
+                        };
+                        if !topics.iter().any(|subscribed| subscribed == topic) {
+                            continue;
+                        }
                         let message = WsServerMessage::event(&event);
                         if let Ok(body) = serde_json::to_string(&message)
                             && socket.send(Message::Text(body.into())).await.is_err()

@@ -51,6 +51,13 @@ impl PostgresRunStore {
 
 #[async_trait]
 impl RunStore for PostgresRunStore {
+    async fn ready(&self) -> bool {
+        sqlx::query_scalar::<_, i32>("SELECT 1")
+            .fetch_one(&self.pool)
+            .await
+            .is_ok()
+    }
+
     async fn get(&self, id: &str) -> Option<RunView> {
         let uuid = Uuid::parse_str(id).ok()?;
         self.fetch_run(uuid).await
