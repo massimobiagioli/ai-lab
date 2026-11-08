@@ -33,7 +33,7 @@
 - [x] Cancellation/pause — `request_cancel`, checkpoints; sandbox destruction is WP-14.
 - [x] Escalation ladder + human intervention records — `escalate`, `HumanDecision`.
 - [x] Run events mapping + trace/step recording — `PipelineStage::event`, `RunStep`.
-- [x] Integration/idempotency/bounds tests — 28 orchestrator tests; real E2E in WP-21.
+- [x] Integration/idempotency/bounds tests — 41 orchestrator tests; real LLM/SCM E2E in WP-21.
 - [x] `.docs/product/orchestration.md` — present, but it documents the deferrals.
 
 ## 4. Acceptance criteria
@@ -44,7 +44,7 @@
 - [x] AC4 failed verification loops ≤ 3 — `fail_verification`.
 - [x] AC5 exactly one PR/review/merge; retries dedupe — idempotency keys + handoff; adapter dedupe WP-12/WP-16.
 - [x] AC6 worker kill recovers from external PR state — `ExternalPrState::recovery`.
-- [x] AC7 budget exhaustion stops with `BUDGET_EXCEEDED` — `RunBudget`.
+- [x] AC7 budget exhaustion stops with `BUDGET_EXCEEDED` and pauses the lab — `RunBudget::charge` typed code + `lab_paused`; test.
 - [x] AC8 cancellation stops at a tool boundary — `request_cancel` + checkpoint.
 - [x] AC9 DONE only after QA/CI/merge/DoD — Kanban domain (WP-09).
 - [x] AC10 complete step trace + trace_id — `RunStep` + `trace_id`.
@@ -73,11 +73,11 @@
 
 - [ ] QA subagent verdict: `APPROVED`.
 - [ ] QA evidence: reproduced gates (harness 16, sow-lint 31, doc links 144, 28 orchestrator tests, clippy, pipeline/context/recovery).
-- [x] Author fixes: 13-stage pipeline, context bundle, loop bounds, verification/review rework, handoff, recovery, cancellation, escalation, step trace and event mapping delivered.
+- [x] Author fixes: 13-stage pipeline, context bundle, loop bounds, verification/review rework, handoff, recovery, cancellation, escalation, step trace, event mapping and the worker tick with retry/backoff delivered.
 
 ## 9. Deferred items and residual risks
 
-- [x] Postgres leases and the worker scheduler loop — owner: Dev, WP-13 follow-up.
+- [x] Worker scheduler loop (`Worker::tick`) delivered; Postgres leases remain — owner: Dev, WP-13 follow-up.
 - [x] Real LLM/sandbox/SCM adapters for the pipeline — owner: Dev, WP-13 follow-up/WP-14.
 - [x] Event persistence, metrics/traces, full E2E — owner: Dev/QA, WP-20/WP-21.
 - [ ] Merge only after QA returns `APPROVED`.

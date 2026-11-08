@@ -312,17 +312,50 @@ pub enum RetryDecision {
     DeadLetter,
 }
 
+/// Heartbeat age after which a run is considered stale (WP-13 §3.1).
+pub const STALE_HEARTBEAT_S: i64 = 45;
+
 /// Decide whether to requeue or dead-letter.
+///
+/// Backoff is 30 s, 2 min and 10 min with a deterministic ±20% jitter.
 #[must_use]
+#[allow(clippy::cast_possible_wrap, clippy::cast_sign_loss)]
 pub fn retry_decision(attempt: u8, error: ErrorKind) -> RetryDecision {
-    if error != ErrorKind::Transient || attempt >= 3 {
+    if error != ErrorKind::Transient || attempt >= 4 {
         return RetryDecision::DeadLetter;
     }
-    let shift = u32::from(attempt.saturating_sub(1));
-    let backoff_ms = 100_u64.saturating_mul(1_u64 << shift.min(10)).min(5_000);
+    let base_ms = match attempt {
+        1 => 30_000_i64,
+        2 => 120_000,
+        _ => 600_000,
+    };
+    let jitter = (i64::from(attempt) * 37 % 41) - 20;
+    let adjusted = base_ms + base_ms * jitter / 100;
     RetryDecision::Requeue {
         attempt: attempt + 1,
-        backoff_ms,
+        backoff_ms: u64::try_from(adjusted.max(0)).unwrap_or(0),
+    }
+}
+
+/// Reconcile runs whose heartbeat is older than 45 s.
+#[must_use]
+pub fn reconcile_stale(runs: &mut [Run], now: DateTime<Utc>) -> Vec<RunId> {
+    reconcile(runs, now, STALE_HEARTBEAT_S)
+}
+
+/// Budget failure.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
+pub enum BudgetError {
+    /// The limit would be exceeded.
+    #[error("budget exceeded")]
+    Exceeded,
+}
+
+impl BudgetError {
+    /// Stable code.
+    #[must_use]
+    pub const fn code() -> &'static str {
+        "BUDGET_EXCEEDED"
     }
 }
 
@@ -333,6 +366,8 @@ pub struct RunBudget {
     pub limit: Money,
     /// Spent.
     pub spent: Money,
+    /// The lab is paused after exhaustion.
+    pub lab_paused: bool,
 }
 
 impl RunBudget {
@@ -342,6 +377,7 @@ impl RunBudget {
         Self {
             limit,
             spent: Money::ZERO,
+            lab_paused: false,
         }
     }
 
@@ -352,16 +388,23 @@ impl RunBudget {
     }
 
     /// Charge a cost; reject when it would exceed the limit.
-    pub fn charge(&mut self, cost: Money) -> Result<(), String> {
+    pub fn charge(&mut self, cost: Money) -> Result<(), BudgetError> {
         let next = self
             .spent
             .checked_add(cost)
-            .map_err(|error| error.to_string())?;
+            .map_err(|_| BudgetError::Exceeded)?;
         if next > self.limit {
-            return Err("budget exceeded".to_owned());
+            self.lab_paused = true;
+            return Err(BudgetError::Exceeded);
         }
         self.spent = next;
         Ok(())
+    }
+
+    /// True when the lab was paused by budget exhaustion.
+    #[must_use]
+    pub const fn is_lab_paused(self) -> bool {
+        self.lab_paused
     }
 }
 
@@ -446,15 +489,16 @@ mod tests {
 
     #[test]
     fn retries_are_bounded_and_classified() {
-        assert_eq!(
+        assert!(matches!(
             retry_decision(1, ErrorKind::Transient),
-            RetryDecision::Requeue {
-                attempt: 2,
-                backoff_ms: 100
-            }
-        );
-        assert_eq!(
+            RetryDecision::Requeue { attempt: 2, backoff_ms } if (24_000..=36_000).contains(&backoff_ms)
+        ));
+        assert!(matches!(
             retry_decision(3, ErrorKind::Transient),
+            RetryDecision::Requeue { attempt: 4, backoff_ms } if (480_000..=720_000).contains(&backoff_ms)
+        ));
+        assert_eq!(
+            retry_decision(4, ErrorKind::Transient),
             RetryDecision::DeadLetter
         );
         assert_eq!(
@@ -470,11 +514,24 @@ mod tests {
         budget
             .charge(Money::from_microusd(900).expect("cost"))
             .expect("charge");
-        assert!(
-            budget
-                .charge(Money::from_microusd(200).expect("cost"))
-                .is_err()
+        assert_eq!(
+            budget.charge(Money::from_microusd(200).expect("cost")),
+            Err(BudgetError::Exceeded)
         );
+        assert!(budget.is_lab_paused());
+        assert_eq!(BudgetError::code(), "BUDGET_EXCEEDED");
+    }
+
+    #[test]
+    fn stale_runs_time_out_after_45s() {
+        let mut run = Run::new(RunId::generate(), CardId::generate(), AgentId::generate());
+        let now = now();
+        run.start(now).expect("start");
+        run.heartbeat_at = Some(now - chrono::Duration::seconds(46));
+        let mut runs = vec![run];
+        let stale = reconcile_stale(&mut runs, now);
+        assert_eq!(stale.len(), 1);
+        assert_eq!(runs[0].state, RunState::TimedOut);
     }
 
     #[test]

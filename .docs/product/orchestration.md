@@ -28,22 +28,26 @@ A card is eligible when it is `READY`, the agent is active, the budget is availa
 ## 4. Retries and dead-letter
 
 - Transient errors retry up to 3 attempts.
-- Backoff: 100 ms, 200 ms, capped at 5 s.
+- Backoff: 30 s, 2 min, 10 min (±20% jitter), max 3 retries.
 - Permanent and policy errors, or a third failure, dead-letter the card to `ICEBOX` for review.
 
 ## 5. Budget
 
-`RunBudget` stops a run before it exceeds its limit. The caller records the cost and pauses the lab on exhaustion.
+`RunBudget` stops a run before it exceeds its limit and returns the typed `BUDGET_EXCEEDED` code; it sets `lab_paused` on exhaustion.
 
 ## 6. Recovery
 
-`reconcile` marks running runs whose heartbeat is older than the TTL as `TimedOut`, so the scheduler can requeue or dead-letter them.
+`reconcile` marks running runs whose heartbeat is older than the TTL as `TimedOut`; `reconcile_stale` uses the 45 s heartbeat window. The worker requeues retryable failures with the 30 s/2 min/10 min backoff and dead-letters after 3 retries.
 
 ## 7. Tests
 
 `cargo test -p ailab-orchestrator` covers eligibility reasons, lease contention, expiry/reap, run transitions, retry classification, budget hard stop and reconciliation.
 
-## 8. Pipeline, loops and recovery
+## 8. Worker loop
+
+`crates/orchestrator/src/worker.rs` implements the scheduler tick: reap expired leases, pop queued runs, acquire the lease, execute through the `RunExecutor` port (LLM/sandbox/SCM are injected), release the lease, and requeue retryable failures. The tick respects `WORKER_CONCURRENCY` and an active lease keeps a run queued for the next tick.
+
+## 9. Pipeline, loops and recovery
 
 `crates/orchestrator/src/pipeline.rs` implements the 13 normative stages (`lease → context → plan → implement → verify → commit → push → pr → transition → review → merge → done → reflect`) with:
 
@@ -57,14 +61,14 @@ A card is eligible when it is `READY`, the agent is active, the budget is availa
 
 `crates/orchestrator/src/context.rs` builds a token-budgeted context bundle: the task packet is never dropped, high-priority overflow is summarized and low-priority overflow is omitted, deterministically.
 
-## 9. Deferred to the WP-13 follow-up
+## 10. Deferred to the WP-13 follow-up
 
 - Postgres-backed leases/heartbeats and the worker scheduler loop.
 - Real adapters for the pipeline stages (LLM/sandbox/SCM) and event emission.
 - Worker concurrency, dead-letter persistence and metrics/traces.
 - Integration/chaos suites in WP-21.
 
-## 10. References
+## 11. References
 
 - `.docs/sow/WP-13-ORCHESTRATION.md`
 - `.docs/technical-specification/AI-LAB-TECHNICAL-SPECIFICATION.md` §8, §18
