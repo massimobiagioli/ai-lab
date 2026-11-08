@@ -408,13 +408,39 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/openapi.json", get(openapi))
         .route("/api/v1/telemetry", post(ingest_telemetry))
         .route("/api/v1/telemetry/frontend", post(ingest_telemetry))
+        .route("/api/v1/labs", get(not_implemented))
+        .route("/api/v1/labs/{id}", get(not_implemented))
+        .route("/api/v1/agents", get(not_implemented))
+        .route("/api/v1/agents/{id}", get(not_implemented))
+        .route("/api/v1/agents/{id}/cv", get(not_implemented))
+        .route("/api/v1/characters", get(not_implemented))
         .route("/api/v1/providers", get(not_implemented))
         .route("/api/v1/providers/{id}", get(not_implemented))
+        .route("/api/v1/providers/{id}/verify", post(not_implemented))
+        .route("/api/v1/providers/{id}/rotate", post(not_implemented))
+        .route("/api/v1/scm-credentials", get(not_implemented))
         .route("/api/v1/models", get(not_implemented))
         .route("/api/v1/projects", get(not_implemented))
+        .route("/api/v1/projects/{id}", get(not_implemented))
+        .route("/api/v1/projects/{id}/sync", post(not_implemented))
+        .route("/api/v1/ideas", get(not_implemented))
+        .route("/api/v1/ideas/{id}", get(not_implemented))
+        .route("/api/v1/sows", get(not_implemented))
+        .route("/api/v1/sows/{id}", get(not_implemented))
+        .route("/api/v1/sows/{id}/plans", get(not_implemented))
+        .route("/api/v1/plans/{id}", get(not_implemented))
+        .route("/api/v1/plans/{id}/materialize", post(not_implemented))
         .route("/api/v1/projects/{id}/board", get(not_implemented))
         .route("/api/v1/cards/{id}", get(not_implemented))
         .route("/api/v1/cards/{id}/transition", post(not_implemented))
+        .route("/api/v1/cards/{id}/comments", get(not_implemented))
+        .route("/api/v1/cards/{id}/events", get(not_implemented))
+        .route("/api/v1/cards/{id}/assign", post(not_implemented))
+        .route("/api/v1/memory/search", post(not_implemented))
+        .route("/api/v1/memory/documents", get(not_implemented))
+        .route("/api/v1/memory/documents/{id}", get(not_implemented))
+        .route("/api/v1/settings", get(not_implemented))
+        .route("/api/v1/webhooks/github", post(not_implemented))
         .route("/api/v1/health/providers", get(health_providers))
         .route("/api/v1/health/scm", get(health_scm))
         .route("/ws", get(ws_upgrade))
@@ -554,7 +580,15 @@ fn idempotency_key(headers: &HeaderMap, method: &str, path: &str) -> Option<Stri
     if !(8..=128).contains(&raw.len()) {
         return None;
     }
-    Some(format!("{method}:{path}:{raw}"))
+    let actor = headers
+        .get("authorization")
+        .and_then(|value| value.to_str().ok())
+        .map_or(0, |value| {
+            value.bytes().fold(0xcbf2_9ce4_8422_2325, |hash, byte| {
+                (hash ^ u64::from(byte)).wrapping_mul(0x0000_0100_0000_01b3)
+            })
+        });
+    Some(format!("{actor:016x}:{method}:{path}:{raw}"))
 }
 
 fn replay(status: u16, body: serde_json::Value) -> Response {

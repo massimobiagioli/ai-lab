@@ -84,6 +84,11 @@ pub trait RunExecutor: Send + Sync {
     ) -> Option<crate::pipeline::RecoveryAction> {
         None
     }
+
+    /// Take the most recent pipeline state (including failed runs).
+    fn last_pipeline(&self) -> Option<RunPipeline> {
+        None
+    }
 }
 
 /// Probe used to cancel a running run at a tool boundary.

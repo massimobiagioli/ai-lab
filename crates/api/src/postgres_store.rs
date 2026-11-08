@@ -186,6 +186,17 @@ impl RunStore for PostgresRunStore {
         .execute(&self.pool)
         .await
         .map_err(|_| StoreError::Conflict)?;
+        let _ = sqlx::query(
+            "INSERT INTO outbox (id, aggregate_type, aggregate_id, event_type, payload) \
+             VALUES ($1, 'run', $2, 'delivery.run.queued', \
+               jsonb_build_object('run_id', $2::text, 'lab_id', $3::text, 'card_id', $4::text))",
+        )
+        .bind(Uuid::now_v7())
+        .bind(run_id)
+        .bind(lab_id)
+        .bind(card)
+        .execute(&self.pool)
+        .await;
         self.fetch_run(run_id).await.ok_or(StoreError::Conflict)
     }
 

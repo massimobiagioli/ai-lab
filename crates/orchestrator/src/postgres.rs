@@ -271,6 +271,16 @@ impl PostgresScheduler {
         Ok(())
     }
 
+    /// Persist the run trace id.
+    pub async fn set_trace(&self, run_id: RunId, trace_id: &str) -> Result<(), sqlx::Error> {
+        sqlx::query("UPDATE runs SET trace_id = $2 WHERE id = $1")
+            .bind(run_id.as_uuid())
+            .bind(trace_id)
+            .execute(&self.pool)
+            .await?;
+        Ok(())
+    }
+
     /// Persist a typed error code on a run.
     pub async fn set_error(&self, run_id: RunId, code: &str) -> Result<(), sqlx::Error> {
         sqlx::query("UPDATE runs SET error_code = $2 WHERE id = $1")
@@ -570,6 +580,18 @@ impl PostgresWorker {
         }
     }
 
+    async fn persist_failed(&self, run: &ScheduledRun) -> Result<(), sqlx::Error> {
+        if let Some(pipeline) = self.executor.last_pipeline() {
+            self.scheduler
+                .persist_steps(run.run_id, &pipeline.steps)
+                .await?;
+            self.scheduler
+                .set_trace(run.run_id, &pipeline.trace_id)
+                .await?;
+        }
+        Ok(())
+    }
+
     /// Run one tick: reap stale runs, lease up to concurrency runs and execute.
     #[allow(clippy::too_many_lines)]
     pub async fn tick(&self, now: DateTime<Utc>) -> Result<PostgresTickReport, sqlx::Error> {
@@ -648,12 +670,24 @@ impl PostgresWorker {
                             now,
                         )
                         .await?;
+                    for step in &pipeline.steps {
+                        let event = match step.kind.as_str() {
+                            "pr" => "delivery.pr.opened",
+                            "review" => "delivery.review.submitted",
+                            "merge" => "delivery.merge.completed",
+                            _ => continue,
+                        };
+                        self.scheduler
+                            .emit_event_raw(event, run.run_id, run.lab_id, run.card_id, now)
+                            .await?;
+                    }
                     self.scheduler
                         .emit_event("delivery.run.completed", &run, now)
                         .await?;
                     report.completed += 1;
                 }
                 Err(crate::worker::ExecError::Cancelled) => {
+                    self.persist_failed(&run).await?;
                     self.scheduler.finish(run.run_id, "cancelled", now).await?;
                     self.scheduler
                         .emit_event("delivery.run.cancelled", &run, now)
@@ -661,6 +695,7 @@ impl PostgresWorker {
                     report.cancelled += 1;
                 }
                 Err(crate::worker::ExecError::Budget) => {
+                    self.persist_failed(&run).await?;
                     self.scheduler
                         .set_error(run.run_id, "BUDGET_EXCEEDED")
                         .await?;
@@ -672,6 +707,7 @@ impl PostgresWorker {
                     report.failed += 1;
                 }
                 Err(error) if error.retryable() => {
+                    self.persist_failed(&run).await?;
                     if run.attempt < 4 {
                         let backoff = match run.attempt {
                             1 => 30,
@@ -690,6 +726,7 @@ impl PostgresWorker {
                     report.failed += 1;
                 }
                 Err(_) => {
+                    self.persist_failed(&run).await?;
                     self.scheduler.finish(run.run_id, "failed", now).await?;
                     self.scheduler
                         .emit_event("delivery.run.failed", &run, now)

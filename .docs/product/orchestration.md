@@ -77,3 +77,16 @@ A card is eligible when it is `READY`, the agent is active, the budget is availa
 - `.docs/sow/WP-13-ORCHESTRATION.md`
 - `.docs/technical-specification/AI-LAB-TECHNICAL-SPECIFICATION.md` §8, §18
 - `crates/orchestrator/src/orchestration.rs`
+
+## 12. Failure matrix
+
+| Failure | Detection | Action | Event |
+|---|---|---|---|
+| LLM transient | retryable port error | requeue 30 s / 2 min / 10 min, then ICEBOX | `delivery.run.failed` |
+| Sandbox timeout | `TOOL_TIMEOUT` | rework or terminal failure | `delivery.run.failed` |
+| Stale heartbeat | no heartbeat for 45 s | `timed_out`, backoff requeue or merged recovery | `delivery.run.timed_out` |
+| Merge already done | run `merge_sha` / PR merged | complete the card as DONE | `delivery.merge.completed` |
+| Budget exhausted | charge exceeds limit | persist `BUDGET_EXCEEDED`, pause the lab | `system.budget.exhausted` |
+| Cancel requested | `runs.status = cancelled` | destroy the sandbox at the next tool boundary | `delivery.run.cancelled` |
+| Prompt injection | hard-stop evaluation | escalate and move the card to ICEBOX | `system.escalation` |
+| Verification failure | non-zero check | raw output rework (max 3), then fail | `delivery.run.failed` |

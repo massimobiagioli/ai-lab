@@ -64,6 +64,12 @@ impl WiredExecutor {
         }
     }
 
+    fn remember(&self, pipeline: &RunPipeline) {
+        if let Ok(mut last) = self.last.lock() {
+            *last = Some(pipeline.clone());
+        }
+    }
+
     /// Attach a cancellation probe checked at tool boundaries.
     #[must_use]
     pub fn with_cancel_probe(mut self, probe: Arc<dyn CancelProbe>) -> Self {
@@ -282,6 +288,10 @@ fn tool_call_to_exec(call: &LlmToolCall) -> Result<(Vec<String>, String), ExecEr
 
 #[async_trait]
 impl RunExecutor for WiredExecutor {
+    fn last_pipeline(&self) -> Option<RunPipeline> {
+        self.last.lock().ok().and_then(|mut last| last.take())
+    }
+
     async fn recover(
         &self,
         _card_id: ailab_domain::CardId,
@@ -314,7 +324,9 @@ impl RunExecutor for WiredExecutor {
         let advance = |pipeline: &mut RunPipeline| -> Result<(), ExecError> {
             pipeline
                 .advance(now)
-                .map_err(|error| ExecError::Terminal(error.to_string()))
+                .map_err(|error| ExecError::Terminal(error.to_string()))?;
+            self.remember(pipeline);
+            Ok(())
         };
 
         advance(&mut pipeline)?; // Context
@@ -383,6 +395,7 @@ impl RunExecutor for WiredExecutor {
             return Err(error);
         }
 
+        self.remember(&pipeline);
         advance(&mut pipeline)?; // Verify
         let mut reworks = 0_u8;
         loop {
