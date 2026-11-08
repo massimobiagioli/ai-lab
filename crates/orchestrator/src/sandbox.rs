@@ -73,6 +73,11 @@ pub struct SandboxSpec {
     pub timeout_s: u64,
     /// Egress policy.
     pub egress: EgressPolicy,
+    /// Optional egress proxy URL (injected as HTTP(S)_PROXY).
+    pub egress_proxy: Option<String>,
+    /// Short-lived SCM token injected only into the sandbox env.
+    #[serde(skip)]
+    pub scm_token: Option<ailab_application::Secret<String>>,
 }
 
 /// Isolation flags asserted by the sandbox template.
@@ -175,7 +180,23 @@ impl SandboxSpec {
             memory_mb,
             timeout_s,
             egress,
+            egress_proxy: None,
+            scm_token: None,
         })
+    }
+
+    /// Inject the egress proxy URL.
+    #[must_use]
+    pub fn with_egress_proxy(mut self, proxy: impl Into<String>) -> Self {
+        self.egress_proxy = Some(proxy.into());
+        self
+    }
+
+    /// Inject the short-lived SCM token (never serialized or logged).
+    #[must_use]
+    pub fn with_scm_token(mut self, token: ailab_application::Secret<String>) -> Self {
+        self.scm_token = Some(token);
+        self
     }
 
     /// Mandatory isolation flags.

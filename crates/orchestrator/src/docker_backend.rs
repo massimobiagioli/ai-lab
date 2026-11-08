@@ -53,7 +53,7 @@ impl DockerBackend {
         let workspaces = std::env::var("AILAB_WORKSPACES_DIR")
             .unwrap_or_else(|_| "/var/lib/ailab/workspaces".to_owned());
         let network = std::env::var("AILAB_SANDBOX_EGRESS_NETWORK")
-            .unwrap_or_else(|_| "ailab-sandbox-egress".to_owned());
+            .unwrap_or_else(|_| "sandbox-egress".to_owned());
         Self::connect(&host, workspaces, network)
     }
 
@@ -115,6 +115,19 @@ pub fn host_config_for(spec: &SandboxSpec, worktree_path: &str, network_mode: &s
     }
 }
 
+fn container_env(spec: &SandboxSpec) -> Option<Vec<String>> {
+    let mut env = Vec::new();
+    if let Some(proxy) = &spec.egress_proxy {
+        env.push(format!("HTTP_PROXY={proxy}"));
+        env.push(format!("HTTPS_PROXY={proxy}"));
+        env.push("NO_PROXY=127.0.0.1,localhost".to_owned());
+    }
+    if let Some(token) = &spec.scm_token {
+        env.push(format!("AILAB_SCM_TOKEN={}", token.expose()));
+    }
+    if env.is_empty() { None } else { Some(env) }
+}
+
 fn map_docker_error(error: bollard::errors::Error) -> BackendError {
     match error {
         bollard::errors::Error::DockerResponseServerError {
@@ -162,6 +175,7 @@ impl SandboxBackend for DockerBackend {
             image: Some(spec.image.clone()),
             user: Some("10001:10001".to_owned()),
             working_dir: Some("/workspace".to_owned()),
+            env: container_env(spec),
             labels: Some(HashMap::from([(
                 "ailab.run_id".to_owned(),
                 spec.run_id.clone(),
@@ -349,6 +363,24 @@ mod tests {
     }
 
     #[test]
+    fn egress_and_token_env_are_injected_without_leaking() {
+        let spec = spec()
+            .with_egress_proxy("http://egress-proxy:3128")
+            .with_scm_token(ailab_application::Secret::new("short-token".to_owned()));
+        let env = container_env(&spec).expect("env");
+        assert!(
+            env.iter()
+                .any(|value| value == "HTTP_PROXY=http://egress-proxy:3128")
+        );
+        assert!(
+            env.iter()
+                .any(|value| value == "AILAB_SCM_TOKEN=short-token")
+        );
+        let debug = format!("{spec:?}");
+        assert!(!debug.contains("short-token"));
+    }
+
+    #[test]
     fn host_config_enforces_isolation() {
         let spec = spec();
         let host = host_config_for(&spec, "/tmp/workspaces/escape-drill", "none");
@@ -368,6 +400,42 @@ mod tests {
         );
         assert!(!binds.iter().any(|bind| bind.contains("docker.sock")));
         assert!(!binds.iter().any(|bind| bind == "/:/workspace:rw"));
+    }
+
+    /// Live escape suite; run with `cargo test -p ailab-orchestrator -- --ignored`.
+    #[tokio::test]
+    #[ignore = "requires a reachable Docker Engine and the debian:trixie-slim image"]
+    async fn docker_escape_suite() {
+        let backend = backend();
+        let created = backend
+            .create(&spec(), AgentRole::Dev)
+            .await
+            .expect("create");
+        let check = |argv: &[&str]| ToolCall {
+            argv: argv.iter().map(|arg| (*arg).to_owned()).collect(),
+            cwd: "workspace".to_owned(),
+            writes: vec![],
+        };
+        let socket = backend
+            .exec(
+                &created.sandbox_id,
+                &check(&["ls", "/var/run/docker.sock"]),
+                10,
+            )
+            .await
+            .expect("exec");
+        assert_ne!(socket.exit_code, 0, "docker socket must be unreachable");
+        let shadow = backend
+            .exec(&created.sandbox_id, &check(&["cat", "/etc/shadow"]), 10)
+            .await
+            .expect("exec");
+        assert_ne!(shadow.exit_code, 0, "/etc/shadow must be unreadable");
+        let root = backend
+            .exec(&created.sandbox_id, &check(&["ls", "/"]), 10)
+            .await
+            .expect("exec");
+        assert_eq!(root.exit_code, 0, "the read-only root must run");
+        backend.delete(&created.sandbox_id).await.expect("delete");
     }
 
     /// Live Docker test; run with `cargo test -p ailab-orchestrator -- --ignored`.

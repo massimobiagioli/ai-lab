@@ -36,6 +36,12 @@ pub struct CreateSandboxRequest {
     pub timeout_s: u64,
     /// Egress policy.
     pub egress: EgressPolicy,
+    /// Optional egress proxy URL.
+    #[serde(default)]
+    pub egress_proxy: Option<String>,
+    /// Optional short-lived SCM token (write-only).
+    #[serde(default)]
+    pub scm_token: Option<String>,
 }
 
 /// Create-sandbox response.
@@ -215,7 +221,7 @@ async fn create_sandbox(
     Json(request): Json<CreateSandboxRequest>,
 ) -> Result<(StatusCode, Json<CreateSandboxResponse>), ApiError> {
     state.authorize(&headers)?;
-    let spec = SandboxSpec::new(
+    let mut spec = SandboxSpec::new(
         request.run_id,
         request.image,
         request.worktree_ref,
@@ -225,6 +231,12 @@ async fn create_sandbox(
         request.egress,
     )
     .map_err(|error| ApiError::validation(error.to_string()))?;
+    if let Some(proxy) = request.egress_proxy {
+        spec = spec.with_egress_proxy(proxy);
+    }
+    if let Some(token) = request.scm_token {
+        spec = spec.with_scm_token(ailab_application::Secret::new(token));
+    }
     let created = state
         .backend
         .create(&spec, AgentRole::Dev)

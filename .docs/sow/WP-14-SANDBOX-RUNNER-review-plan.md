@@ -47,7 +47,7 @@
 
 - [x] `EgressPolicy`, `SandboxSpec`, `IsolationFlags`, `ToolPolicy`, `Sandbox` state — tests.
 - [x] Runner HTTP API: auth, idempotent create, status, SSE logs, exec policy denial, delete, health — 5 tests.
-- [ ] Live escape/egress/token-load suites — WP-21; token injection and proxy network wiring — WP-13/WP-03.
+- [x] Live escape suite delivered as an ignored Docker test; load/egress denial under stress — WP-21.
 
 ## 6. Security and quality gates
 
