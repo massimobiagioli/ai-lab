@@ -62,9 +62,11 @@ impl PostgresScheduler {
         let mut scheduled = Vec::new();
         // Claim explicitly queued runs first (API `POST /cards/{id}/runs`).
         let queued = sqlx::query(
-            "SELECT id, card_id, agent_id, attempt FROM runs \
-             WHERE status = 'queued' ORDER BY created_at FOR UPDATE SKIP LOCKED LIMIT $1",
+            "SELECT id, card_id, agent_id, attempt, lab_id FROM runs \
+             WHERE status = 'queued' AND created_at <= $1 \
+             ORDER BY created_at FOR UPDATE SKIP LOCKED LIMIT $2",
         )
+        .bind(now)
         .bind(limit)
         .fetch_all(&mut *tx)
         .await?;
@@ -80,6 +82,12 @@ impl PostgresScheduler {
             .bind(run_id)
             .bind(Uuid::new_v4())
             .bind(now)
+            .execute(&mut *tx)
+            .await?;
+            sqlx::query(
+                "UPDATE cards SET column_name = 'DOING', version = version + 1 WHERE id = $1",
+            )
+            .bind(card_id)
             .execute(&mut *tx)
             .await?;
             scheduled.push(ScheduledRun {
@@ -167,18 +175,36 @@ impl PostgresScheduler {
         status: &str,
         now: DateTime<Utc>,
     ) -> Result<(), sqlx::Error> {
-        let mut tx = self.pool.begin().await?;
         sqlx::query("UPDATE runs SET status = $2, ended_at = $3, lease_id = NULL WHERE id = $1")
             .bind(run_id.as_uuid())
             .bind(status)
             .bind(now)
-            .execute(&mut *tx)
+            .execute(&self.pool)
             .await?;
-        if status == "succeeded" {
+        Ok(())
+    }
+
+    /// Complete a successful run and move its card to DONE with the merge SHA.
+    pub async fn complete_success(
+        &self,
+        run_id: RunId,
+        merge_sha: Option<&str>,
+        now: DateTime<Utc>,
+    ) -> Result<(), sqlx::Error> {
+        let mut tx = self.pool.begin().await?;
+        sqlx::query(
+            "UPDATE runs SET status = 'succeeded', ended_at = $2, lease_id = NULL WHERE id = $1",
+        )
+        .bind(run_id.as_uuid())
+        .bind(now)
+        .execute(&mut *tx)
+        .await?;
+        if let Some(merge_sha) = merge_sha {
             sqlx::query(
-                "UPDATE cards SET column_name = 'DONE'                  WHERE id = (SELECT card_id FROM runs WHERE id = $1)                    AND column_name IN ('REVIEW','DOING')",
+                "UPDATE cards SET column_name = 'DONE', merge_sha = $2                  WHERE id = (SELECT card_id FROM runs WHERE id = $1)                    AND column_name IN ('REVIEW','DOING')",
             )
             .bind(run_id.as_uuid())
+            .bind(merge_sha)
             .execute(&mut *tx)
             .await?;
         }
@@ -245,15 +271,21 @@ impl PostgresScheduler {
     }
 
     /// Requeue a retryable run and return its card to READY.
-    pub async fn requeue(&self, run_id: RunId, card_id: CardId) -> Result<(), sqlx::Error> {
+    pub async fn requeue(
+        &self,
+        run_id: RunId,
+        card_id: CardId,
+        available_at: DateTime<Utc>,
+    ) -> Result<(), sqlx::Error> {
         let mut tx = self.pool.begin().await?;
         sqlx::query(
-            "UPDATE runs SET status = 'queued', lease_id = NULL, heartbeat_at = NULL,              attempt = attempt + 1 WHERE id = $1",
+            "UPDATE runs SET status = 'queued', lease_id = NULL, heartbeat_at = NULL,              attempt = attempt + 1, created_at = $2 WHERE id = $1",
         )
         .bind(run_id.as_uuid())
+        .bind(available_at)
         .execute(&mut *tx)
         .await?;
-        sqlx::query("UPDATE cards SET column_name = 'READY' WHERE id = $1")
+        sqlx::query("UPDATE cards SET column_name = 'DOING' WHERE id = $1")
             .bind(card_id.as_uuid())
             .execute(&mut *tx)
             .await?;
@@ -450,12 +482,34 @@ impl PostgresWorker {
                 .emit_event("delivery.run.started", &run, now)
                 .await?;
             let queued = crate::worker::QueuedRun::new(run.run_id, run.card_id, run.agent_id, now);
-            match self.executor.execute(&queued).await {
+            let heartbeat = {
+                let scheduler = self.scheduler.clone();
+                let run_id = run.run_id;
+                tokio::spawn(async move {
+                    loop {
+                        tokio::time::sleep(std::time::Duration::from_secs(15)).await;
+                        if scheduler.heartbeat(run_id, Utc::now()).await.is_err() {
+                            break;
+                        }
+                    }
+                })
+            };
+            let result = self.executor.execute(&queued).await;
+            heartbeat.abort();
+            match result {
                 Ok(pipeline) => {
                     self.scheduler
                         .persist_steps(run.run_id, &pipeline.steps)
                         .await?;
-                    self.scheduler.finish(run.run_id, "succeeded", now).await?;
+                    let merge_sha = pipeline
+                        .steps
+                        .iter()
+                        .rev()
+                        .find(|step| step.kind == "merge")
+                        .map(|step| step.output.clone());
+                    self.scheduler
+                        .complete_success(run.run_id, merge_sha.as_deref(), now)
+                        .await?;
                     self.scheduler
                         .emit_event("delivery.run.completed", &run, now)
                         .await?;
@@ -470,7 +524,14 @@ impl PostgresWorker {
                 }
                 Err(error) if error.retryable() => {
                     if run.attempt < 4 {
-                        self.scheduler.requeue(run.run_id, run.card_id).await?;
+                        let backoff = match run.attempt {
+                            1 => 30,
+                            2 => 120,
+                            _ => 600,
+                        };
+                        self.scheduler
+                            .requeue(run.run_id, run.card_id, now + Duration::seconds(backoff))
+                            .await?;
                     } else {
                         self.scheduler.dead_letter(run.run_id, run.card_id).await?;
                     }
