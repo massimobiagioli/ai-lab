@@ -625,6 +625,15 @@ impl PostgresWorker {
                     self.scheduler
                         .persist_steps(run.run_id, &pipeline.steps)
                         .await?;
+                    self.scheduler
+                        .emit_event_raw(
+                            "delivery.run.step",
+                            run.run_id,
+                            run.lab_id,
+                            run.card_id,
+                            now,
+                        )
+                        .await?;
                     let merge_sha = pipeline
                         .steps
                         .iter()

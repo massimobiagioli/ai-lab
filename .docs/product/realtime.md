@@ -32,7 +32,7 @@ The client sends `subscribe`/`unsubscribe` with topics such as `lab:{id}`, `card
 
 - Clients reconnect with their last applied `seq`.
 - `events_after(events, since)` filters `seq > since`, removes duplicate `event_id` values and sorts by `seq`.
-- A gap larger than the in-memory buffer falls back to `GET /api/v1/events?after={seq}`.
+- A gap larger than the in-memory buffer falls back to `GET /api/v1/events?since={seq}`.
 - State events are persisted and replayable; ephemeral events are coalesced and never persisted.
 
 ## 3. Backpressure and heartbeat
