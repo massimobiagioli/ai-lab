@@ -81,7 +81,7 @@ pub trait RunExecutor: Send + Sync {
         &self,
         _card_id: CardId,
         _run_id: RunId,
-    ) -> Option<crate::pipeline::RecoveryAction> {
+    ) -> Option<(crate::pipeline::RecoveryAction, Option<String>)> {
         None
     }
 

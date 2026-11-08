@@ -162,6 +162,7 @@ impl WiredExecutor {
                     Some(outcome.exit_code),
                     outcome.stdout.clone(),
                 );
+                self.remember(pipeline);
                 let _ = write!(
                     user,
                     "\nTool {} exited {}\n{}\n",
@@ -214,6 +215,7 @@ impl WiredExecutor {
                 Some(outcome.exit_code),
                 outcome.stdout.clone(),
             );
+            self.remember(pipeline);
             if outcome.exit_code != 0 {
                 return Err(format!(
                     "[{kind}] {}\n{}",
@@ -296,15 +298,21 @@ impl RunExecutor for WiredExecutor {
         &self,
         _card_id: ailab_domain::CardId,
         _run_id: ailab_domain::RunId,
-    ) -> Option<RecoveryAction> {
+    ) -> Option<(RecoveryAction, Option<String>)> {
         let branch = self.branch().ok()?;
         match self.scm.find_pull_request(&self.repo, &branch).await {
-            Ok(Some(pr)) => Some(if self.scm.is_merged(&self.repo, pr.number).await {
-                RecoveryAction::Done
-            } else {
-                RecoveryAction::ResumeReview
-            }),
-            Ok(None) => Some(RecoveryAction::Retry),
+            Ok(Some(pr)) => {
+                let sha = self.scm.merged_sha(&self.repo, pr.number).await;
+                Some((
+                    if sha.is_some() {
+                        RecoveryAction::Done
+                    } else {
+                        RecoveryAction::ResumeReview
+                    },
+                    sha,
+                ))
+            }
+            Ok(None) => Some((RecoveryAction::Retry, None)),
             Err(_) => None,
         }
     }

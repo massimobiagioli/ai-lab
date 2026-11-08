@@ -206,7 +206,7 @@ impl RunStore for PostgresRunStore {
         };
         let rows = sqlx::query(
             "SELECT id, event_type, seq, lab_id, occurred_at, payload \
-             FROM domain_events WHERE lab_id = $1 AND seq > $2 ORDER BY seq LIMIT 200",
+             FROM domain_events WHERE lab_id = $1 AND seq > $2 ORDER BY seq LIMIT 1000",
         )
         .bind(lab)
         .bind(since)

@@ -13,17 +13,7 @@ The realtime contract is a WebSocket stream of persisted events with resumable s
 ## 1. Envelope
 
 ```json
-{
-  "type": "event",
-  "event": {
-    "event_id": "uuid",
-    "event": "kanban.card.moved",
-    "seq": 10422,
-    "lab_id": "uuid",
-    "occurred_at": "2026-11-07T10:00:00Z",
-    "payload": {}
-  }
-}
+{"type":"event","event":"kanban.card.moved","event_id":"…","seq":42,"lab_id":"…","occurred_at":"…","payload":{}}
 ```
 
 The client sends `subscribe`/`unsubscribe` with topics such as `lab:{id}`, `card:{id}`, `run:{id}`, `system`. The server sends `hello` with `server_time`, `seq` and `topics`.

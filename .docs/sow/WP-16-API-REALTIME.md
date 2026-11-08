@@ -330,3 +330,4 @@ Server → client:
 2026-11-07 | build | .tools/check-openapi-drift.py, Makefile, crates/api/src/server.rs | OpenAPI drift gate; WS 256; lab_id required; 14 API tests | surface/Redis/utoipa open | QA review
 2026-11-07 | build | crates/api/src/server.rs | hello before backfill; live seq; 14 API tests | surface/Redis/utoipa open | QA review
 2026-11-07 | build | crates/api/src/{main,server}.rs | steps cursor/2MB/BAD_REQUEST/Origin/bind-guard/hello-seq; 14 tests | surface/Redis/utoipa open | QA review
+2026-11-07 | build | crates/api/src/{server,postgres_store}.rs, .tools/check-openapi-drift.py | 202 replay; 1000 backfill; events Page; methods; 14 tests | Redis/utoipa/keyset open | QA review

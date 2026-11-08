@@ -20,7 +20,7 @@ def main() -> int:
     args = parser.parse_args()
     root = Path(args.root).resolve()
     server = (root / "crates/api/src/server.rs").read_text()
-    routes = {normalize(match.group(1)) for match in re.finditer(r'\.route\("([^"]+)"', server)}
+    routes = {normalize(match.group(1)) for match in re.finditer(r'\.route\(\s*"([^"]+)"', server)}
     spec = json.loads((root / ".docs/product/api/openapi.json").read_text())
     missing = []
     for path in spec.get("paths", {}):

@@ -601,9 +601,15 @@ impl PostgresWorker {
                 self.scheduler.latest_run(*card).await?
             {
                 let action = self.executor.recover(*card, run_id).await;
-                if merge_sha.is_some() || action == Some(crate::pipeline::RecoveryAction::Done) {
+                let recovered_sha = action.as_ref().and_then(|(action, sha)| {
+                    (*action == crate::pipeline::RecoveryAction::Done)
+                        .then(|| sha.clone())
+                        .flatten()
+                });
+                let final_sha = merge_sha.clone().or(recovered_sha);
+                if final_sha.is_some() {
                     self.scheduler
-                        .complete_success(run_id, merge_sha.as_deref(), None, now)
+                        .complete_success(run_id, final_sha.as_deref(), None, now)
                         .await?;
                 } else {
                     let backoff = match attempt {

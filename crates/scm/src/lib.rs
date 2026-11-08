@@ -312,6 +312,10 @@ pub trait ScmProvider: Send + Sync {
     async fn is_merged(&self, _repo: &RepoRef, _pr_number: u64) -> bool {
         false
     }
+    /// The merge SHA when the PR is merged.
+    async fn merged_sha(&self, _repo: &RepoRef, _pr_number: u64) -> Option<String> {
+        None
+    }
     /// Submit a review.
     async fn submit_review(
         &self,
@@ -497,6 +501,16 @@ impl ScmProvider for FakeScm {
         self.inner
             .lock()
             .is_ok_and(|state| state.merges.iter().any(|(number, _)| *number == pr_number))
+    }
+
+    async fn merged_sha(&self, _repo: &RepoRef, pr_number: u64) -> Option<String> {
+        self.inner.lock().ok().and_then(|state| {
+            state
+                .merges
+                .iter()
+                .find(|(number, _)| *number == pr_number)
+                .map(|(_, sha)| sha.clone())
+        })
     }
 
     async fn submit_review(
@@ -1115,20 +1129,24 @@ impl ScmProvider for GitHubClient {
     }
 
     async fn is_merged(&self, repo: &RepoRef, pr_number: u64) -> bool {
-        let Ok(response) = self
+        self.merged_sha(repo, pr_number).await.is_some()
+    }
+
+    async fn merged_sha(&self, repo: &RepoRef, pr_number: u64) -> Option<String> {
+        let response = self
             .send(self.request(
                 Method::Get,
                 &format!("/repos/{}/pulls/{pr_number}", repo.full_name()),
                 None,
             ))
             .await
-        else {
-            return false;
-        };
-        serde_json::from_str::<Value>(&response.body)
-            .ok()
-            .and_then(|value| value["merged"].as_bool())
-            .unwrap_or(false)
+            .ok()?;
+        let value: Value = serde_json::from_str(&response.body).ok()?;
+        if value["merged"].as_bool() == Some(true) {
+            value["merge_commit_sha"].as_str().map(ToOwned::to_owned)
+        } else {
+            None
+        }
     }
 
     async fn submit_review(

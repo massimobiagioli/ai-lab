@@ -413,32 +413,46 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/agents", get(not_implemented))
         .route("/api/v1/agents/{id}", get(not_implemented))
         .route("/api/v1/agents/{id}/cv", get(not_implemented))
+        .route("/api/v1/agents/{id}/pause", post(not_implemented))
+        .route("/api/v1/labs/{id}/agents", get(not_implemented))
         .route("/api/v1/characters", get(not_implemented))
-        .route("/api/v1/providers", get(not_implemented))
+        .route(
+            "/api/v1/providers",
+            get(not_implemented).post(not_implemented),
+        )
         .route("/api/v1/providers/{id}", get(not_implemented))
         .route("/api/v1/providers/{id}/verify", post(not_implemented))
         .route("/api/v1/providers/{id}/rotate", post(not_implemented))
         .route("/api/v1/scm-credentials", get(not_implemented))
         .route("/api/v1/models", get(not_implemented))
-        .route("/api/v1/projects", get(not_implemented))
+        .route(
+            "/api/v1/projects",
+            get(not_implemented).post(not_implemented),
+        )
         .route("/api/v1/projects/{id}", get(not_implemented))
         .route("/api/v1/projects/{id}/sync", post(not_implemented))
-        .route("/api/v1/ideas", get(not_implemented))
+        .route("/api/v1/ideas", get(not_implemented).post(not_implemented))
         .route("/api/v1/ideas/{id}", get(not_implemented))
         .route("/api/v1/sows", get(not_implemented))
         .route("/api/v1/sows/{id}", get(not_implemented))
         .route("/api/v1/sows/{id}/plans", get(not_implemented))
+        .route("/api/v1/sows/{id}/approve", post(not_implemented))
         .route("/api/v1/plans/{id}", get(not_implemented))
         .route("/api/v1/plans/{id}/materialize", post(not_implemented))
         .route("/api/v1/projects/{id}/board", get(not_implemented))
-        .route("/api/v1/cards/{id}", get(not_implemented))
+        .route(
+            "/api/v1/cards/{id}",
+            get(not_implemented).patch(not_implemented),
+        )
         .route("/api/v1/cards/{id}/transition", post(not_implemented))
         .route("/api/v1/cards/{id}/comments", get(not_implemented))
         .route("/api/v1/cards/{id}/events", get(not_implemented))
         .route("/api/v1/cards/{id}/assign", post(not_implemented))
+        .route("/api/v1/cards/{id}/merge", post(not_implemented))
         .route("/api/v1/memory/search", post(not_implemented))
         .route("/api/v1/memory/documents", get(not_implemented))
         .route("/api/v1/memory/documents/{id}", get(not_implemented))
+        .route("/api/v1/memory/notes", get(not_implemented))
         .route("/api/v1/settings", get(not_implemented))
         .route("/api/v1/webhooks/github", post(not_implemented))
         .route("/api/v1/health/providers", get(health_providers))
@@ -997,7 +1011,7 @@ async fn enqueue_run(
         Ok(run) => {
             let body = serde_json::to_value(&run).unwrap_or(serde_json::Value::Null);
             if let Some(key) = key.as_deref() {
-                state.idempotency.put(key, 201, body.clone());
+                state.idempotency.put(key, 202, body.clone());
                 state.idempotency.finish(key);
             }
             (StatusCode::ACCEPTED, Json(body)).into_response()
@@ -1119,7 +1133,13 @@ async fn list_events(
     let limit = query.limit.unwrap_or(200).clamp(1, 1_000) as usize;
     let mut events = state.store.events_after(lab_id, after).await;
     events.truncate(limit);
-    Json(events).into_response()
+    let total = u64::try_from(events.len()).unwrap_or(u64::MAX);
+    Json(crate::Page {
+        data: events,
+        next_cursor: None,
+        total_estimate: total,
+    })
+    .into_response()
 }
 
 async fn get_metrics(
@@ -1466,7 +1486,7 @@ mod tests {
             .expect("body")
             .to_bytes();
         let value: serde_json::Value = serde_json::from_slice(&body).expect("json");
-        assert_eq!(value.as_array().map(Vec::len), Some(1));
+        assert_eq!(value["data"].as_array().map(Vec::len), Some(1));
     }
 
     #[tokio::test]
