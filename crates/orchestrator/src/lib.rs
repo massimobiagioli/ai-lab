@@ -7,6 +7,7 @@ pub mod context;
 pub mod docker_backend;
 pub mod orchestration;
 pub mod pipeline;
+pub mod postgres;
 pub mod runner_api;
 pub mod sandbox;
 pub mod wired;

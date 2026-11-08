@@ -29,7 +29,7 @@
 - [x] Verification/review feedback loop (≤ 3) and wired verification — `fail_verification`, `request_changes`, sandbox exec in `WiredExecutor`.
 - [x] Commit/push/PR via the SCM port + idempotency keys and handoff — `WiredExecutor`, `idempotency_key`, `Handoff`.
 - [x] Handoff/review/merge orchestration — `Handoff`, pipeline stages.
-- [x] Crash recovery/reconciliation — `reconcile` + `ExternalPrState::recovery`.
+- [x] Crash recovery/reconciliation — `reconcile`, `reconcile_stale`, `ExternalPrState::recovery`, `PostgresScheduler::reap` (45s).
 - [x] Cancellation/pause — `request_cancel`, checkpoints; sandbox destruction is WP-14.
 - [x] Escalation ladder + human intervention records — `escalate`, `HumanDecision`.
 - [x] Run events mapping + trace/step recording — `PipelineStage::event`, `RunStep`.
@@ -38,7 +38,7 @@
 
 ## 4. Acceptance criteria
 
-- [x] AC1 one worker leases a card — in-memory `LeaseManager` test.
+- [x] AC1 one worker leases a card — in-memory `LeaseManager` test + durable `PostgresScheduler::acquire_batch`; 20-worker load test remains WP-21.
 - [x] AC2 45 s heartbeat timeout requeues with backoff — `reconcile` + `retry_decision`.
 - [x] AC3 agent loop stops at 40 tool calls / 25 iterations / 45 min — `RunPipeline` bounds.
 - [x] AC4 failed verification loops ≤ 3 — `fail_verification`.

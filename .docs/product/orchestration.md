@@ -45,7 +45,7 @@ A card is eligible when it is `READY`, the agent is active, the budget is availa
 
 ## 8. Worker loop
 
-`crates/orchestrator/src/worker.rs` implements the scheduler tick: reap expired leases, pop queued runs, acquire the lease, execute through the `RunExecutor` port (LLM/sandbox/SCM are injected), release the lease, and requeue retryable failures. The tick respects `WORKER_CONCURRENCY` and an active lease keeps a run queued for the next tick.
+`crates/orchestrator/src/worker.rs` implements the in-memory scheduler tick; `crates/orchestrator/src/postgres.rs` implements the durable one. `PostgresScheduler::acquire_batch` selects READY cards `FOR UPDATE SKIP LOCKED`, inserts a running `runs` row with a lease and moves the card to DOING in one transaction; `heartbeat` refreshes the run, `reap` times out runs with a heartbeat older than 45 s, and `PostgresWorker::tick` leases up to the concurrency and records succeeded/failed. The in-memory worker requeues retryable failures with the same bounds.
 
 ## 9. Port wiring
 
