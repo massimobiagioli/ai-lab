@@ -206,16 +206,18 @@ impl PostgresScheduler {
         &self,
         run_id: RunId,
         merge_sha: Option<&str>,
+        trace_id: Option<&str>,
         now: DateTime<Utc>,
     ) -> Result<(), sqlx::Error> {
         let mut tx = self.pool.begin().await?;
         sqlx::query(
             "UPDATE runs SET status = 'succeeded', ended_at = $2, lease_id = NULL, \
-             merge_sha = $3 WHERE id = $1",
+             merge_sha = $3, trace_id = $4 WHERE id = $1",
         )
         .bind(run_id.as_uuid())
         .bind(now)
         .bind(merge_sha)
+        .bind(trace_id)
         .execute(&mut *tx)
         .await?;
         if let Some(merge_sha) = merge_sha {
@@ -557,7 +559,7 @@ impl PostgresWorker {
                 let action = self.executor.recover(*card, run_id).await;
                 if merge_sha.is_some() || action == Some(crate::pipeline::RecoveryAction::Done) {
                     self.scheduler
-                        .complete_success(run_id, merge_sha.as_deref(), now)
+                        .complete_success(run_id, merge_sha.as_deref(), None, now)
                         .await?;
                 } else {
                     let backoff = match attempt {
@@ -608,7 +610,12 @@ impl PostgresWorker {
                         .find(|step| step.kind == "merge")
                         .map(|step| step.output.clone());
                     self.scheduler
-                        .complete_success(run.run_id, merge_sha.as_deref(), now)
+                        .complete_success(
+                            run.run_id,
+                            merge_sha.as_deref(),
+                            Some(&pipeline.trace_id),
+                            now,
+                        )
                         .await?;
                     self.scheduler
                         .emit_event("delivery.run.completed", &run, now)

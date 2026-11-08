@@ -328,3 +328,4 @@ Server → client:
 2026-11-07 | build | crates/api/src/server.rs | base64url cursor+tamper; documented route stubs; request-id/body-limit middleware; 13 API tests | surface/Redis/OpenAPI open | QA review
 2026-11-07 | build | crates/api/src/{server,lib}.rs | Problem extractors; WS protocol tests; 14 API tests | surface/Redis/OpenAPI open | QA review
 2026-11-07 | build | .tools/check-openapi-drift.py, Makefile, crates/api/src/server.rs | OpenAPI drift gate; WS 256; lab_id required; 14 API tests | surface/Redis/utoipa open | QA review
+2026-11-07 | build | crates/api/src/server.rs | hello before backfill; live seq; 14 API tests | surface/Redis/utoipa open | QA review

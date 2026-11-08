@@ -1055,7 +1055,14 @@ async fn handle_socket(mut socket: WebSocket, state: AppState, query: WsQuery) {
         query.lab_id
     };
     let backfill = state.store.events_after(&lab_id, query.since).await;
-    let seq = backfill.last().map_or(query.since, |event| event.seq);
+    let mut seq = backfill.last().map_or(query.since, |event| event.seq);
+    let mut topics: Vec<String> = vec!["system".to_owned()];
+    let handshake = hello(Utc::now(), seq, topics.clone());
+    if let Ok(text) = serde_json::to_string(&handshake)
+        && socket.send(Message::Text(text.into())).await.is_err()
+    {
+        return;
+    }
     for event in &backfill {
         let message = WsServerMessage::event(event);
         let Ok(body) = serde_json::to_string(&message) else {
@@ -1064,13 +1071,6 @@ async fn handle_socket(mut socket: WebSocket, state: AppState, query: WsQuery) {
         if socket.send(Message::Text(body.into())).await.is_err() {
             return;
         }
-    }
-    let mut topics: Vec<String> = vec!["system".to_owned()];
-    let handshake = hello(Utc::now(), seq, topics.clone());
-    if let Ok(text) = serde_json::to_string(&handshake)
-        && socket.send(Message::Text(text.into())).await.is_err()
-    {
-        return;
     }
     let mut events = state.subscribe();
     let mut heartbeat = interval(Duration::from_secs(10));
@@ -1146,6 +1146,7 @@ async fn handle_socket(mut socket: WebSocket, state: AppState, query: WsQuery) {
                             continue;
                         }
                         let message = WsServerMessage::event(&event);
+                        seq = event.seq;
                         if let Ok(body) = serde_json::to_string(&message)
                             && socket.send(Message::Text(body.into())).await.is_err()
                         {
