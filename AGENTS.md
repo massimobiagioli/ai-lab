@@ -128,6 +128,7 @@ Every document under `.docs` is listed here. When a document is created, renamed
 | WP-14 Sandbox runner | Sandbox isolation and tool policy. | [`.docs/sow/WP-14-SANDBOX-RUNNER.md`](./.docs/sow/WP-14-SANDBOX-RUNNER.md) |
 | WP-14 review plan | Sandbox runner review checklist and evidence. | [`.docs/sow/WP-14-SANDBOX-RUNNER-review-plan.md`](./.docs/sow/WP-14-SANDBOX-RUNNER-review-plan.md) |
 | WP-15 QA and merge | QA review, merge policy, autonomy. | [`.docs/sow/WP-15-QA-MERGE.md`](./.docs/sow/WP-15-QA-MERGE.md) |
+| WP-15 review plan | QA, review, merge and autonomy review checklist and evidence. | [`.docs/sow/WP-15-QA-MERGE-review-plan.md`](./.docs/sow/WP-15-QA-MERGE-review-plan.md) |
 | WP-16 API and realtime | REST, WebSocket, contracts, rate limits. | [`.docs/sow/WP-16-API-REALTIME.md`](./.docs/sow/WP-16-API-REALTIME.md) |
 | WP-16 review plan | API and realtime review checklist and evidence. | [`.docs/sow/WP-16-API-REALTIME-review-plan.md`](./.docs/sow/WP-16-API-REALTIME-review-plan.md) |
 | WP-17 Frontend platform | Angular platform, design system, accessibility. | [`.docs/sow/WP-17-FRONTEND-PLATFORM.md`](./.docs/sow/WP-17-FRONTEND-PLATFORM.md) |
