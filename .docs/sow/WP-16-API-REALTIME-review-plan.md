@@ -24,7 +24,8 @@
 - [x] Bearer auth middleware (when `AILAB_API_TOKEN` is set; health stays open).
 - [x] In-memory idempotency store (24 h) for the POST endpoints.
 - [x] WS hub with live event broadcast and 20 s heartbeat.
-- [ ] Full DTO/OpenAPI annotations, Redis idempotency, backpressure, outbox fan-out, telemetry ingest, Swagger UI, contract/perf tests.
+- [x] Outbox relay → API backfill store + live hub (`/api/v1/events`, `relay_once`) — test.
+- [ ] Full DTO/OpenAPI annotations, Redis idempotency, WS backpressure, telemetry ingest, Swagger UI, contract/perf tests.
 
 ## 3. Deliverables
 
@@ -33,8 +34,8 @@
 - [x] Pagination, rate limiting, origin/JSON guards — increment.
 - [x] WS hello/subscribe + `events_after` — increment.
 - [x] OpenAPI determinism with the run paths — `make openapi`.
-- [x] Auth middleware, idempotency store, WS broadcast + heartbeat — increment.
-- [ ] Full DTO surface, Redis idempotency, backpressure, outbox fan-out, telemetry ingest, Swagger UI — open.
+- [x] Auth middleware, idempotency store, WS broadcast + heartbeat, outbox relay/backfill — increment.
+- [ ] Full DTO surface, Redis idempotency, WS backpressure, telemetry ingest, Swagger UI — open.
 
 ## 4. Acceptance criteria
 
@@ -44,11 +45,12 @@
 - [x] Auth middleware over the protected router + health open — test.
 - [x] Idempotency replay for POST — test.
 - [x] WS hello/subscribe + live broadcast + heartbeat — implementation.
-- [ ] WS backpressure under load, outbox fan-out/Redis, telemetry ingest, perf — open.
+- [x] Outbox relay drains the outbox, persists for backfill and broadcasts live — test.
+- [ ] WS backpressure under load, Redis idempotency, telemetry ingest, perf — open.
 
 ## 5. Implementation and tests
 
-- [x] `server.rs` router, in-memory `RunStore`, Problem Details, rate limiter, auth, idempotency, WS hub/heartbeat — 11 API tests + 2 contract tests.
+- [x] `server.rs` router, in-memory `RunStore`, Problem Details, rate limiter, auth, idempotency, WS hub/heartbeat, outbox relay/backfill — 12 API tests + 2 contract tests.
 - [ ] Postgres/Redis adapters, full DTOs, WS hub — build phase.
 
 ## 6. Security and quality gates

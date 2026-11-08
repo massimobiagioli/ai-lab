@@ -14,7 +14,7 @@ use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use chrono::{DateTime, Utc};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tokio::sync::broadcast;
 use tokio::time::interval;
 
@@ -82,6 +82,8 @@ pub trait RunStore: Send + Sync {
     fn enqueue_card(&self, card_id: &str) -> Result<RunView, StoreError>;
     /// Events after a sequence.
     fn events_after(&self, since: i64) -> Vec<EventEnvelope>;
+    /// Append an event to the backfill buffer.
+    fn append_event(&self, event: EventEnvelope);
 }
 
 #[derive(Default)]
@@ -182,6 +184,17 @@ impl RunStore for InMemoryRunStore {
             return Vec::new();
         };
         crate::events_after(&data.events, since)
+    }
+
+    fn append_event(&self, event: EventEnvelope) {
+        if let Ok(mut data) = self.data.lock()
+            && !data
+                .events
+                .iter()
+                .any(|existing| existing.event_id == event.event_id)
+        {
+            data.events.push(event);
+        }
     }
 }
 
@@ -311,6 +324,37 @@ impl AppState {
     pub fn subscribe(&self) -> broadcast::Receiver<EventEnvelope> {
         self.hub.subscribe()
     }
+
+    /// Persist an event for backfill and broadcast it to live subscribers.
+    pub fn ingest(&self, event: EventEnvelope) -> usize {
+        self.store.append_event(event.clone());
+        self.hub.send(event).unwrap_or(0)
+    }
+}
+
+/// Drain the outbox and publish its events to the API hub and backfill store.
+pub async fn relay_once(
+    outbox: &dyn ailab_application::Outbox,
+    state: &AppState,
+) -> Result<usize, String> {
+    let pending = outbox.pending().await.map_err(|error| error.to_string())?;
+    let mut published = 0;
+    for event in &pending {
+        state.ingest(EventEnvelope {
+            event_id: event.event_id,
+            event: event.event_type.clone(),
+            seq: event.seq.unwrap_or(0),
+            lab_id: event.lab_id,
+            occurred_at: event.occurred_at,
+            payload: event.payload.clone(),
+        });
+        outbox
+            .acknowledge(event.event_id.as_uuid())
+            .await
+            .map_err(|error| error.to_string())?;
+        published += 1;
+    }
+    Ok(published)
 }
 
 /// Build the edge router.
@@ -322,6 +366,7 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/labs/{id}/runs", get(list_runs))
         .route("/api/v1/labs/{id}/metrics", get(get_metrics))
         .route("/api/v1/cards/{id}/runs", post(enqueue_run))
+        .route("/api/v1/events", get(list_events))
         .route("/ws", get(ws_upgrade))
         .layer(middleware::from_fn_with_state(state.clone(), auth));
     Router::new()
@@ -538,6 +583,23 @@ async fn enqueue_run(
     }
 }
 
+#[derive(Debug, Clone, Deserialize, Default)]
+struct EventsQuery {
+    #[serde(default)]
+    since: i64,
+}
+
+async fn list_events(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Query(query): Query<EventsQuery>,
+) -> Response {
+    if let Err(response) = enforce(&state, &headers, RateLimitKind::Read) {
+        return response;
+    }
+    Json(state.store.events_after(query.since)).into_response()
+}
+
 async fn get_metrics(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -606,6 +668,8 @@ async fn handle_socket(mut socket: WebSocket, state: AppState) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ailab_application::Outbox;
+    use ailab_domain::{Actor, DomainEvent, LabId};
     use axum::body::Body;
     use axum::http::Request;
     use http_body_util::BodyExt;
@@ -700,6 +764,41 @@ mod tests {
         let body = runs.into_body().collect().await.expect("body").to_bytes();
         let value: serde_json::Value = serde_json::from_slice(&body).expect("json");
         assert!(value["data"].is_array());
+    }
+
+    #[tokio::test]
+    async fn relay_drains_the_outbox_and_backfills_events() {
+        let state = AppState::with_store(Arc::new(InMemoryRunStore::new()));
+        let outbox = ailab_infrastructure::outbox::InMemoryOutbox::new();
+        let event = DomainEvent::new(
+            "kanban.card.moved",
+            LabId::generate(),
+            Actor::system(),
+            serde_json::json!({"x": 1}),
+            Utc::now(),
+        )
+        .expect("event");
+        outbox.append(&[event]).await.expect("append");
+        let mut rx = state.subscribe();
+        let published = relay_once(&outbox, &state).await.expect("relay");
+        assert_eq!(published, 1);
+        let received = rx.try_recv().expect("live event");
+        assert_eq!(received.event, "kanban.card.moved");
+        assert!(outbox.pending().await.expect("pending").is_empty());
+        let app = router(state);
+        let response = app
+            .oneshot(request("GET", "/api/v1/events?since=0"))
+            .await
+            .expect("response");
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let value: serde_json::Value = serde_json::from_slice(&body).expect("json");
+        assert_eq!(value.as_array().map(Vec::len), Some(1));
     }
 
     #[tokio::test]
