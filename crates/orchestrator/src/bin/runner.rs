@@ -1,13 +1,10 @@
-//! AI-Lab `runner` binary.
-//!
-//! The sandbox control plane lands with WP-14. WP-03 delivers the platform
-//! health probe and a minimal readiness listener so the worker can verify that
-//! at least one runner is reachable (WP-03 §3.6/§3.7).
+//! AI-Lab `runner` binary: authenticated sandbox control-plane API.
 #![forbid(unsafe_code)]
 
-use std::io::{Read, Write};
-use std::net::TcpListener;
 use std::time::Duration;
+
+use ailab_application::Secret;
+use ailab_orchestrator::runner_api::{RunnerState, router};
 
 fn main() {
     if std::env::args().any(|arg| arg == "healthcheck") {
@@ -16,22 +13,34 @@ fn main() {
         std::process::exit(i32::from(!healthy));
     }
 
+    let token = match std::env::var("AILAB_RUNNER_TOKEN") {
+        Ok(value) if value.trim().len() >= 32 => value,
+        _ => {
+            eprintln!("runner: AILAB_RUNNER_TOKEN (>= 32 bytes) is required");
+            std::process::exit(78);
+        }
+    };
     let bind = std::env::var("AILAB_RUNNER_BIND").unwrap_or_else(|_| "0.0.0.0:8081".to_owned());
-    let listener = match TcpListener::bind(&bind) {
-        Ok(listener) => listener,
+
+    let runtime = match tokio::runtime::Runtime::new() {
+        Ok(runtime) => runtime,
         Err(error) => {
-            eprintln!("runner: cannot bind {bind}: {error}");
+            eprintln!("runner: cannot start the async runtime: {error}");
             std::process::exit(1);
         }
     };
-    for stream in listener.incoming() {
-        let Ok(mut stream) = stream else {
-            continue;
+    runtime.block_on(async move {
+        let app = router(RunnerState::new(Secret::new(token)));
+        let listener = match tokio::net::TcpListener::bind(&bind).await {
+            Ok(listener) => listener,
+            Err(error) => {
+                eprintln!("runner: cannot bind {bind}: {error}");
+                std::process::exit(1);
+            }
         };
-        let mut buffer = [0_u8; 512];
-        let _ = stream.read(&mut buffer);
-        let _ = stream.write_all(
-            b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 2\r\nConnection: close\r\n\r\nok",
-        );
-    }
+        if let Err(error) = axum::serve(listener, app).await {
+            eprintln!("runner: server error: {error}");
+            std::process::exit(1);
+        }
+    });
 }

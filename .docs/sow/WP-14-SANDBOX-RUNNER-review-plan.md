@@ -7,7 +7,7 @@
 | Review branch | `review/wp-14-sandbox-runner` |
 | Reviewer | Chief Software Engineer (agent) |
 | QA reviewer | qa-review-agent (independent subagent) |
-| Status | `blocked` |
+| Status | `in_progress` |
 
 ## 1. Contract completeness
 
@@ -17,7 +17,7 @@
 ## 2. Specification conformance
 
 - [x] Sandbox spec, isolation flags, egress policy and role tool policy — evidence: `crates/orchestrator/src/sandbox.rs`, `.docs/product/sandbox.md`.
-- [ ] Runner control-plane HTTP API (`POST /v1/sandboxes`, status, SSE logs, exec, delete, health) — **NOT IMPLEMENTED**; the runner binary is a health listener.
+- [x] Runner control-plane HTTP API (`POST /v1/sandboxes`, status, SSE logs, exec, delete, health) — evidence: `crates/orchestrator/src/runner_api.rs`, 5 API tests; the runner binary serves it.
 - [ ] Live escape suite (host FS, Docker socket, network scan, privilege escalation, fork bomb, disk fill) — **NOT IMPLEMENTED**.
 - [ ] Egress proxy runtime enforcement — policy exists; runtime deferred.
 - [ ] Sandbox token injection/revocation — token broker exists in WP-12; injection missing.
@@ -30,17 +30,20 @@
 - [x] Role tool policy + denial rules — evidence: `ToolPolicy`.
 - [x] Token broker — evidence: WP-12 `TokenBroker`.
 - [x] Spec limits — evidence: `SandboxSpec`.
-- [ ] HTTP runner, exec/logs, escape suite, egress runtime, token injection, output caps — **missing**.
+- [x] HTTP runner + exec/logs + token auth + idempotent create — evidence: `runner_api.rs`.
+- [ ] Docker backend, escape suite, egress runtime, token injection, output caps — **missing**.
 
 ## 4. Acceptance criteria
 
 - [x] Policy types and denial tests — 5 sandbox tests.
-- [ ] AC live isolation/escape, exec allowlist, output caps, egress allow/deny, token scoping/revocation, resource limits under load — not verifiable without the runner runtime.
+- [x] HTTP API auth/idempotency/exec policy/delete/health — verified in tests.
+- [ ] AC live isolation/escape, output caps, egress runtime, token injection, resource limits under load — needs the Docker backend.
 
 ## 5. Implementation and tests
 
 - [x] `EgressPolicy`, `SandboxSpec`, `IsolationFlags`, `ToolPolicy`, `Sandbox` state — tests.
-- [ ] Runner HTTP API, Docker backend, exec/logs, escape suite — missing.
+- [x] Runner HTTP API: auth, idempotent create, status, SSE logs, exec policy denial, delete, health — 5 tests.
+- [ ] Docker backend, escape suite, egress runtime, token injection — build phase.
 
 ## 6. Security and quality gates
 

@@ -279,3 +279,4 @@ Evaluation order for every call:
 2026-11-07 | T02 | crates/orchestrator/src/sandbox.rs | role tool policy, forbidden commands, protected paths | — | T03
 2026-11-07 | T03 | .docs/product/sandbox.md, .docs/product/tools.md | doc link check | runner service/escape suite deferred WP-14 follow-up | WP-16
 2026-11-07 | review | .docs/sow/WP-14-SANDBOX-RUNNER-review-plan.md | policy types/egress/tool-policy only; runner is a health placeholder | BLOCKED: HTTP control plane, exec/logs, escape suite, egress runtime (CR-0009) | build phase
+2026-11-07 | build | crates/orchestrator/src/runner_api.rs, crates/orchestrator/src/bin/runner.rs | authenticated HTTP control plane; idempotent create; status/logs/exec/delete; 17 orchestrator tests | Docker backend/escape suite still open (CR-0009) | build phase

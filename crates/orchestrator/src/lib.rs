@@ -3,4 +3,5 @@
 #![forbid(unsafe_code)]
 
 pub mod orchestration;
+pub mod runner_api;
 pub mod sandbox;
