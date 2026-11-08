@@ -8,7 +8,7 @@
 | Owner | Dev |
 | Related | `.docs/product/tools.md`, `.docs/product/security.md`, `crates/orchestrator/src/sandbox.rs` |
 
-The sandbox is the only place agent code runs. The specification, egress policy, tool policy and lifecycle are implemented in `crates/orchestrator/src/sandbox.rs`; the runner service and actual container creation are owned by WP-14 follow-up/WP-03.
+The sandbox is the only place agent code runs. The specification, egress policy, tool policy and lifecycle are implemented in `crates/orchestrator/src/sandbox.rs`. The runner control-plane API and the Docker backend are implemented in `crates/orchestrator/src/{runner_api,backend,docker_backend}.rs`.
 
 ## 1. Specification
 
@@ -44,7 +44,11 @@ The sandbox is the only place agent code runs. The specification, egress policy,
 
 `cargo test -p ailab-orchestrator` covers spec validation and isolation, egress allow/deny, role allowlists, forbidden commands, force-push, publish, protected paths, traversal and the lifecycle.
 
-## 7. Deferred to the WP-14 follow-up
+## 7. Runner control plane
+
+`POST /v1/sandboxes` (idempotent by `run_id`), `GET/DELETE /v1/sandboxes/{id}`, SSE logs, allowlisted `POST /exec`, and health endpoints. Auth is `Bearer AILAB_RUNNER_TOKEN` (constant-time compare). The Docker backend creates the container with `readonly_rootfs`, `cap_drop=ALL`, `no-new-privileges`, non-root 10001, PID/memory/CPU limits, a `tmpfs` `/tmp`, only the run worktree bind-mounted at `/workspace`, and `network_mode=none` unless the egress allowlist is enabled. Exec output is capped at 1 MB per stream.
+
+## 8. Deferred to the WP-14 follow-up
 
 - Runner service, control-plane API and auth token.
 - Docker socket proxy allowlist and egress proxy runtime.
@@ -52,7 +56,7 @@ The sandbox is the only place agent code runs. The specification, egress policy,
 - Real container creation, output caps, cleanup/orphan reconciliation and metrics.
 - Escape/resource/egress/token suites with a live Docker host.
 
-## 8. References
+## 9. References
 
 - `.docs/sow/WP-14-SANDBOX-RUNNER.md`
 - `.docs/technical-specification/AI-LAB-TECHNICAL-SPECIFICATION.md` §16.3

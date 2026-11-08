@@ -31,19 +31,22 @@
 - [x] Token broker — evidence: WP-12 `TokenBroker`.
 - [x] Spec limits — evidence: `SandboxSpec`.
 - [x] HTTP runner + exec/logs + token auth + idempotent create — evidence: `runner_api.rs`.
-- [ ] Docker backend, escape suite, egress runtime, token injection, output caps — **missing**.
+- [x] Docker backend with isolation host config, worktree bind, network none/egress, resource limits and 1 MB output caps — evidence: `docker_backend.rs`, `host_config_enforces_isolation` test.
+- [ ] Live Docker escape/resource/egress suite execution — `#[ignore]` test delivered; run on the Docker host in WP-21.
+- [ ] Token injection into the sandbox and egress-proxy runtime wiring — WP-13/WP-12 integration.
 
 ## 4. Acceptance criteria
 
 - [x] Policy types and denial tests — 5 sandbox tests.
 - [x] HTTP API auth/idempotency/exec policy/delete/health — verified in tests.
-- [ ] AC live isolation/escape, output caps, egress runtime, token injection, resource limits under load — needs the Docker backend.
+- [x] Docker isolation host config (read-only, cap drop, non-root, PIDs, no socket, worktree-only bind) and output caps — unit test.
+- [ ] AC live escape/egress/token-load execution — Docker host suite WP-21 and token/egress wiring WP-13.
 
 ## 5. Implementation and tests
 
 - [x] `EgressPolicy`, `SandboxSpec`, `IsolationFlags`, `ToolPolicy`, `Sandbox` state — tests.
 - [x] Runner HTTP API: auth, idempotent create, status, SSE logs, exec policy denial, delete, health — 5 tests.
-- [ ] Docker backend, escape suite, egress runtime, token injection — build phase.
+- [ ] Live escape/egress/token-load suites — WP-21; token injection and proxy network wiring — WP-13/WP-03.
 
 ## 6. Security and quality gates
 

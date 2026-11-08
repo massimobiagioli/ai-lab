@@ -3,7 +3,11 @@
 
 use std::time::Duration;
 
+use std::sync::Arc;
+
 use ailab_application::Secret;
+use ailab_orchestrator::backend::{InMemoryBackend, SandboxBackend};
+use ailab_orchestrator::docker_backend::DockerBackend;
 use ailab_orchestrator::runner_api::{RunnerState, router};
 
 fn main() {
@@ -29,8 +33,19 @@ fn main() {
             std::process::exit(1);
         }
     };
+    let backend = if std::env::var("AILAB_RUNNER_BACKEND").as_deref() == Ok("memory") {
+        Arc::new(InMemoryBackend::new()) as Arc<dyn SandboxBackend>
+    } else {
+        match DockerBackend::from_env() {
+            Ok(backend) => Arc::new(backend) as Arc<dyn SandboxBackend>,
+            Err(error) => {
+                eprintln!("runner: docker backend unavailable: {error}");
+                std::process::exit(1);
+            }
+        }
+    };
     runtime.block_on(async move {
-        let app = router(RunnerState::new(Secret::new(token)));
+        let app = router(RunnerState::with_backend(Secret::new(token), backend));
         let listener = match tokio::net::TcpListener::bind(&bind).await {
             Ok(listener) => listener,
             Err(error) => {

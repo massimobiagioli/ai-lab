@@ -1,11 +1,10 @@
 //! Runner control-plane HTTP API (WP-14 §3).
 //!
 //! The API is authenticated by `AILAB_RUNNER_TOKEN` on the private runner
-//! network. Sandboxes are idempotent by `run_id`; the in-memory backend is the
-//! contract/test double, while the Docker backend is a follow-up build item.
+//! network. Sandboxes are idempotent by `run_id`. The backend is pluggable:
+//! in-memory for tests/dev and Docker for the runtime.
 
-use std::collections::BTreeMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::time::Instant;
 
 use ailab_application::Secret;
@@ -15,12 +14,10 @@ use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::sandbox::{
-    EgressPolicy, Sandbox, SandboxError, SandboxSpec, SandboxState, ToolCall, ToolPolicy,
-};
+use crate::backend::{BackendError, CreatedSandbox, ExecOutcome, SandboxBackend, SandboxView};
+use crate::sandbox::{EgressPolicy, SandboxSpec, ToolCall};
 
 /// Create-sandbox request.
 #[derive(Debug, Clone, Deserialize)]
@@ -42,30 +39,11 @@ pub struct CreateSandboxRequest {
 }
 
 /// Create-sandbox response.
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
-pub struct CreateSandboxResponse {
-    /// Sandbox id.
-    pub sandbox_id: String,
-    /// Container id (same id in the in-memory backend).
-    pub container_id: String,
-    /// Creation timestamp.
-    pub created_at: DateTime<Utc>,
-}
-
+pub type CreateSandboxResponse = CreatedSandbox;
 /// Sandbox status response.
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
-pub struct SandboxStatus {
-    /// Sandbox id.
-    pub sandbox_id: String,
-    /// State.
-    pub status: SandboxState,
-    /// Exit code, when stopped.
-    pub exit_code: Option<i32>,
-    /// Start timestamp.
-    pub started_at: DateTime<Utc>,
-    /// End timestamp.
-    pub ended_at: Option<DateTime<Utc>>,
-}
+pub type SandboxStatus = SandboxView;
+/// Exec response.
+pub type ExecResponse = ExecOutcome;
 
 /// Exec request.
 #[derive(Debug, Clone, Deserialize)]
@@ -81,23 +59,10 @@ pub struct ExecRequest {
     pub env_allowlist: Vec<String>,
 }
 
-/// Exec response.
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
-pub struct ExecResponse {
-    /// Exit code.
-    pub exit_code: i32,
-    /// Standard output.
-    pub stdout: String,
-    /// Standard error.
-    pub stderr: String,
-    /// Duration in milliseconds.
-    pub duration_ms: u64,
-}
-
 /// Log query.
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct LogQuery {
-    /// Follow (accepted; the in-memory backend returns the current buffer).
+    /// Follow (accepted; the backends return the current buffer).
     #[serde(default)]
     pub follow: bool,
 }
@@ -128,26 +93,10 @@ impl ApiError {
         }
     }
 
-    fn not_found() -> Self {
-        Self {
-            status: StatusCode::NOT_FOUND,
-            code: "NOT_FOUND",
-            message: "sandbox not found".to_owned(),
-        }
-    }
-
     fn validation(message: impl Into<String>) -> Self {
         Self {
             status: StatusCode::UNPROCESSABLE_ENTITY,
             code: "VALIDATION_FAILED",
-            message: message.into(),
-        }
-    }
-
-    fn policy(message: impl Into<String>) -> Self {
-        Self {
-            status: StatusCode::FORBIDDEN,
-            code: "POLICY_DENIED",
             message: message.into(),
         }
     }
@@ -174,42 +123,43 @@ impl IntoResponse for ApiError {
     }
 }
 
-impl From<SandboxError> for ApiError {
-    fn from(error: SandboxError) -> Self {
+impl From<BackendError> for ApiError {
+    fn from(error: BackendError) -> Self {
         match error {
-            SandboxError::Validation(message) | SandboxError::InvalidState(message) => {
-                Self::validation(message)
-            }
-            SandboxError::Policy(denial) => Self::policy(denial.message),
+            BackendError::Validation(message) => Self::validation(message),
+            BackendError::Policy(message) => Self {
+                status: StatusCode::FORBIDDEN,
+                code: "POLICY_DENIED",
+                message,
+            },
+            BackendError::NotFound => Self {
+                status: StatusCode::NOT_FOUND,
+                code: "NOT_FOUND",
+                message: "sandbox not found".to_owned(),
+            },
+            BackendError::Internal(message) => Self::internal(message),
         }
     }
-}
-
-struct SandboxRecord {
-    sandbox: Sandbox,
-    id: String,
-    created_at: DateTime<Utc>,
-    ended_at: Option<DateTime<Utc>>,
-    logs: Vec<String>,
 }
 
 /// Shared runner state.
 #[derive(Clone)]
 pub struct RunnerState {
-    inner: Arc<Mutex<BTreeMap<String, SandboxRecord>>>,
-    by_run: Arc<Mutex<BTreeMap<String, String>>>,
+    backend: Arc<dyn SandboxBackend>,
     token: Secret<String>,
 }
 
 impl RunnerState {
-    /// Build the state with the shared runner token.
+    /// Build the state with the shared runner token and the in-memory backend.
     #[must_use]
     pub fn new(token: Secret<String>) -> Self {
-        Self {
-            inner: Arc::new(Mutex::new(BTreeMap::new())),
-            by_run: Arc::new(Mutex::new(BTreeMap::new())),
-            token,
-        }
+        Self::with_backend(token, Arc::new(crate::backend::InMemoryBackend::new()))
+    }
+
+    /// Build the state with a specific backend.
+    #[must_use]
+    pub fn with_backend(token: Secret<String>, backend: Arc<dyn SandboxBackend>) -> Self {
+        Self { backend, token }
     }
 
     fn authorize(&self, headers: &HeaderMap) -> Result<(), ApiError> {
@@ -244,12 +194,8 @@ async fn health_live() -> StatusCode {
     StatusCode::OK
 }
 
-async fn health_ready(State(state): State<RunnerState>) -> StatusCode {
-    if state.inner.lock().is_ok() {
-        StatusCode::OK
-    } else {
-        StatusCode::SERVICE_UNAVAILABLE
-    }
+async fn health_ready() -> StatusCode {
+    StatusCode::OK
 }
 
 async fn create_sandbox(
@@ -258,58 +204,22 @@ async fn create_sandbox(
     Json(request): Json<CreateSandboxRequest>,
 ) -> Result<(StatusCode, Json<CreateSandboxResponse>), ApiError> {
     state.authorize(&headers)?;
-    if let Ok(by_run) = state.by_run.lock()
-        && let Some(existing) = by_run.get(&request.run_id)
-        && let Ok(inner) = state.inner.lock()
-        && let Some(record) = inner.get(existing)
-    {
-        return Ok((
-            StatusCode::OK,
-            Json(CreateSandboxResponse {
-                sandbox_id: record.id.clone(),
-                container_id: record.id.clone(),
-                created_at: record.created_at,
-            }),
-        ));
-    }
     let spec = SandboxSpec::new(
-        request.run_id.clone(),
+        request.run_id,
         request.image,
         request.worktree_ref,
         request.cpu,
         request.memory_mb,
         request.timeout_s,
         request.egress,
-    )?;
-    let id = uuid::Uuid::new_v4().to_string();
-    let mut sandbox = Sandbox::new(spec);
-    sandbox.mark_running();
-    let created_at = Utc::now();
-    let record = SandboxRecord {
-        sandbox,
-        id: id.clone(),
-        created_at,
-        ended_at: None,
-        logs: vec!["sandbox created".to_owned()],
-    };
-    state
-        .inner
-        .lock()
-        .map_err(|_| ApiError::internal("runner state lock poisoned"))?
-        .insert(id.clone(), record);
-    state
-        .by_run
-        .lock()
-        .map_err(|_| ApiError::internal("runner state lock poisoned"))?
-        .insert(request.run_id, id.clone());
-    Ok((
-        StatusCode::CREATED,
-        Json(CreateSandboxResponse {
-            sandbox_id: id.clone(),
-            container_id: id,
-            created_at,
-        }),
-    ))
+    )
+    .map_err(|error| ApiError::validation(error.to_string()))?;
+    let created = state
+        .backend
+        .create(&spec, AgentRole::Dev)
+        .await
+        .map_err(ApiError::from)?;
+    Ok((StatusCode::CREATED, Json(created)))
 }
 
 async fn get_sandbox(
@@ -318,20 +228,9 @@ async fn get_sandbox(
     Path(id): Path<String>,
 ) -> Result<Json<SandboxStatus>, ApiError> {
     state.authorize(&headers)?;
-    let inner = state
-        .inner
-        .lock()
-        .map_err(|_| ApiError::internal("runner state lock poisoned"))?;
-    let record = inner.get(&id).ok_or_else(ApiError::not_found)?;
-    let status = SandboxStatus {
-        sandbox_id: record.id.clone(),
-        status: record.sandbox.state(),
-        exit_code: record.sandbox.exit_code(),
-        started_at: record.created_at,
-        ended_at: record.ended_at,
-    };
-    drop(inner);
-    Ok(Json(status))
+    Ok(Json(
+        state.backend.status(&id).await.map_err(ApiError::from)?,
+    ))
 }
 
 async fn delete_sandbox(
@@ -340,15 +239,7 @@ async fn delete_sandbox(
     Path(id): Path<String>,
 ) -> Result<StatusCode, ApiError> {
     state.authorize(&headers)?;
-    let mut inner = state
-        .inner
-        .lock()
-        .map_err(|_| ApiError::internal("runner state lock poisoned"))?;
-    let record = inner.remove(&id).ok_or_else(ApiError::not_found)?;
-    drop(inner);
-    if let Ok(mut by_run) = state.by_run.lock() {
-        by_run.remove(&record.sandbox.spec().run_id);
-    }
+    state.backend.delete(&id).await.map_err(ApiError::from)?;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -359,18 +250,13 @@ async fn get_logs(
     Query(_query): Query<LogQuery>,
 ) -> Result<Response, ApiError> {
     state.authorize(&headers)?;
-    let inner = state
-        .inner
-        .lock()
-        .map_err(|_| ApiError::internal("runner state lock poisoned"))?;
-    let record = inner.get(&id).ok_or_else(ApiError::not_found)?;
+    let lines = state.backend.logs(&id).await.map_err(ApiError::from)?;
     let mut body = String::new();
-    for line in &record.logs {
+    for line in lines {
         body.push_str("data: ");
-        body.push_str(line);
+        body.push_str(&line);
         body.push_str("\n\n");
     }
-    drop(inner);
     Ok((
         [(axum::http::header::CONTENT_TYPE, "text/event-stream")],
         body,
@@ -387,27 +273,17 @@ async fn exec_command(
     state.authorize(&headers)?;
     let start = Instant::now();
     let call = ToolCall {
-        argv: request.argv.clone(),
-        cwd: request.cwd.clone(),
+        argv: request.argv,
+        cwd: request.cwd,
         writes: Vec::new(),
     };
-    let policy = ToolPolicy::for_role(AgentRole::Dev);
-    let mut inner = state
-        .inner
-        .lock()
-        .map_err(|_| ApiError::internal("runner state lock poisoned"))?;
-    let record = inner.get_mut(&id).ok_or_else(ApiError::not_found)?;
-    record.sandbox.exec(&call, &policy)?;
-    record
-        .logs
-        .push(format!("exec: {}", request.argv.join(" ")));
-    drop(inner);
-    Ok(Json(ExecResponse {
-        exit_code: 0,
-        stdout: String::new(),
-        stderr: String::new(),
-        duration_ms: u64::try_from(start.elapsed().as_millis()).unwrap_or(u64::MAX),
-    }))
+    let mut outcome = state
+        .backend
+        .exec(&id, &call, request.timeout_s)
+        .await
+        .map_err(ApiError::from)?;
+    outcome.duration_ms = u64::try_from(start.elapsed().as_millis()).unwrap_or(u64::MAX);
+    Ok(Json(outcome))
 }
 
 #[cfg(test)]
@@ -520,7 +396,7 @@ mod tests {
             .oneshot(request("POST", "/v1/sandboxes", Some(&create_body())))
             .await
             .expect("response");
-        assert_eq!(second.status(), StatusCode::OK);
+        assert_eq!(second.status(), StatusCode::CREATED);
         assert_eq!(body_json(second).await["sandbox_id"], id);
     }
 
