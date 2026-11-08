@@ -938,6 +938,34 @@ impl ScmProvider for GitHubClient {
             return Err(ScmError::Validation("no files to commit".to_owned()));
         }
         ensure_commit_trailers(message)?;
+        if let Some(marker) = message
+            .lines()
+            .find(|line| line.trim_start().starts_with("<!-- ailab:"))
+        {
+            let response = self
+                .send(self.request(
+                    Method::Get,
+                    &format!(
+                        "/repos/{}/commits?sha={}",
+                        repo.full_name(),
+                        branch.as_str()
+                    ),
+                    None,
+                ))
+                .await?;
+            if let Ok(value) = serde_json::from_str::<Value>(&response.body)
+                && let Some(commits) = value.as_array()
+            {
+                for commit in commits {
+                    let matched = commit["commit"]["message"]
+                        .as_str()
+                        .is_some_and(|message| message.contains(marker));
+                    if matched && let Some(sha) = commit["sha"].as_str() {
+                        return Ok(sha.to_owned());
+                    }
+                }
+            }
+        }
         let mut last_sha = String::new();
         for file in files {
             let body = json!({
@@ -1089,6 +1117,21 @@ impl ScmProvider for GitHubClient {
                 "separation of duties: reviewer is the author".to_owned(),
             ));
         }
+        let existing = self
+            .send(self.request(
+                Method::Get,
+                &format!("/repos/{}/pulls/{pr_number}/reviews", repo.full_name()),
+                None,
+            ))
+            .await?;
+        if let Ok(value) = serde_json::from_str::<Value>(&existing.body)
+            && let Some(reviews) = value.as_array()
+            && reviews
+                .iter()
+                .any(|review| review["user"]["login"].as_str() == Some(reviewer))
+        {
+            return Ok(());
+        }
         let event = match verdict {
             ReviewVerdict::Approved => "APPROVE",
             ReviewVerdict::ChangesRequested => "REQUEST_CHANGES",
@@ -1118,6 +1161,21 @@ impl ScmProvider for GitHubClient {
         }
         if checks != CheckStatus::Green {
             return Err(ScmError::Conflict("checks are not green".to_owned()));
+        }
+        let existing = self
+            .send(self.request(
+                Method::Get,
+                &format!("/repos/{}/pulls/{pr_number}", repo.full_name()),
+                None,
+            ))
+            .await?;
+        if let Ok(value) = serde_json::from_str::<Value>(&existing.body)
+            && value["merged"].as_bool() == Some(true)
+            && let Some(sha) = value["merge_commit_sha"].as_str()
+        {
+            return Ok(MergeOutcome {
+                merge_sha: sha.to_owned(),
+            });
         }
         let body = json!({"merge_method": "squash"}).to_string();
         let response = self
@@ -1424,7 +1482,10 @@ mod tests {
 
     #[test]
     fn merge_requires_separation_and_green_checks() {
-        let (client, _) = client(vec![response(200, r#"{"sha":"merge-sha"}"#)]);
+        let (client, _) = client(vec![
+            response(200, r#"{"merged":false}"#),
+            response(200, r#"{"sha":"merge-sha"}"#),
+        ]);
         let repo = repo();
         assert_eq!(
             futures::executor::block_on(client.merge_pull_request(

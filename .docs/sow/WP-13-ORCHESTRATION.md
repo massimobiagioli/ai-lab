@@ -378,3 +378,4 @@ Outputs are stored in `run_steps` (type `verification`) and attached to the PR b
 2026-11-07 | build | crates/orchestrator/src/{worker,wired,postgres}.rs | SCM recovery; max_concurrent_cards/lab budget eligibility; 53 tests | adapter idempotency/metrics/adapters open | QA review
 2026-11-07 | build | crates/orchestrator/src/postgres.rs | paused-lab eligibility; 53 tests | adapter idempotency/metrics/adapters open | QA review
 2026-11-07 | build | crates/orchestrator/src/postgres.rs | run trace_id persisted; 53 tests | adapter idempotency/metrics/adapters open | QA review
+2026-11-07 | build | crates/scm/src/lib.rs | GitHub commit/review/merge idempotency; 11 scm tests | metrics/adapters/E2E open | QA review
