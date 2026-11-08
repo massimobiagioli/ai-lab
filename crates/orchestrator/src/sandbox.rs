@@ -156,19 +156,19 @@ impl SandboxSpec {
         if worktree_ref.is_empty() || worktree_ref.starts_with('/') || worktree_ref.contains("..") {
             return Err(SandboxError::Validation("invalid worktree ref".to_owned()));
         }
-        if !(100..=4_000).contains(&cpu_millis) {
+        if !(1_000..=4_000).contains(&cpu_millis) {
             return Err(SandboxError::Validation(
-                "cpu_millis must be 100-4000".to_owned(),
+                "cpu_millis must be 1000-4000".to_owned(),
             ));
         }
-        if !(128..=8_192).contains(&memory_mb) {
+        if !(1_024..=8_192).contains(&memory_mb) {
             return Err(SandboxError::Validation(
-                "memory_mb must be 128-8192".to_owned(),
+                "memory_mb must be 1024-8192".to_owned(),
             ));
         }
-        if !(1..=7_200).contains(&timeout_s) {
+        if !(1..=2_700).contains(&timeout_s) {
             return Err(SandboxError::Validation(
-                "timeout_s must be 1-7200".to_owned(),
+                "timeout_s must be 1-2700".to_owned(),
             ));
         }
         egress.validate()?;
@@ -434,7 +434,7 @@ mod tests {
             "ailab/runner@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
             "worktrees/run-1",
             1_000,
-            512,
+            1_024,
             900,
             EgressPolicy::Allowlist(vec!["crates.io".to_owned()]),
         )

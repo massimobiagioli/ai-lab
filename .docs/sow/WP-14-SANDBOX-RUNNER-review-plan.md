@@ -41,7 +41,8 @@
 - [x] HTTP API auth/idempotency/exec policy/delete/health — verified in tests.
 - [x] Docker isolation host config (read-only, cap drop, non-root, PIDs, no socket, worktree-only bind) and output caps — unit test.
 - [x] Tool registry: unknown tool, role, missing argument, path and command denials — 5 registry tests.
-- [ ] AC live escape/egress/token-load execution — Docker host suite WP-21 and token/egress wiring WP-13.
+- [x] CPU/memory/timeout bounds aligned (1000–4000 mCPU, 1024–8192 MB, ≤2700 s), 20 KB output cap, `TOOL_TIMEOUT`, role-aware in-memory policy.
+- [ ] Live escape/egress/token-load execution on the Docker host — WP-21.
 
 ## 5. Implementation and tests
 

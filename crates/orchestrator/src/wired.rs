@@ -236,7 +236,7 @@ impl RunExecutor for WiredExecutor {
             IMAGE,
             format!("run-{}", run.run_id),
             1_000,
-            512,
+            1_024,
             2_700,
             EgressPolicy::Disabled,
         )

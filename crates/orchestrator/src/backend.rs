@@ -24,6 +24,9 @@ pub enum BackendError {
     /// The sandbox does not exist.
     #[error("sandbox not found")]
     NotFound,
+    /// The command timed out.
+    #[error("tool timeout")]
+    Timeout,
     /// Backend failure.
     #[error("backend error: {0}")]
     Internal(String),
@@ -94,6 +97,7 @@ pub trait SandboxBackend: Send + Sync {
 
 struct MemoryRecord {
     sandbox: Sandbox,
+    role: AgentRole,
     id: String,
     created_at: DateTime<Utc>,
     ended_at: Option<DateTime<Utc>>,
@@ -120,7 +124,7 @@ impl SandboxBackend for InMemoryBackend {
     async fn create(
         &self,
         spec: &SandboxSpec,
-        _role: AgentRole,
+        role: AgentRole,
     ) -> Result<CreatedSandbox, BackendError> {
         if let Ok(by_run) = self.by_run.lock()
             && let Some(existing) = by_run.get(&spec.run_id)
@@ -139,6 +143,7 @@ impl SandboxBackend for InMemoryBackend {
         let created_at = Utc::now();
         let record = MemoryRecord {
             sandbox,
+            role,
             id: id.clone(),
             created_at,
             ended_at: None,
@@ -194,12 +199,12 @@ impl SandboxBackend for InMemoryBackend {
         _timeout_s: u64,
     ) -> Result<ExecOutcome, BackendError> {
         let start = std::time::Instant::now();
-        let policy = ToolPolicy::for_role(AgentRole::Dev);
         let mut inner = self
             .inner
             .lock()
             .map_err(|_| BackendError::Internal("sandbox lock poisoned".to_owned()))?;
         let record = inner.get_mut(sandbox_id).ok_or(BackendError::NotFound)?;
+        let policy = ToolPolicy::for_role(record.role);
         record
             .sandbox
             .exec(call, &policy)
@@ -239,7 +244,7 @@ mod tests {
             "ailab/runner@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
             "worktrees/run-1",
             1_000,
-            512,
+            1_024,
             900,
             EgressPolicy::Allowlist(vec!["crates.io".to_owned()]),
         )

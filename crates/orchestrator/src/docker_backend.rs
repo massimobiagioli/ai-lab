@@ -83,7 +83,7 @@ impl DockerBackend {
 }
 
 /// Maximum captured exec output per stream.
-pub const OUTPUT_CAP_BYTES: usize = 1024 * 1024;
+pub const OUTPUT_CAP_BYTES: usize = 20 * 1024;
 
 fn truncate(mut value: String) -> String {
     if value.len() > OUTPUT_CAP_BYTES {
@@ -315,7 +315,7 @@ impl SandboxBackend for DockerBackend {
                 duration_ms: u64::try_from(start.elapsed().as_millis()).unwrap_or(u64::MAX),
             }),
             Ok(Err(error)) => Err(error),
-            Err(_) => Err(BackendError::Internal("exec timed out".to_owned())),
+            Err(_) => Err(BackendError::Timeout),
         }
     }
 
@@ -344,7 +344,7 @@ mod tests {
             "debian:trixie-slim@sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2",
             "escape-drill",
             1_000,
-            256,
+            1_024,
             60,
             EgressPolicy::Disabled,
         )

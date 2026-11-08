@@ -154,6 +154,11 @@ impl From<BackendError> for ApiError {
                 code: "NOT_FOUND",
                 message: "sandbox not found".to_owned(),
             },
+            BackendError::Timeout => Self {
+                status: StatusCode::GATEWAY_TIMEOUT,
+                code: "TOOL_TIMEOUT",
+                message: "tool execution timed out".to_owned(),
+            },
             BackendError::Internal(message) => Self::internal(message),
         }
     }
@@ -351,7 +356,7 @@ mod tests {
             "image": "ailab/runner@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
             "worktree_ref": "worktrees/run-1",
             "cpu": 1000,
-            "memory_mb": 512,
+            "memory_mb": 1024,
             "timeout_s": 900,
             "egress": {"Allowlist": ["crates.io"]}
         })
