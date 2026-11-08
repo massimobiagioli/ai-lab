@@ -2,6 +2,8 @@
 //! WebSocket envelope with resumable sequencing and event backfill.
 #![forbid(unsafe_code)]
 
+pub mod server;
+
 use ailab_domain::{EventId, LabId};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -316,6 +318,8 @@ mod contract_tests {
         let openapi = read(".docs/product/api/openapi.json");
         assert_eq!(openapi["openapi"], "3.1.0");
         assert!(openapi["paths"]["/cards/{id}/transition"]["post"].is_object());
+        assert!(openapi["paths"]["/runs/{id}"]["get"].is_object());
+        assert!(openapi["paths"]["/runs/{id}/cancel"]["post"].is_object());
         assert!(openapi["components"]["schemas"]["Problem"].is_object());
 
         let asyncapi = read(".docs/product/api/asyncapi.json");

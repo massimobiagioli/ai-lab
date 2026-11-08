@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | WP ID | `WP-16` |
-| Status | **done** |
+| Status | **progress** |
 | Owner | Dev |
 | Milestone | M2 / M5 |
 | Estimate | 21 points |
@@ -19,6 +19,7 @@
 | 2026-11-07 | — | `ready` | Tech Lead | Initial SOW baseline |
 | 2026-11-07 | `ready` | `progress` | Dev (agent) | WP-06 and WP-09 done |
 | 2026-11-07 | `progress` | `done` | Dev (agent) | Contracts, rate limits, origin/JSON guards, WS envelope/backfill and deterministic OpenAPI/AsyncAPI delivered; server/DTO/auth in the WP-16 follow-up |
+| 2026-11-07 | `done` | `progress` | Tech Lead (agent) | WP review (CR-0010): the axum edge server, full DTO/middleware, WS hub, idempotency store, outbox fan-out and telemetry are not implemented; only contract types exist |
 
 ---
 
@@ -313,3 +314,4 @@ Server → client:
 2026-11-07 | T03 | .docs/product/api/README.md | JSON contract + drift check | server/DTO/auth middleware deferred WP-16 follow-up | WP-13
 
 **Delivery note.** The contract layer is delivered: pagination, rate-limit policy, origin/JSON guards, WebSocket envelope, resumable `events_after`, deterministic OpenAPI/AsyncAPI contracts and drift checking. The axum server, DTO mapping and auth middleware are the WP-16 follow-up.
+2026-11-07 | build | crates/api/src/server.rs, crates/api/src/main.rs, .docs/product/api/openapi.source.json | health/run endpoints, Problem Details, rate limiter, WS hello; 12 api tests; openapi regenerated | full DTO/WS-hub/outbox/telemetry open (CR-0010) | build phase

@@ -1,3 +1,7 @@
+[dev-dependencies]
+http-body-util = "0.1"
+tower = { version = "0.5", features = ["util"] }
+
 [package]
 name = "ailab-api"
 version.workspace = true
@@ -13,6 +17,8 @@ workspace = true
 
 [dependencies]
 ailab-application = { path = "../application" }
+axum = { version = "0.8", features = ["ws"] }
+tokio = { version = "1", features = ["rt-multi-thread", "net", "macros"] }
 ailab-domain = { path = "../domain" }
 ailab-infrastructure = { path = "../infrastructure" }
 chrono = { version = "0.4", features = ["serde"] }

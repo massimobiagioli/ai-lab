@@ -6,38 +6,57 @@
     "description": "REST contract for the local-first AI-Lab product."
   },
   "servers": [
-    { "url": "http://127.0.0.1:8080/api/v1", "description": "Default loopback server" }
+    {
+      "url": "http://127.0.0.1:8080/api/v1",
+      "description": "Default loopback server"
+    }
   ],
   "paths": {
     "/health/live": {
       "get": {
         "operationId": "healthLive",
-        "responses": { "200": { "description": "Process alive" } }
+        "responses": {
+          "200": {
+            "description": "Process alive"
+          }
+        }
       }
     },
     "/health/ready": {
       "get": {
         "operationId": "healthReady",
         "responses": {
-          "200": { "description": "Ready" },
-          "503": { "description": "Dependencies not ready" }
+          "200": {
+            "description": "Ready"
+          },
+          "503": {
+            "description": "Dependencies not ready"
+          }
         }
       }
     },
     "/providers": {
       "get": {
         "operationId": "listProviders",
-        "responses": { "200": { "description": "Providers" } }
+        "responses": {
+          "200": {
+            "description": "Providers"
+          }
+        }
       },
       "post": {
         "operationId": "createProvider",
         "responses": {
-          "201": { "description": "Created; only last4 is readable" },
+          "201": {
+            "description": "Created; only last4 is readable"
+          },
           "422": {
             "description": "Validation failed",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/Problem" }
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
           }
@@ -47,57 +66,117 @@
     "/models": {
       "get": {
         "operationId": "listModels",
-        "responses": { "200": { "description": "Models" } }
+        "responses": {
+          "200": {
+            "description": "Models"
+          }
+        }
       }
     },
     "/projects": {
       "get": {
         "operationId": "listProjects",
-        "responses": { "200": { "description": "Projects" } }
+        "responses": {
+          "200": {
+            "description": "Projects"
+          }
+        }
       },
       "post": {
         "operationId": "createProject",
-        "responses": { "201": { "description": "Created" } }
+        "responses": {
+          "201": {
+            "description": "Created"
+          }
+        }
       }
     },
     "/projects/{id}/board": {
       "get": {
         "operationId": "getBoard",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
         ],
-        "responses": { "200": { "description": "Board projection" } }
+        "responses": {
+          "200": {
+            "description": "Board projection"
+          }
+        }
       }
     },
     "/cards/{id}": {
       "get": {
         "operationId": "getCard",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
         ],
-        "responses": { "200": { "description": "Card" } }
+        "responses": {
+          "200": {
+            "description": "Card"
+          }
+        }
       },
       "patch": {
         "operationId": "updateCard",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
         ],
-        "responses": { "200": { "description": "Updated card" } }
+        "responses": {
+          "200": {
+            "description": "Updated card"
+          }
+        }
       }
     },
     "/cards/{id}/transition": {
       "post": {
         "operationId": "transitionCard",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
         ],
         "responses": {
-          "200": { "description": "Transition applied" },
+          "200": {
+            "description": "Transition applied"
+          },
           "409": {
             "description": "Version conflict",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/Problem" }
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
           },
@@ -105,7 +184,9 @@
             "description": "Invalid transition or guard",
             "content": {
               "application/problem+json": {
-                "schema": { "$ref": "#/components/schemas/Problem" }
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
               }
             }
           }
@@ -116,18 +197,167 @@
       "get": {
         "operationId": "backfillEvents",
         "parameters": [
-          { "name": "after", "in": "query", "required": false, "schema": { "type": "integer", "format": "int64" } }
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
         ],
-        "responses": { "200": { "description": "Events after the cursor" } }
+        "responses": {
+          "200": {
+            "description": "Events after the cursor"
+          }
+        }
       }
     },
     "/labs/{id}/metrics": {
       "get": {
         "operationId": "getMetrics",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
         ],
-        "responses": { "200": { "description": "Flow metrics" } }
+        "responses": {
+          "200": {
+            "description": "Flow metrics"
+          }
+        }
+      }
+    },
+    "/runs/{id}": {
+      "get": {
+        "summary": "Run summary",
+        "tags": [
+          "runs"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/runs/{id}/steps": {
+      "get": {
+        "summary": "Run steps",
+        "tags": [
+          "runs"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/runs/{id}/cancel": {
+      "post": {
+        "summary": "Cancel a run",
+        "tags": [
+          "runs"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/labs/{id}/runs": {
+      "get": {
+        "summary": "List lab runs",
+        "tags": [
+          "runs"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/cards/{id}/runs": {
+      "post": {
+        "summary": "Queue a run for a card",
+        "tags": [
+          "runs"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created"
+          }
+        }
       }
     }
   },
@@ -135,34 +365,72 @@
     "schemas": {
       "Problem": {
         "type": "object",
-        "required": ["type", "title", "status", "code", "detail"],
+        "required": [
+          "type",
+          "title",
+          "status",
+          "code",
+          "detail"
+        ],
         "properties": {
-          "type": { "type": "string", "format": "uri" },
-          "title": { "type": "string" },
-          "status": { "type": "integer" },
-          "code": { "type": "string" },
-          "detail": { "type": "string" },
+          "type": {
+            "type": "string",
+            "format": "uri"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "code": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          },
           "violations": {
             "type": "array",
             "items": {
               "type": "object",
               "properties": {
-                "rule": { "type": "string" },
-                "field": { "type": "string" },
-                "message": { "type": "string" }
+                "rule": {
+                  "type": "string"
+                },
+                "field": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
               }
             }
           },
-          "trace_id": { "type": "string" }
+          "trace_id": {
+            "type": "string"
+          }
         }
       },
       "Page": {
         "type": "object",
-        "required": ["data"],
+        "required": [
+          "data"
+        ],
         "properties": {
-          "data": { "type": "array", "items": {} },
-          "next_cursor": { "type": ["string", "null"] },
-          "total_estimate": { "type": "integer", "format": "int64" }
+          "data": {
+            "type": "array",
+            "items": {}
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "total_estimate": {
+            "type": "integer",
+            "format": "int64"
+          }
         }
       }
     }

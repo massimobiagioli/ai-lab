@@ -1,7 +1,7 @@
 //! AI-Lab `api` binary.
 //!
-//! The HTTP surface lands with WP-16. WP-03 delivers the platform health probe;
-//! WP-05 adds the startup exposure and master-key guard.
+//! Serves the WP-16 edge router; WP-03 delivers the health probe and WP-05 the
+//! startup exposure and master-key guard.
 #![forbid(unsafe_code)]
 
 use std::time::Duration;
@@ -39,9 +39,28 @@ fn main() {
         std::process::exit(78);
     }
 
-    loop {
-        std::thread::sleep(Duration::from_secs(3600));
-    }
+    let listen = std::env::var("AILAB_API_LISTEN").unwrap_or_else(|_| "0.0.0.0:3000".to_owned());
+    let runtime = match tokio::runtime::Runtime::new() {
+        Ok(runtime) => runtime,
+        Err(error) => {
+            eprintln!("api: cannot start the async runtime: {error}");
+            std::process::exit(1);
+        }
+    };
+    runtime.block_on(async move {
+        let app = ailab_api::server::router(ailab_api::server::AppState::new());
+        let listener = match tokio::net::TcpListener::bind(&listen).await {
+            Ok(listener) => listener,
+            Err(error) => {
+                eprintln!("api: cannot bind {listen}: {error}");
+                std::process::exit(1);
+            }
+        };
+        if let Err(error) = axum::serve(listener, app).await {
+            eprintln!("api: server error: {error}");
+            std::process::exit(1);
+        }
+    });
 }
 
 fn validate_startup(

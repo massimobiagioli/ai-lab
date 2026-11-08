@@ -13,6 +13,7 @@ This directory is the canonical record of AI-Lab change requests. Each CR is a s
 | [CR-0007](./CR-0007.md) | Add the least-privilege database role passwords to Appendix D.4 | approved | Tech Lead | 2026-11-07 | ADR-0003 |
 | [CR-0008](./CR-0008.md) | Reopen WP-13 to deliver the missing orchestration pipeline | approved | Tech Lead | 2026-11-07 | — |
 | [CR-0009](./CR-0009.md) | Re-baseline WP-13/WP-14 and schedule the platform build phase | approved | Tech Lead | 2026-11-07 | — |
+| [CR-0010](./CR-0010.md) | Reopen WP-16 for the edge server build | approved | Tech Lead | 2026-11-07 | ADR-0014 |
 
 Rules:
 
