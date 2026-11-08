@@ -21,7 +21,10 @@
 - [x] Rate limits and origin/JSON guards — evidence: `RateLimiter`, `RateLimitPolicy`, `OriginPolicy`.
 - [x] WS envelope/`events_after`/hello — evidence: `lib.rs`, `server.rs`.
 - [x] Axum router with health and run endpoints — evidence: `crates/api/src/server.rs` (increment).
-- [ ] Full DTOs/OpenAPI annotations, idempotency store, WS hub/backpressure/heartbeat, outbox fan-out, telemetry ingest, Swagger UI, contract/perf tests.
+- [x] Bearer auth middleware (when `AILAB_API_TOKEN` is set; health stays open).
+- [x] In-memory idempotency store (24 h) for the POST endpoints.
+- [x] WS hub with live event broadcast and 20 s heartbeat.
+- [ ] Full DTO/OpenAPI annotations, Redis idempotency, backpressure, outbox fan-out, telemetry ingest, Swagger UI, contract/perf tests.
 
 ## 3. Deliverables
 
@@ -30,18 +33,22 @@
 - [x] Pagination, rate limiting, origin/JSON guards — increment.
 - [x] WS hello/subscribe + `events_after` — increment.
 - [x] OpenAPI determinism with the run paths — `make openapi`.
-- [ ] Full DTO surface, idempotency store, WS backpressure/heartbeat, outbox fan-out, telemetry ingest, Swagger UI — open.
+- [x] Auth middleware, idempotency store, WS broadcast + heartbeat — increment.
+- [ ] Full DTO surface, Redis idempotency, backpressure, outbox fan-out, telemetry ingest, Swagger UI — open.
 
 ## 4. Acceptance criteria
 
 - [x] Health and run endpoints return the expected status/payload — API tests.
 - [x] 404 returns a valid RFC 9457 Problem — test.
 - [x] Rate limits are class-specific — test.
-- [ ] Auth/exposure middleware over the full router, idempotency replay, WS backpressure/heartbeat, outbox fan-out, telemetry, perf — open.
+- [x] Auth middleware over the protected router + health open — test.
+- [x] Idempotency replay for POST — test.
+- [x] WS hello/subscribe + live broadcast + heartbeat — implementation.
+- [ ] WS backpressure under load, outbox fan-out/Redis, telemetry ingest, perf — open.
 
 ## 5. Implementation and tests
 
-- [x] `server.rs` router, in-memory `RunStore`, Problem Details, rate limiter, WS handshake — 3 API tests (12 total in the crate).
+- [x] `server.rs` router, in-memory `RunStore`, Problem Details, rate limiter, auth, idempotency, WS hub/heartbeat — 11 API tests + 2 contract tests.
 - [ ] Postgres/Redis adapters, full DTOs, WS hub — build phase.
 
 ## 6. Security and quality gates

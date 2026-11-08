@@ -315,3 +315,4 @@ Server → client:
 
 **Delivery note.** The contract layer is delivered: pagination, rate-limit policy, origin/JSON guards, WebSocket envelope, resumable `events_after`, deterministic OpenAPI/AsyncAPI contracts and drift checking. The axum server, DTO mapping and auth middleware are the WP-16 follow-up.
 2026-11-07 | build | crates/api/src/server.rs, crates/api/src/main.rs, .docs/product/api/openapi.source.json | health/run endpoints, Problem Details, rate limiter, WS hello; 12 api tests; openapi regenerated | full DTO/WS-hub/outbox/telemetry open (CR-0010) | build phase
+2026-11-07 | build | crates/api/src/server.rs | bearer auth middleware; 24h idempotency store; WS broadcast + 20s heartbeat; 11 API + 2 contract tests | full DTO/Redis/backpressure/outbox/telemetry open (CR-0010) | build phase

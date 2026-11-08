@@ -18,7 +18,7 @@ workspace = true
 [dependencies]
 ailab-application = { path = "../application" }
 axum = { version = "0.8", features = ["ws"] }
-tokio = { version = "1", features = ["rt-multi-thread", "net", "macros"] }
+tokio = { version = "1", features = ["rt-multi-thread", "net", "macros", "time", "sync"] }
 ailab-domain = { path = "../domain" }
 ailab-infrastructure = { path = "../infrastructure" }
 chrono = { version = "0.4", features = ["serde"] }

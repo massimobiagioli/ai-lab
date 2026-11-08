@@ -2,21 +2,25 @@
 
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
-use ailab_application::ProblemDetails;
+use ailab_application::{ProblemDetails, Secret};
 use ailab_domain::{DomainError, RunId};
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
-use axum::extract::{Path, Query, State};
+use axum::extract::{Path, Query, Request, State};
 use axum::http::{HeaderMap, StatusCode};
+use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use chrono::{DateTime, Utc};
 use serde::Serialize;
+use tokio::sync::broadcast;
+use tokio::time::interval;
 
 use crate::{
-    EventEnvelope, Page, PageQuery, RateLimitKind, RateLimitPolicy, WsClientMessage, hello,
+    EventEnvelope, Page, PageQuery, RateLimitKind, RateLimitPolicy, WsClientMessage,
+    WsServerMessage, hello,
 };
 
 /// Run summary.
@@ -216,6 +220,40 @@ impl RateLimiter {
     }
 }
 
+struct StoredResponse {
+    status: u16,
+    body: serde_json::Value,
+    at: Instant,
+}
+
+#[derive(Default)]
+struct IdempotencyStore {
+    entries: Mutex<BTreeMap<String, StoredResponse>>,
+}
+
+impl IdempotencyStore {
+    fn get(&self, key: &str) -> Option<(u16, serde_json::Value)> {
+        let mut entries = self.entries.lock().ok()?;
+        entries.retain(|_, response| response.at.elapsed() < Duration::from_hours(24));
+        entries
+            .get(key)
+            .map(|response| (response.status, response.body.clone()))
+    }
+
+    fn put(&self, key: &str, status: u16, body: serde_json::Value) {
+        if let Ok(mut entries) = self.entries.lock() {
+            entries.insert(
+                key.to_owned(),
+                StoredResponse {
+                    status,
+                    body,
+                    at: Instant::now(),
+                },
+            );
+        }
+    }
+}
+
 /// Application state.
 #[derive(Clone)]
 pub struct AppState {
@@ -223,6 +261,9 @@ pub struct AppState {
     pub store: Arc<dyn RunStore>,
     /// Rate limiter.
     pub limiter: Arc<RateLimiter>,
+    auth: Option<Secret<String>>,
+    idempotency: Arc<IdempotencyStore>,
+    hub: broadcast::Sender<EventEnvelope>,
 }
 
 impl Default for AppState {
@@ -232,30 +273,49 @@ impl Default for AppState {
 }
 
 impl AppState {
-    /// Build with the in-memory store.
+    /// Build with the in-memory store and the environment token.
     #[must_use]
     pub fn new() -> Self {
-        Self {
-            store: Arc::new(InMemoryRunStore::new()),
-            limiter: Arc::new(RateLimiter::new(RateLimitPolicy::default())),
-        }
+        let token = std::env::var("AILAB_API_TOKEN")
+            .ok()
+            .filter(|value| !value.is_empty());
+        Self::with_store_and_token(Arc::new(InMemoryRunStore::new()), token)
     }
 
     /// Build with a specific store.
     #[must_use]
     pub fn with_store(store: Arc<dyn RunStore>) -> Self {
+        Self::with_store_and_token(store, None)
+    }
+
+    /// Build with a specific store and optional bearer token.
+    #[must_use]
+    pub fn with_store_and_token(store: Arc<dyn RunStore>, token: Option<String>) -> Self {
+        let (hub, _) = broadcast::channel(1_024);
         Self {
             store,
             limiter: Arc::new(RateLimiter::new(RateLimitPolicy::default())),
+            auth: token.map(Secret::new),
+            idempotency: Arc::new(IdempotencyStore::default()),
+            hub,
         }
+    }
+
+    /// Publish an event to live WebSocket subscribers.
+    pub fn publish(&self, event: EventEnvelope) -> usize {
+        self.hub.send(event).unwrap_or(0)
+    }
+
+    /// Subscribe to live events.
+    #[must_use]
+    pub fn subscribe(&self) -> broadcast::Receiver<EventEnvelope> {
+        self.hub.subscribe()
     }
 }
 
 /// Build the edge router.
 pub fn router(state: AppState) -> Router {
-    Router::new()
-        .route("/api/v1/health/live", get(health_live))
-        .route("/api/v1/health/ready", get(health_ready))
+    let protected = Router::new()
         .route("/api/v1/runs/{id}", get(get_run))
         .route("/api/v1/runs/{id}/steps", get(get_steps))
         .route("/api/v1/runs/{id}/cancel", post(cancel_run))
@@ -263,7 +323,49 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/labs/{id}/metrics", get(get_metrics))
         .route("/api/v1/cards/{id}/runs", post(enqueue_run))
         .route("/ws", get(ws_upgrade))
+        .layer(middleware::from_fn_with_state(state.clone(), auth));
+    Router::new()
+        .route("/api/v1/health/live", get(health_live))
+        .route("/api/v1/health/ready", get(health_ready))
+        .merge(protected)
         .with_state(state)
+}
+
+async fn auth(State(state): State<AppState>, request: Request, next: Next) -> Response {
+    let Some(expected) = state.auth.as_ref() else {
+        return next.run(request).await;
+    };
+    let header = request
+        .headers()
+        .get("authorization")
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.strip_prefix("Bearer "));
+    let query = request.uri().query().and_then(|query| {
+        query
+            .split('&')
+            .find_map(|pair| pair.strip_prefix("token="))
+    });
+    if ailab_infrastructure::exposure::token_matches(expected.expose(), header.or(query)) {
+        next.run(request).await
+    } else {
+        unauthorized()
+    }
+}
+
+fn unauthorized() -> Response {
+    let mut problem = ProblemDetails::from(DomainError::policy(
+        "UNAUTHORIZED",
+        "missing or invalid API token",
+    ));
+    problem.status = 401;
+    (StatusCode::UNAUTHORIZED, Json(problem)).into_response()
+}
+
+fn idempotency_key(headers: &HeaderMap) -> Option<String> {
+    headers
+        .get("idempotency-key")
+        .and_then(|value| value.to_str().ok())
+        .map(ToOwned::to_owned)
 }
 
 fn problem(error: DomainError) -> Response {
@@ -362,8 +464,21 @@ async fn cancel_run(
     if let Err(response) = enforce(&state, &headers, RateLimitKind::Write) {
         return response;
     }
+    let key = idempotency_key(&headers);
+    if let Some(key) = key.as_deref()
+        && let Some((status, body)) = state.idempotency.get(key)
+    {
+        let status = StatusCode::from_u16(status).unwrap_or(StatusCode::OK);
+        return (status, Json(body)).into_response();
+    }
     match state.store.cancel(&id) {
-        Ok(run) => Json(run).into_response(),
+        Ok(run) => {
+            let body = serde_json::to_value(&run).unwrap_or(serde_json::Value::Null);
+            if let Some(key) = key.as_deref() {
+                state.idempotency.put(key, 200, body.clone());
+            }
+            Json(body).into_response()
+        }
         Err(StoreError::NotFound) => problem(DomainError::NotFound),
         Err(StoreError::Conflict) => problem(DomainError::policy(
             "INVALID_RUN_STATE",
@@ -400,8 +515,21 @@ async fn enqueue_run(
     if let Err(response) = enforce(&state, &headers, RateLimitKind::Write) {
         return response;
     }
+    let key = idempotency_key(&headers);
+    if let Some(key) = key.as_deref()
+        && let Some((status, body)) = state.idempotency.get(key)
+    {
+        let status = StatusCode::from_u16(status).unwrap_or(StatusCode::OK);
+        return (status, Json(body)).into_response();
+    }
     match state.store.enqueue_card(&id) {
-        Ok(run) => (StatusCode::CREATED, Json(run)).into_response(),
+        Ok(run) => {
+            let body = serde_json::to_value(&run).unwrap_or(serde_json::Value::Null);
+            if let Some(key) = key.as_deref() {
+                state.idempotency.put(key, 201, body.clone());
+            }
+            (StatusCode::CREATED, Json(body)).into_response()
+        }
         Err(StoreError::NotFound) => problem(DomainError::NotFound),
         Err(StoreError::Conflict) => problem(DomainError::policy(
             "RUN_NOT_ALLOWED",
@@ -427,6 +555,7 @@ async fn ws_upgrade(ws: WebSocketUpgrade, State(state): State<AppState>) -> Resp
 }
 
 async fn handle_socket(mut socket: WebSocket, state: AppState) {
+    let mut events = state.subscribe();
     let seq = state
         .store
         .events_after(0)
@@ -438,20 +567,38 @@ async fn handle_socket(mut socket: WebSocket, state: AppState) {
     {
         return;
     }
-    while let Some(Ok(message)) = socket.recv().await {
-        match message {
-            Message::Text(text) => {
-                if let Ok(WsClientMessage::Subscribe { topics }) =
-                    serde_json::from_str(text.as_str())
-                {
-                    let reply = hello(Utc::now(), seq, topics);
-                    if let Ok(body) = serde_json::to_string(&reply) {
-                        let _ = socket.send(Message::Text(body.into())).await;
+    let mut heartbeat = interval(Duration::from_secs(20));
+    loop {
+        tokio::select! {
+            message = socket.recv() => {
+                match message {
+                    Some(Ok(Message::Text(text))) => {
+                        if let Ok(WsClientMessage::Subscribe { topics }) =
+                            serde_json::from_str(text.as_str())
+                        {
+                            let reply = hello(Utc::now(), seq, topics);
+                            if let Ok(body) = serde_json::to_string(&reply) {
+                                let _ = socket.send(Message::Text(body.into())).await;
+                            }
+                        }
                     }
+                    Some(Ok(Message::Close(_))) | None => break,
+                    _ => {}
                 }
             }
-            Message::Close(_) => break,
-            _ => {}
+            event = events.recv() => {
+                if let Ok(event) = event
+                    && let Ok(body) = serde_json::to_string(&WsServerMessage::Event { event })
+                    && socket.send(Message::Text(body.into())).await.is_err()
+                {
+                    break;
+                }
+            }
+            _ = heartbeat.tick() => {
+                if socket.send(Message::Ping(Vec::new().into())).await.is_err() {
+                    break;
+                }
+            }
         }
     }
 }
@@ -489,11 +636,15 @@ mod tests {
     }
 
     fn request(method: &str, uri: &str) -> Request<Body> {
-        Request::builder()
-            .method(method)
-            .uri(uri)
-            .body(Body::empty())
-            .expect("request")
+        request_with(method, uri, &[])
+    }
+
+    fn request_with(method: &str, uri: &str, headers: &[(&str, &str)]) -> Request<Body> {
+        let mut builder = Request::builder().method(method).uri(uri);
+        for (name, value) in headers {
+            builder = builder.header(*name, *value);
+        }
+        builder.body(Body::empty()).expect("request")
     }
 
     #[tokio::test]
@@ -549,6 +700,63 @@ mod tests {
         let body = runs.into_body().collect().await.expect("body").to_bytes();
         let value: serde_json::Value = serde_json::from_slice(&body).expect("json");
         assert!(value["data"].is_array());
+    }
+
+    #[tokio::test]
+    async fn auth_is_required_when_configured() {
+        let store = InMemoryRunStore::new();
+        let token = "x".repeat(32);
+        let state = AppState::with_store_and_token(Arc::new(store), Some(token.clone()));
+        let app = router(state);
+        let unauthenticated = app
+            .clone()
+            .oneshot(request("GET", "/api/v1/runs/run-1"))
+            .await
+            .expect("response");
+        assert_eq!(unauthenticated.status(), StatusCode::UNAUTHORIZED);
+        let health = app
+            .clone()
+            .oneshot(request("GET", "/api/v1/health/live"))
+            .await
+            .expect("response");
+        assert_eq!(health.status(), StatusCode::OK);
+        let authenticated = app
+            .oneshot(request_with(
+                "GET",
+                "/api/v1/runs/run-1",
+                &[("authorization", &format!("Bearer {token}"))],
+            ))
+            .await
+            .expect("response");
+        assert_eq!(authenticated.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn idempotency_key_replays_the_first_response() {
+        let app = router(AppState::with_store(Arc::new(InMemoryRunStore::new())));
+        let first = app
+            .clone()
+            .oneshot(request_with(
+                "POST",
+                "/api/v1/cards/card-1/runs",
+                &[("idempotency-key", "key-1")],
+            ))
+            .await
+            .expect("response");
+        assert_eq!(first.status(), StatusCode::CREATED);
+        let first_body = first.into_body().collect().await.expect("body").to_bytes();
+        let first_value: serde_json::Value = serde_json::from_slice(&first_body).expect("json");
+        let second = app
+            .oneshot(request_with(
+                "POST",
+                "/api/v1/cards/card-1/runs",
+                &[("idempotency-key", "key-1")],
+            ))
+            .await
+            .expect("response");
+        let second_body = second.into_body().collect().await.expect("body").to_bytes();
+        let second_value: serde_json::Value = serde_json::from_slice(&second_body).expect("json");
+        assert_eq!(first_value["id"], second_value["id"]);
     }
 
     #[tokio::test]
