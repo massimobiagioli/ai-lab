@@ -4,7 +4,7 @@
 use std::fmt::Write as _;
 use std::sync::{Arc, Mutex};
 
-use ailab_domain::{AgentId, AgentRole};
+use ailab_domain::{AgentId, AgentRole, Money};
 use ailab_llm::{LlmProvider, LlmRequest, LlmToolCall};
 use ailab_scm::{
     BranchName, CheckStatus, FileChange, PullRequestRequest, RepoRef, ReviewVerdict, ScmProvider,
@@ -14,6 +14,7 @@ use chrono::Utc;
 
 use crate::backend::SandboxBackend;
 use crate::context::{ContextSection, build_context};
+use crate::orchestration::RunBudget;
 use crate::pipeline::{Handoff, HandoffState, RunPipeline, VerifyOutcome};
 use crate::sandbox::{EgressPolicy, SandboxSpec, ToolCall};
 use crate::worker::{ExecError, QueuedRun, RunExecutor};
@@ -30,6 +31,7 @@ pub struct WiredExecutor {
     card_key: String,
     author: String,
     reviewer: String,
+    budget: Mutex<RunBudget>,
     last: Mutex<Option<RunPipeline>>,
 }
 
@@ -52,6 +54,9 @@ impl WiredExecutor {
             card_key: card_key.into(),
             author: author.into(),
             reviewer: reviewer.into(),
+            budget: Mutex::new(RunBudget::new(
+                Money::from_microusd(5_000_000).unwrap_or(Money::ZERO),
+            )),
             last: Mutex::new(None),
         }
     }
@@ -89,6 +94,22 @@ impl WiredExecutor {
                 })
                 .await
                 .map_err(|error| ExecError::Transient(error.to_string()))?;
+            let cost = Money::from_microusd(1_000).unwrap_or(Money::ZERO);
+            let exhausted = self
+                .budget
+                .lock()
+                .map_err(|_| ExecError::Terminal("budget lock poisoned".to_owned()))?
+                .charge(cost)
+                .is_err();
+            if exhausted {
+                let _ = pipeline.escalate(
+                    "BUDGET_EXCEEDED",
+                    Money::ZERO,
+                    "run budget exhausted",
+                    Utc::now(),
+                );
+                return Err(ExecError::Terminal("BUDGET_EXCEEDED".to_owned()));
+            }
             if response.tool_calls.is_empty() {
                 return Ok(());
             }
@@ -325,8 +346,9 @@ impl RunExecutor for WiredExecutor {
                 .steps
                 .iter()
                 .any(|step| ailab_llm::contains_secret(&step.output));
+        let budget_remaining = self.budget.lock().map_or(true, |budget| budget.can_start());
         let stops = ailab_application::evaluate_hard_stops(&ailab_application::HardStopInputs {
-            budget_remaining: true,
+            budget_remaining,
             no_secrets,
             no_forbidden_path: true,
             no_force_push: true,

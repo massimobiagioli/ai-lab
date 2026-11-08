@@ -248,6 +248,7 @@ struct StoredResponse {
 #[derive(Default)]
 struct IdempotencyStore {
     entries: Mutex<BTreeMap<String, StoredResponse>>,
+    in_flight: Mutex<std::collections::BTreeSet<String>>,
 }
 
 impl IdempotencyStore {
@@ -257,6 +258,18 @@ impl IdempotencyStore {
         entries
             .get(key)
             .map(|response| (response.status, response.body.clone()))
+    }
+
+    fn try_start(&self, key: &str) -> bool {
+        self.in_flight
+            .lock()
+            .is_ok_and(|mut in_flight| in_flight.insert(key.to_owned()))
+    }
+
+    fn finish(&self, key: &str) {
+        if let Ok(mut in_flight) = self.in_flight.lock() {
+            in_flight.remove(key);
+        }
     }
 
     fn put(&self, key: &str, status: u16, body: serde_json::Value) {
@@ -428,11 +441,25 @@ fn unauthorized() -> Response {
     (StatusCode::UNAUTHORIZED, Json(problem)).into_response()
 }
 
-fn idempotency_key(headers: &HeaderMap) -> Option<String> {
-    headers
-        .get("idempotency-key")
-        .and_then(|value| value.to_str().ok())
-        .map(ToOwned::to_owned)
+fn idempotency_key(headers: &HeaderMap, method: &str, path: &str) -> Option<String> {
+    let raw = headers.get("idempotency-key")?.to_str().ok()?.trim();
+    if !(8..=128).contains(&raw.len()) {
+        return None;
+    }
+    Some(format!("{method}:{path}:{raw}"))
+}
+
+fn replay(status: u16, body: serde_json::Value) -> Response {
+    let status = StatusCode::from_u16(status).unwrap_or(StatusCode::OK);
+    (
+        status,
+        [(
+            axum::http::header::HeaderName::from_static("idempotent-replay"),
+            "true",
+        )],
+        Json(body),
+    )
+        .into_response()
 }
 
 fn problem(error: DomainError) -> Response {
@@ -536,26 +563,43 @@ async fn cancel_run(
     if let Err(response) = enforce(&state, &headers, RateLimitKind::Write) {
         return response;
     }
-    let key = idempotency_key(&headers);
-    if let Some(key) = key.as_deref()
-        && let Some((status, body)) = state.idempotency.get(key)
-    {
-        let status = StatusCode::from_u16(status).unwrap_or(StatusCode::OK);
-        return (status, Json(body)).into_response();
+    let path = format!("/runs/{id}/cancel");
+    let key = idempotency_key(&headers, "POST", &path);
+    if let Some(key) = key.as_deref() {
+        if let Some((status, body)) = state.idempotency.get(key) {
+            return replay(status, body);
+        }
+        if !state.idempotency.try_start(key) {
+            return problem(DomainError::policy(
+                "IDEMPOTENCY_IN_PROGRESS",
+                "a request with this key is in progress",
+            ));
+        }
     }
     match state.store.cancel(&id).await {
         Ok(run) => {
             let body = serde_json::to_value(&run).unwrap_or(serde_json::Value::Null);
             if let Some(key) = key.as_deref() {
                 state.idempotency.put(key, 200, body.clone());
+                state.idempotency.finish(key);
             }
             Json(body).into_response()
         }
-        Err(StoreError::NotFound) => problem(DomainError::NotFound),
-        Err(StoreError::Conflict) => problem(DomainError::policy(
-            "INVALID_RUN_STATE",
-            "the run cannot be cancelled in its current state",
-        )),
+        Err(StoreError::NotFound) => {
+            if let Some(key) = key.as_deref() {
+                state.idempotency.finish(key);
+            }
+            problem(DomainError::NotFound)
+        }
+        Err(StoreError::Conflict) => {
+            if let Some(key) = key.as_deref() {
+                state.idempotency.finish(key);
+            }
+            problem(DomainError::policy(
+                "INVALID_RUN_STATE",
+                "the run cannot be cancelled in its current state",
+            ))
+        }
     }
 }
 
@@ -587,26 +631,43 @@ async fn enqueue_run(
     if let Err(response) = enforce(&state, &headers, RateLimitKind::Write) {
         return response;
     }
-    let key = idempotency_key(&headers);
-    if let Some(key) = key.as_deref()
-        && let Some((status, body)) = state.idempotency.get(key)
-    {
-        let status = StatusCode::from_u16(status).unwrap_or(StatusCode::OK);
-        return (status, Json(body)).into_response();
+    let path = format!("/cards/{id}/runs");
+    let key = idempotency_key(&headers, "POST", &path);
+    if let Some(key) = key.as_deref() {
+        if let Some((status, body)) = state.idempotency.get(key) {
+            return replay(status, body);
+        }
+        if !state.idempotency.try_start(key) {
+            return problem(DomainError::policy(
+                "IDEMPOTENCY_IN_PROGRESS",
+                "a request with this key is in progress",
+            ));
+        }
     }
     match state.store.enqueue_card(&id).await {
         Ok(run) => {
             let body = serde_json::to_value(&run).unwrap_or(serde_json::Value::Null);
             if let Some(key) = key.as_deref() {
                 state.idempotency.put(key, 201, body.clone());
+                state.idempotency.finish(key);
             }
             (StatusCode::CREATED, Json(body)).into_response()
         }
-        Err(StoreError::NotFound) => problem(DomainError::NotFound),
-        Err(StoreError::Conflict) => problem(DomainError::policy(
-            "RUN_NOT_ALLOWED",
-            "a run cannot be queued for this card",
-        )),
+        Err(StoreError::NotFound) => {
+            if let Some(key) = key.as_deref() {
+                state.idempotency.finish(key);
+            }
+            problem(DomainError::NotFound)
+        }
+        Err(StoreError::Conflict) => {
+            if let Some(key) = key.as_deref() {
+                state.idempotency.finish(key);
+            }
+            problem(DomainError::policy(
+                "RUN_NOT_ALLOWED",
+                "a run cannot be queued for this card",
+            ))
+        }
     }
 }
 
@@ -1016,7 +1077,7 @@ mod tests {
             .oneshot(request_with(
                 "POST",
                 "/api/v1/cards/card-1/runs",
-                &[("idempotency-key", "key-1")],
+                &[("idempotency-key", "idem-key-1")],
             ))
             .await
             .expect("response");
@@ -1027,7 +1088,7 @@ mod tests {
             .oneshot(request_with(
                 "POST",
                 "/api/v1/cards/card-1/runs",
-                &[("idempotency-key", "key-1")],
+                &[("idempotency-key", "idem-key-1")],
             ))
             .await
             .expect("response");
