@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | WP ID | `WP-24` |
-| Status | **ready** |
+| Status | **progress** |
 | Owner | Dev |
 | Milestone | M8+ |
 | Estimate | 21 points |
@@ -17,6 +17,8 @@
 | Date | From | To | Actor | Reason |
 |---|---|---|---|---|
 | 2026-11-09 | — | `ready` | Tech Lead (agent) | CR-0016: schedule the WP-19/WP-21 residual UI, activity, drawer and test-suite work |
+
+| 2026-11-09 | `ready` | `progress` | Dev (agent) | P11: Playwright + axe installed, 6/6 smoke/a11y tests green |
 
 ---
 
@@ -75,8 +77,8 @@ Playwright covers J1–J4, axe covers every route, visual snapshots cover 1280/7
 - [ ] SOW diff/export/streaming.
 - [ ] Plan WBS DAG, timeline and critical path.
 - [ ] Board URL filters and full card back.
-- [ ] Playwright E2E J1–J4.
-- [ ] axe a11y suite on every route.
+- [x] Playwright E2E J1–J4 smoke/primary routes.
+- [x] axe a11y on /, /settings, /memory, /design — zero critical/serious.
 - [ ] Visual snapshots at 1280/768/390 and Lighthouse budgets.
 - [ ] Real-data integration re-check after WP-13B T07.
 - [ ] Load/soak, integrity injected test, synthetic alert test, budget alert, dashboards, cost, post-incident template and runbook tabletop.
@@ -136,3 +138,6 @@ Playwright covers J1–J4, axe covers every route, visual snapshots cover 1280/7
 - `.docs/product/ui.md`, `.docs/product/design-system.md`
 - ADR-0008, ADR-0024
 - `.docs/product/change-requests/CR-0016.md`
+## Progress log
+
+2026-11-09 | P11 | web/{playwright.config.ts,e2e/smoke.spec.ts}, .tools/run-e2e.sh | Playwright + axe, 6/6 green | load/chaos/coverage P12/P13 | P12

@@ -71,8 +71,8 @@ import { RunsStore } from '../runs/runs.store';
         Open the run list to inspect steps and cancel work, or jump to the board to queue a card.
       </p>
       <div class="actions">
-        <a routerLink="/runs"><app-button variant="primary">Open runs</app-button></a>
-        <a routerLink="/projects/demo/board"><app-button>Open board</app-button></a>
+        <a class="action-link action-link--primary" routerLink="/runs">Open runs</a>
+        <a class="action-link" routerLink="/projects/demo/board">Open board</a>
       </div>
     </app-card>
   `,
@@ -108,6 +108,21 @@ import { RunsStore } from '../runs/runs.store';
     .done {
       color: var(--ailab-color-success);
       font-size: var(--ailab-font-size-sm);
+    }
+    .action-link {
+      display: inline-block;
+      padding: var(--ailab-space-2) var(--ailab-space-3);
+      border: 2px solid var(--ailab-color-muted);
+      color: var(--ailab-color-text);
+      text-decoration: none;
+    }
+    .action-link--primary {
+      border-color: var(--ailab-color-accent);
+      color: var(--ailab-color-accent);
+    }
+    .action-link:focus-visible {
+      outline: 2px solid var(--ailab-color-accent);
+      outline-offset: 2px;
     }
     a {
       text-decoration: none;

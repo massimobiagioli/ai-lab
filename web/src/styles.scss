@@ -35,6 +35,14 @@ code {
   font-family: var(--ailab-font-mono);
 }
 
+a {
+  color: var(--ailab-color-accent);
+}
+
+a:visited {
+  color: var(--ailab-color-accent);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

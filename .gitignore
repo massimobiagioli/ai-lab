@@ -26,3 +26,7 @@ workspaces/
 
 # Generated reports
 coverage/
+# Playwright local state
+web/.playwright/
+web/test-results/
+web/playwright-report/

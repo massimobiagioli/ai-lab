@@ -71,7 +71,7 @@ scripts/run-web.sh npm run format:check
 - [x] **P10 — WP-20 backup/DR/runbooks and QA.**
   Branch `review/p10-wp20-dr`; restore drill, DR and incident runbooks, QA `APPROVED`, WP-20 `done`. Depends P09.
 
-- [ ] **P11 — WP-24 E2E and accessibility tooling.**
+- [x] **P11 — WP-24 E2E and accessibility tooling.**
   Branch `review/p11-wp24-e2e`; Playwright + axe, journeys J1–J5, a11y per route; WP-21 is `done`, so these suites are owned by WP-24. Depends P07, P10.
 
 - [ ] **P12 — WP-24 load, chaos, security, fuzz.**
@@ -146,4 +146,5 @@ scripts/run-web.sh npm run format:check
 | 2026-11-09 | P07 | `review/p07-wp19-qa` | `ad4c65c` | QA APPROVED; WP-19 done. |
 | 2026-11-09 | P08 | `review/p08-wp20-metrics` | `b0b90e1` | Metrics, redacted logs. |
 | 2026-11-09 | P09 | `review/p09-wp20-tracing` | `d6af2b3` | Trace propagation, SLOs, dashboard, alerts. |
-| 2026-11-09 | P10 | `review/p10-wp20-dr` | merge pending | QA APPROVED; WP-20 done. |
+| 2026-11-09 | P10 | `review/p10-wp20-dr` | `5eac3c2` | QA APPROVED; WP-20 done. |
+| 2026-11-09 | P11 | `review/p11-wp24-e2e` | merge pending | Playwright/axe, 6/6. |

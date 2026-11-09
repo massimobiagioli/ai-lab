@@ -128,6 +128,7 @@ Every document under `.docs` is listed here. When a document is created, renamed
 | WP-13 review plan | Orchestration review checklist and evidence. | [`.docs/sow/WP-13-ORCHESTRATION-review-plan.md`](./.docs/sow/WP-13-ORCHESTRATION-review-plan.md) |
 | WP-13B Backend hardening follow-up | WP-13/WP-16 residual hardening (resume, context, OTel, DoD, adapters, Redis, REST/WS, OpenAPI). | [`.docs/sow/WP-13B-FOLLOW-UP.md`](./.docs/sow/WP-13B-FOLLOW-UP.md) |
 | WP-24 Frontend & QA hardening | WP-19/WP-21 residual UI, drawers and suites. | [`.docs/sow/WP-24-FRONTEND-HARDENING.md`](./.docs/sow/WP-24-FRONTEND-HARDENING.md) |
+| WP-24 review plan | Frontend/QA hardening review checklist and evidence. | [`.docs/sow/WP-24-FRONTEND-HARDENING-review-plan.md`](./.docs/sow/WP-24-FRONTEND-HARDENING-review-plan.md) |
 | WP-14 Sandbox runner | Sandbox isolation and tool policy. | [`.docs/sow/WP-14-SANDBOX-RUNNER.md`](./.docs/sow/WP-14-SANDBOX-RUNNER.md) |
 | WP-14 review plan | Sandbox runner review checklist and evidence. | [`.docs/sow/WP-14-SANDBOX-RUNNER-review-plan.md`](./.docs/sow/WP-14-SANDBOX-RUNNER-review-plan.md) |
 | WP-15 QA and merge | QA review, merge policy, autonomy. | [`.docs/sow/WP-15-QA-MERGE.md`](./.docs/sow/WP-15-QA-MERGE.md) |
@@ -222,6 +223,7 @@ Use the `quality-gates` skill for the exact commands and evidence rules.
 | `check-doc-links` | [`.tools/check-doc-links.sh`](./.tools/check-doc-links.sh) | Resolve relative Markdown links under `.docs/product/` and `.docs/`. | `.tools/check-doc-links.sh [--root DIR]` |
 | `check-openapi-drift` | [`.tools/check-openapi-drift.py`](./.tools/check-openapi-drift.py) | Fail when an OpenAPI path is not served by the edge router. | `.tools/check-openapi-drift.py [--root DIR]` |
 | `check-observability` | [`.tools/check-observability.sh`](./.tools/check-observability.sh) | Validate the SLO, alert and Grafana dashboard artifacts. | `.tools/check-observability.sh` |
+| `run-e2e` | [`.tools/run-e2e.sh`](./.tools/run-e2e.sh) | Run Playwright in the official image (browser deps included). | `.tools/run-e2e.sh [args]` |
 | `check-architecture-fitness` | [`.tools/check-architecture-fitness.sh`](./.tools/check-architecture-fitness.sh) | Validate context ownership, dependency acyclicity, cross-context table access and Compose catalog coverage. | `.tools/check-architecture-fitness.sh [--root DIR]` |
 | `architecture-fitness-self-test` | [`.tools/architecture-fitness-self-test.sh`](./.tools/architecture-fitness-self-test.sh) | Exercise the architecture fitness check against disposable roots. | `.tools/architecture-fitness-self-test.sh` |
 | `check-crate-dependencies` | [`.tools/check-crate-dependencies.sh`](./.tools/check-crate-dependencies.sh) | Validate crate direction, acyclicity, `#![forbid(unsafe_code)]` and the no-unwrap gate. | `.tools/check-crate-dependencies.sh` |
