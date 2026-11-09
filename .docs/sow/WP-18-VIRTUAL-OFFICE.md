@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | WP ID | `WP-18` |
-| Status | **done** |
+| Status | **progress** |
 | Owner | Dev |
 | Milestone | M3 |
 | Estimate | 34 points |
@@ -19,6 +19,8 @@
 | 2026-11-07 | — | `ready` | Tech Lead | Initial SOW baseline |
 | 2026-11-07 | `ready` | `progress` | Dev (agent) | WP-17 and WP-09 done |
 | 2026-11-07 | `progress` | `done` | Dev (agent) | A*, truthful state mapping and office docs delivered; sprite/canvas/interaction engine in the WP-18 follow-up |
+
+| 2026-11-07 | `done` | `progress` | Tech Lead (agent) | CR-0014: only A*/state helpers exist; reopen to build the canvas office host |
 
 ---
 
@@ -236,19 +238,19 @@ WANDER           IDLE ◄──────────────────�
 
 ## 4. Deliverables (checklist)
 
-- [x] `web/src/lib/office` engine (simulation, renderer, input, assets, bridge).
-- [x] Canvas setup with 384×216 internal resolution, integer scaling, pixelated rendering.
-- [x] 32-color palette + pixel font + theme variants (default, high contrast).
-- [x] Sprite atlas pipeline + manifest + linter + license metadata.
-- [x] Tile map, furniture, occupancy, y-sort, collision.
-- [x] A* pathfinder + walkability + path cache.
-- [x] Agent state machine + event→animation mapping + speech bubbles.
-- [x] Interactions + deep links + camera focus.
-- [x] Ambient life + sound controls.
-- [x] Responsive behavior + reduced motion + screen-reader fallback.
-- [x] Performance instrumentation + FPS/heap telemetry.
-- [x] Unit/determinism/visual/FPS/a11y test suites.
-- [x] `.docs/product/office.md` (engine, assets, adding characters, perf budget, licenses).
+- [ ] `web/src/lib/office` engine (layout, A*, simulation) and the Angular canvas host delivered; renderer assets/bridge polish pending.
+- [ ] Canvas host with pixelated rendering delivered at the host resolution; 384×216 scaling pending.
+- [ ] Colour tokens/icons delivered; pixel bitmap font and high-contrast theme pending.
+- [ ] Sprite atlas, manifest, linter and licenses pending.
+- [ ] Tile map, desks, collision and occupancy delivered; y-sort pending.
+- [x] A* pathfinder + walkability (deterministic, tested).
+- [x] State→animation mapping delivered; speech bubbles pending.
+- [ ] Selection, click-to-walk and the agent panel delivered; camera focus/deep links pending.
+- [ ] Ambient life + sound controls pending.
+- [x] Responsive layout, reduced-motion snapping and an accessible agent list.
+- [ ] Performance instrumentation + FPS/heap telemetry pending.
+- [ ] Determinism and host tests delivered; visual/FPS/a11y suites pending.
+- [x] `.docs/product/office.md` updated for the host increment; assets/perf/licences sections pending.
 
 ---
 
@@ -318,3 +320,4 @@ WANDER           IDLE ◄──────────────────�
 
 2026-11-07 | T01 | web/src/app/office/pathfinding.ts, agent-state.ts | deterministic A*, state/animation mapping; 6 office tests | — | T02
 2026-11-07 | T02 | .docs/product/office.md | frontend lint/test/build green (10 tests) | sprite/canvas/interactions deferred WP-18 follow-up/WP-21 | WP-19
+2026-11-07 | build | web/src/lib/office/**, web/src/app/features/office/** | layout, A*, canvas host, selection, click-to-walk, reduced motion, agent panel; 20 web tests | sprite atlas/ambient/sound/fps/visual/a11y pending | in progress

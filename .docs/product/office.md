@@ -6,7 +6,7 @@
 | Version | 1.0.0 |
 | Status | Accepted |
 | Owner | Dev |
-| Related | `.docs/product/frontend.md`, `web/src/app/office/` |
+| Related | `.docs/product/frontend.md`, `web/src/lib/office/`, `web/src/app/features/office/` |
 
 The office is the emotional core of AI-Lab. It is a 16-bit pixel office driven exclusively by backend state: agents never show activity that is not happening.
 
@@ -17,9 +17,18 @@ The office is the emotional core of AI-Lab. It is a 16-bit pixel office driven e
 - Target ≥ 58 FPS desktop, ≥ 30 FPS low-end.
 - Office engine decoupled from Angular (ADR-0021).
 
-## 2. Pathfinding
+## 2. Engine and host
 
-`findPath` implements deterministic 4-directional A* with a stable tie-break. It returns the path including start and goal, or `null` when the goal is blocked or unreachable. Tests cover straight paths, wall detours, unreachable goals and identical endpoints.
+The framework-agnostic engine lives in `web/src/lib/office/` (ADR-0021):
+
+- `layout.ts`: deterministic 20×12 grid, walls and five desks.
+- `pathfinding.ts`: deterministic 4-directional A* with a stable tie-break.
+- `agent-state.ts`: truthful domain-state → animation mapping.
+- `engine.ts`: agents, A* movement, per-frame interpolation and reduced-motion snapping.
+
+The Angular host is `web/src/app/features/office/office.ts`: a pixelated canvas, an accessible agent
+list, click-to-select/click-to-walk, a path overlay, state-driven colours and a detail panel. The
+route is `/lab/:labId` with a lab-slug guard.
 
 ## 3. Truthful state mapping
 
