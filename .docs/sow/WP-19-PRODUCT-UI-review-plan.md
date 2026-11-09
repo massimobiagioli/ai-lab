@@ -18,7 +18,7 @@
 ## 2. Specification conformance
 
 - [x] Routes `/`, `/runs`, `/projects/:projectId/board`, `/inventory/{agents,projects,providers}`, `/projects/:projectId/sow`, `/memory`, `/settings` exist and lazy-load — evidence: `web/src/app/app.routes.ts`.
-- [ ] Kanban six columns, DnD + keyboard and violations — P02.
+- [x] Kanban six columns, DnD + keyboard moves, filters, card drawer and the blocked reason — P02; real-time/violation animation in P07.
 - [ ] Agent Inspector Live/CV/Memory/Controls with rollback — P03.
 - [ ] Inventory wizards and write-only secrets — P03.
 - [ ] SOW versions/diff/approve/reject/export/traceability/streaming — P04.
@@ -38,7 +38,7 @@
 - [x] Signal stores with `idle|loading|ready|error` for board, inventory, SOW, memory and settings — `features/*/store`.
 - [x] Optimistic card move with rollback on 409/422 — `features/board/store/board.store.ts`.
 - [ ] Dashboard KPIs/activity/idea composer/onboarding — P06.
-- [ ] Kanban board — P02.
+- [x] Kanban board — P02 (`features/board`).
 - [ ] Inventory tables/wizards — P03.
 - [ ] SOW/Plan — P04.
 - [ ] Memory explorer — P05.
@@ -65,6 +65,7 @@
 ## 5. Implementation and tests
 
 - [x] Board store load/optimistic/rollback — tests: `features/board/store/board.store.spec.ts`.
+- [x] Board render/keyboard/detail — tests: `features/board/board.spec.ts`.
 - [x] Demo model determinism — test: `core/demo/demo-data.spec.ts`.
 - [ ] Inventory/SOW/memory/settings store tests — P03–P06.
 - [ ] No real external API in tests (fetch/WebSocket mocked).
@@ -98,3 +99,4 @@
 
 - [x] CR-0015 — reopen WP-19; alternatives and consequences recorded.
 - [x] Demo read model is explicit (`AILAB_DEMO_DATA`) and never presented as live data.
+2026-11-09 | P02 | web/src/app/features/board/**, app.routes.ts | board columns, DnD, keyboard, filters, drawer, tests (73 web) | real-time/violations P07 | P03

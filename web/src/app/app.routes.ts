@@ -24,9 +24,7 @@ export const routes: Routes = [
     path: 'projects/:projectId/board',
     title: 'AI-Lab · Board',
     canActivate: [paramGuard],
-    loadComponent: () =>
-      import('./features/placeholder/placeholder').then((module) => module.Placeholder),
-    data: { title: 'Kanban board', body: 'Board surface (WP-19).' },
+    loadComponent: () => import('./features/board/board').then((module) => module.Board),
   },
   {
     path: 'projects/:projectId/sow',
