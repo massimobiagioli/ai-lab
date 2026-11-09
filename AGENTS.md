@@ -97,6 +97,7 @@ Every document under `.docs` is listed here. When a document is created, renamed
 | Agents and Kanban | Roles, characters, prompts, transition matrix, assets. | [`.docs/technical-specification/APPENDIX-C-AGENTS-KANBAN.md`](./.docs/technical-specification/APPENDIX-C-AGENTS-KANBAN.md) |
 | Delivery appendix | WBS, acceptance tests, ADRs, environment variables, docs manifest. | [`.docs/technical-specification/APPENDIX-D-DELIVERY.md`](./.docs/technical-specification/APPENDIX-D-DELIVERY.md) |
 | SOW index | Delivery index, status model, dependency graph, milestones. | [`.docs/sow/SOW.md`](./.docs/sow/SOW.md) |
+| Review closure checklist | Remaining items required to close the full WP review (2026-11-09). | [`.docs/sow/review-plan-checklist-20261109.md`](./.docs/sow/review-plan-checklist-20261109.md) |
 | WP-00 Governance | Program governance, Lean/Agile delivery, quality system. | [`.docs/sow/WP-00-GOVERNANCE.md`](./.docs/sow/WP-00-GOVERNANCE.md) |
 | WP-00 review plan | Governance review checklist and evidence. | [`.docs/sow/WP-00-GOVERNANCE-review-plan.md`](./.docs/sow/WP-00-GOVERNANCE-review-plan.md) |
 | WP-01 review plan | Architecture review checklist and evidence. | [`.docs/sow/WP-01-ARCHITECTURE-review-plan.md`](./.docs/sow/WP-01-ARCHITECTURE-review-plan.md) |
