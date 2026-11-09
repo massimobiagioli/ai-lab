@@ -61,9 +61,7 @@ export const routes: Routes = [
   {
     path: 'settings',
     title: 'AI-Lab · Settings',
-    loadComponent: () =>
-      import('./features/placeholder/placeholder').then((module) => module.Placeholder),
-    data: { title: 'Settings', body: 'Lab and autonomy settings (WP-19).' },
+    loadComponent: () => import('./features/settings/settings').then((module) => module.Settings),
   },
   {
     path: 'design',

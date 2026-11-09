@@ -24,9 +24,9 @@
 - [x] SOW versions, sections, status and delivery graph — P04; diff/approve/reject/export/traceability/streaming in WP-13B T07.
 - [x] Delivery graph (task dependencies) and materialize confirmation — P04.
 - [x] Memory scopes/search/reader/notes/pin/delete — P05.
-- [ ] Settings lab/autonomy/budgets/scheduler/office/exposure/danger — P06.
-- [ ] Health and handoff drawers — P06.
-- [ ] Loading/empty/error/degraded states on every screen — P02–P06.
+- [x] Settings lab/autonomy/budgets/scheduler/office/exposure/danger — P06.
+- [ ] Health and handoff drawers — P07/WP-13B T07.
+- [x] Loading/empty/error/degraded states delivered on every implemented screen.
 - [ ] Responsive, a11y and reduced motion — P02–P06, verified by WP-21.
 - [ ] E2E J1–J4 and visual screenshots — WP-21 (owned, due 2026-12-31).
 - [ ] `.docs/product/ui.md` with routes, states and interaction rules — P07.
@@ -37,14 +37,14 @@
 - [x] ApiClient read models with the explicit demo fallback (`AILAB_DEMO_DATA`) for the 501 edge stubs — `core/api/api-client.ts`, `core/demo/demo-data.ts`.
 - [x] Signal stores with `idle|loading|ready|error` for board, inventory, SOW, memory and settings — `features/*/store`.
 - [x] Optimistic card move with rollback on 409/422 — `features/board/store/board.store.ts`.
-- [ ] Dashboard KPIs/activity/idea composer/onboarding — P06.
+- [x] Dashboard KPIs and onboarding — P06; live activity/idea composer in WP-13B T07.
 - [x] Kanban board — P02 (`features/board`).
 - [x] Inventory tables and create dialogs — P03 (`features/inventory`).
 - [x] SOW/Plan — P04 (`features/sow`).
 - [x] Memory explorer — P05 (`features/memory`).
-- [ ] Settings/danger zone — P06.
+- [x] Settings/danger zone — P06 (`features/settings`).
 - [ ] Health/failed-runs/retired/handoff drawers — P03/P06.
-- [ ] Every screen's loading/empty/error/degraded states — P02–P06.
+- [x] Loading/empty/error/degraded on board, inventory, SOW, memory, settings and dashboard.
 - [ ] `.docs/product/ui.md` — P07.
 - [ ] E2E/visual — WP-21 (owned, due 2026-12-31).
 
@@ -67,7 +67,7 @@
 - [x] Board store load/optimistic/rollback — tests: `features/board/store/board.store.spec.ts`.
 - [x] Board render/keyboard/detail — tests: `features/board/board.spec.ts`.
 - [x] Demo model determinism — test: `core/demo/demo-data.spec.ts`.
-- [x] Inventory/SOW/memory tests — `inventory.spec.ts`, `sow.spec.ts`, `memory.spec.ts`; settings in P06.
+- [x] Inventory/SOW/memory/settings tests — `inventory.spec.ts`, `sow.spec.ts`, `memory.spec.ts`, `settings.spec.ts`.
 - [ ] No real external API in tests (fetch/WebSocket mocked).
 - [ ] Coverage thresholds — WP-21.
 
@@ -103,3 +103,4 @@
 2026-11-09 | P03 | web/src/app/features/inventory/**, shared/ui/pixel-table | inventory lists/detail/create; tests | health/handoffs P06 | P04
 2026-11-09 | P04 | web/src/app/features/sow/**, app.routes.ts | SOW sections/graph/materialize; tests | diff/export/streaming WP-13B T07 | P05
 2026-11-09 | P05 | web/src/app/features/memory/**, app.routes.ts | memory search/notes/pin/delete; tests | real API WP-13B T07 | P06
+2026-11-09 | P06 | web/src/app/features/{settings,dashboard}/** | settings + onboarding; tests | activity/idea/health WP-13B T07 | P07

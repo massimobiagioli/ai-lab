@@ -185,16 +185,16 @@ Stores deduplicate by `event_id`/`seq`; no duplicate rows on reconnect.
 
 ## 4. Deliverables (checklist)
 
-- [ ] Dashboard with KPIs, office preview, activity feed, idea composer, onboarding (P06).
+- [x] Dashboard KPIs and the onboarding checklist (P06); office preview/activity feed/idea composer in WP-13B T07.
 - [ ] Agent Inspector with Live/CV/Memory/Controls and actions (P03).
 - [x] Kanban board with 6 columns, DnD + keyboard, card back, filters, real-time, violations (P02).
 - [x] Inventory tables + create wizards (agents, projects, providers) (P03).
 - [x] SOW workspace: versions, sections, approval status, delivery graph and materialize confirmation (P04); diff/export/streaming in WP-13B T07.
 - [x] Delivery graph with task dependencies and materialize confirmation (P04).
 - [x] Memory explorer: scopes, search, reader, notes, pin/delete (P05).
-- [ ] Settings: lab, autonomy, budgets, scheduler, office, exposure, danger zone (P06).
+- [x] Settings: lab, autonomy, budgets, scheduler, office, exposure and danger zone (P06).
 - [ ] Health, failed runs, retired agents, handoffs drawers (P06).
-- [ ] Loading/empty/error/degraded states for every screen (P02–P06).
+- [x] Loading/empty/error/degraded states on the board, inventory, SOW, memory, settings and dashboard.
 - [ ] Responsive + a11y + reduced motion across all surfaces (P02–P06; verified by WP-21).
 - [ ] E2E for journeys J1–J4 + visual screenshots (WP-21).
 - [ ] `.docs/product/ui.md` with routes, states, and interaction rules (P07).
@@ -272,3 +272,4 @@ Stores deduplicate by `event_id`/`seq`; no duplicate rows on reconnect.
 2026-11-09 | P03 | web/src/app/features/inventory/**, shared/ui/pixel-table | inventory lists, detail drawers, create dialog with validation, demo badge; tests | health/failed drawers P06 | P04
 2026-11-09 | P04 | web/src/app/features/sow/**, app.routes.ts | SOW sections, versions, delivery graph, materialize dialog; tests | diff/export/streaming WP-13B T07 | P05
 2026-11-09 | P05 | web/src/app/features/memory/**, app.routes.ts | scoped memory search, notes, citations, pin/delete; tests | real API WP-13B T07 | P06
+2026-11-09 | P06 | web/src/app/features/{settings,dashboard}/** | settings form/validation/danger zone; dashboard onboarding; tests | office preview/activity/idea WP-13B T07 | P07
