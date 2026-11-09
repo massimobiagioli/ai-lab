@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PageHeader } from '../../shared/ui/page-header/page-header';
 import { Card } from '../../shared/ui/card/card';
@@ -32,6 +32,21 @@ import { RunsStore } from '../runs/runs.store';
       </app-card>
     </div>
 
+    @if (!onboardingDismissed()) {
+      <app-card title="Getting started">
+        <ol class="onboarding">
+          <li>
+            <a routerLink="/inventory/providers">Connect a provider</a> ·
+            <span class="done">done</span>
+          </li>
+          <li><a routerLink="/settings">Configure the lab</a></li>
+          <li><a routerLink="/inventory/agents">Add an agent</a></li>
+          <li><a routerLink="/inventory/projects">Create a project</a></li>
+        </ol>
+        <app-button (pressed)="onboardingDismissed.set(true)">Dismiss</app-button>
+      </app-card>
+    }
+
     <app-card title="Next actions">
       <p class="hint">
         Open the run list to inspect steps and cancel work, or jump to the board to queue a card.
@@ -64,6 +79,17 @@ import { RunsStore } from '../runs/runs.store';
       gap: var(--ailab-space-2);
       margin-top: var(--ailab-space-3);
     }
+    .onboarding {
+      margin: 0 0 var(--ailab-space-3);
+      padding-left: var(--ailab-space-4);
+    }
+    .onboarding li {
+      margin-bottom: var(--ailab-space-1);
+    }
+    .done {
+      color: var(--ailab-color-success);
+      font-size: var(--ailab-font-size-sm);
+    }
     a {
       text-decoration: none;
     }
@@ -71,6 +97,7 @@ import { RunsStore } from '../runs/runs.store';
 })
 export class Dashboard implements OnInit {
   protected readonly store = inject(RunsStore);
+  protected readonly onboardingDismissed = signal(false);
 
   ngOnInit(): void {
     void this.store.load();
