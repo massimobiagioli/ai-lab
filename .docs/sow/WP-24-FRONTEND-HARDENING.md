@@ -79,7 +79,7 @@ Playwright covers J1–J4, axe covers every route, visual snapshots cover 1280/7
 - [ ] axe a11y suite on every route.
 - [ ] Visual snapshots at 1280/768/390 and Lighthouse budgets.
 - [ ] Real-data integration re-check after WP-13B T07.
-- [ ] Load/soak, integrity injected test, dashboards, cost, post-incident template and runbook tabletop.
+- [ ] Load/soak, integrity injected test, synthetic alert test, budget alert, dashboards, cost, post-incident template and runbook tabletop.
 - [ ] Tests and docs for every item.
 
 ---
@@ -94,7 +94,7 @@ Playwright covers J1–J4, axe covers every route, visual snapshots cover 1280/7
 | WP24-T04 | Plan DAG/timeline/critical path | Dev | 3 | WP-19 | Graph verified |
 | WP24-T05 | Board URL filters and card back | Dev | 3 | WP-19 | Filters persisted |
 | WP24-T06 | Playwright/axe/visual/Lighthouse | QA | 5 | WP-21 | Suites green |
-| WP24-T07 | Load/soak, integrity injected test, seven dashboards, cost dashboard, post-incident template, runbook tabletop | QA | 5 | WP-20, WP-13B T03 | Evidence green |
+| WP24-T07 | Load/soak, integrity injected test, synthetic alert test, budget alert, seven dashboards, cost dashboard, post-incident template, runbook tabletop | QA | 5 | WP-20, WP-13B T03 | Evidence green |
 
 ---
 

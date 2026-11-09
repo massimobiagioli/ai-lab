@@ -22,11 +22,11 @@
 - [x] SLOs (9 SLIs), error-budget policy and alert rules with runbook links — `infra/observability/`.
 - [x] Grafana provisioning (datasource + dashboard file) mounted in Compose — `infra/compose/docker-compose.observability.yml`.
 - [x] Readiness debounce (3 consecutive failures) — `health_ready`.
-- [x] Integrity P1 alert and the restore-drill report artifact.
+- [x] Integrity P1 alert with the textfile metric (integrity-check writes `artifacts/metrics/integrity.prom`; `/metrics` appends the dir) and the restore-drill report artifact.
 - [x] Eight runbooks + on-call checklist — `.docs/product/runbooks/`.
 - [x] `slo.md`, `observability.md`, `operations.md` updated.
 - [ ] Full DB/Redis/queue/LLM/SCM/sandbox/domain/WS metric families, OTel spans and run-context log fields — WP-13B T03 (owner Dev, due 2026-12-31).
-- [ ] Six remaining dashboards, cost dashboard, post-incident template, load/soak, injected-integrity test, synthetic alert test and runbook tabletop — WP-24 T07 (owner QA, due 2026-12-31).
+- [ ] Six remaining dashboards, cost dashboard, budget alert, post-incident template, load/soak, injected-integrity test, synthetic alert test and runbook tabletop — WP-24 T07 (owner QA, due 2026-12-31).
 
 ## 3. Deliverables
 
@@ -34,7 +34,7 @@
 - [ ] All §3.2 metric families — HTTP families delivered; the rest WP-13B T03.
 - [ ] OTel tracing/spans — WP-13B T03; W3C propagation delivered.
 - [x] SLO definitions + error-budget policy (9 SLIs; pending metrics noted).
-- [x] Alert rules with runbook links, including the integrity and budget alerts.
+- [x] Alert rules with runbook links, including the integrity alert.
 - [ ] Seven Grafana dashboards — the edge dashboard is provisioned; the rest WP-24 T07.
 - [x] Health/readiness endpoints with debounce.
 - [x] Integrity alert + restore-drill report (injected-mismatch test in WP-24 T07).
@@ -50,10 +50,10 @@
 1. **DEFERRED (WP-13B T03 for run context).** Logs carry timestamp/service/version/request-id/span-id/code/message and are redacted; lab/project/card/agent/run ids are WP-13B T03. The trace id is propagated (test).
 2. **DEFERRED (WP-13B T03).** HTTP families are labeled, in seconds, with the `+Inf` bucket; the remaining families are WP-13B T03. `/metrics` is internal-only.
 3. **PASS (propagation) / DEFERRED (spans, WP-13B T03).** The traceparent is echoed as `x-trace-id` and attached to Problem Details; span export is WP-13B T03.
-4. **PASS (definitions) / DEFERRED (synthetic fire test, WP-24 T07).** The nine §3.4 SLIs, error-budget policy and runbook-linked alerts exist; the synthetic fire test is WP-24 T07.
+4. **PASS (definitions) / DEFERRED (synthetic fire + budget alerts, WP-24 T07).** The nine §3.4 SLIs, error-budget policy and runbook-linked alerts exist; the synthetic fire test and budget alerts are WP-24 T07.
 5. **PASS (edge).** The edge dashboard is provisioned with the Prometheus datasource; the remaining six dashboards are WP-24 T07.
 6. **PASS.** Readiness debounces after three consecutive failures.
-7. **PARTIAL (WP-24 T07).** The integrity alert and the textfile metric writer exist; the injected-mismatch test is WP-24 T07.
+7. **PARTIAL (WP-24 T07).** The integrity alert is wired end-to-end (integrity-check writes the textfile metric; `/metrics` appends it; test `metrics_appends_the_textfile_collector`); the injected-mismatch test is WP-24 T07.
 8. **PASS.** The restore drill ran on 2026-11-09 (52 s) and verified checksums/row counts/integrity; evidence: `.docs/product/evidence/WP-20-restore-drill.md`.
 9. **DEFERRED (WP-24 T07).** Load/soak evidence is WP-24 T07.
 10. **PASS (tabletop WP-24 T07).** The eight runbooks and the on-call checklist exist and are link-checked; the tabletop is WP-24 T07.
@@ -92,3 +92,4 @@
 
 - [x] CR-0017 — reopen WP-20.
 - [x] The edge dashboard and HTTP metrics are the P10 scope; the wider families/spans move to the named WP-13B/WP-24 follow-ups.
+2026-11-09 | fix | scripts/integrity-check.sh, crates/api/src/{metrics,server}.rs, infra/compose/docker-compose.yml | integrity textfile end-to-end; +Inf; trace layer; SLO conformance; budget-alert deferral; 21 API tests | WP-13B T03/WP-24 T07 | QA re-review

@@ -332,6 +332,8 @@ pub struct AppState {
     pub metrics: Arc<crate::metrics::Metrics>,
     /// Consecutive readiness failures for debouncing.
     readiness_failures: Arc<std::sync::atomic::AtomicU8>,
+    /// Directory of Prometheus textfile metrics appended to `/metrics`.
+    textfile_dir: std::path::PathBuf,
 }
 
 impl Default for AppState {
@@ -380,12 +382,22 @@ impl AppState {
             hub,
             metrics: crate::metrics::Metrics::new(),
             readiness_failures: Arc::new(std::sync::atomic::AtomicU8::new(0)),
+            textfile_dir: std::env::var("AILAB_METRICS_TEXTFILE_DIR")
+                .unwrap_or_else(|_| "artifacts/metrics".to_owned())
+                .into(),
         }
     }
 
     /// Publish an event to live WebSocket subscribers.
     pub fn publish(&self, event: EventEnvelope) -> usize {
         self.hub.send(event).unwrap_or(0)
+    }
+
+    /// Use a custom textfile metrics directory (tests/operators).
+    #[must_use]
+    pub fn with_textfile_dir(mut self, dir: impl Into<std::path::PathBuf>) -> Self {
+        self.textfile_dir = dir.into();
+        self
     }
 
     /// Subscribe to live events.
@@ -591,9 +603,7 @@ async fn metrics_layer(State(state): State<AppState>, request: Request, next: Ne
 
 async fn metrics_endpoint(State(state): State<AppState>) -> Response {
     let mut body = state.metrics.render();
-    let directory = std::env::var("AILAB_METRICS_TEXTFILE_DIR")
-        .unwrap_or_else(|_| "artifacts/metrics".to_owned());
-    if let Ok(entries) = std::fs::read_dir(&directory) {
+    if let Ok(entries) = std::fs::read_dir(&state.textfile_dir) {
         for entry in entries.flatten() {
             if entry.path().extension().and_then(|value| value.to_str()) == Some("prom")
                 && let Ok(text) = std::fs::read_to_string(entry.path())
@@ -1639,6 +1649,29 @@ mod tests {
         let body = runs.into_body().collect().await.expect("body").to_bytes();
         let value: serde_json::Value = serde_json::from_slice(&body).expect("json");
         assert!(value["data"].is_array());
+    }
+
+    #[tokio::test]
+    async fn metrics_appends_the_textfile_collector() {
+        let dir = std::env::temp_dir().join(format!("ailab-metrics-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("dir");
+        std::fs::write(dir.join("integrity.prom"), "ailab_integrity_mismatches 0\n")
+            .expect("write");
+        let app =
+            router(AppState::with_store(Arc::new(InMemoryRunStore::new())).with_textfile_dir(&dir));
+        let response = app
+            .oneshot(request("GET", "/metrics"))
+            .await
+            .expect("response");
+        let body = response
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let text = String::from_utf8_lossy(&body);
+        assert!(text.contains("ailab_integrity_mismatches 0"));
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[tokio::test]

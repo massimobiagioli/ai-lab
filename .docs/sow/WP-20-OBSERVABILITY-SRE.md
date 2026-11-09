@@ -200,7 +200,7 @@ Each alert: severity, runbook link, summary, first action. No alert without a ru
 - [ ] Load/soak evidence is WP-24 T07.
 - [ ] Runbooks/on-call delivered; the post-incident template is WP-24 T07.
 - [x] 8 runbooks + on-call checklist.
-- [ ] Budget alert delivered; the cost dashboard is WP-24 T07.
+- [ ] Budget alert and the cost dashboard are WP-24 T07.
 - [x] `.docs/product/operations.md`, `.docs/product/slo.md`, `.docs/product/observability.md`.
 
 ---

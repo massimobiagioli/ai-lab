@@ -47,11 +47,9 @@ impl Metrics {
         }
         if let Ok(mut latency) = self.latency.lock() {
             let seconds = elapsed_ms as f64 / 1_000.0;
-            let index = BUCKETS
-                .iter()
-                .position(|bucket| seconds <= *bucket)
-                .unwrap_or(BUCKETS.len() - 1);
-            latency.bucket[index] += 1;
+            if let Some(index) = BUCKETS.iter().position(|bucket| seconds <= *bucket) {
+                latency.bucket[index] += 1;
+            }
             latency.sum_ms = latency.sum_ms.saturating_add(elapsed_ms);
             latency.count += 1;
         }
@@ -99,7 +97,8 @@ impl Metrics {
             }
             let _ = writeln!(
                 output,
-                "ailab_http_request_duration_seconds_bucket{{le=\"+Inf\"}} {cumulative}"
+                "ailab_http_request_duration_seconds_bucket{{le=\"+Inf\"}} {}",
+                latency.count
             );
             let _ = writeln!(
                 output,

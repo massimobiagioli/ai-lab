@@ -140,7 +140,11 @@ services:
     image: ailab/api:1.0.0
     profiles: ["core"]
     restart: unless-stopped
-    environment: *app-env
+    environment:
+      <<: *app-env
+      AILAB_METRICS_TEXTFILE_DIR: /metrics-textfile
+    volumes:
+      - ../../artifacts/metrics:/metrics-textfile:ro
     depends_on:
       migrate:
         condition: service_completed_successfully
