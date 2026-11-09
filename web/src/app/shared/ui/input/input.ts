@@ -59,7 +59,7 @@ import { Component, input, model } from '@angular/core';
 export class Input {
   readonly label = input.required<string>();
   readonly value = model('');
-  readonly type = input<'text' | 'search' | 'email'>('text');
+  readonly type = input<'text' | 'search' | 'email' | 'password'>('text');
   readonly placeholder = input('');
   readonly autocomplete = input<string | null>(null);
   readonly error = input<string | null>(null);

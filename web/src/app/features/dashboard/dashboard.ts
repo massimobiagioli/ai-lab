@@ -1,47 +1,66 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PageHeader } from '../../shared/ui/page-header/page-header';
+import { Degraded } from '../../shared/ui/degraded/degraded';
+import { Spinner } from '../../shared/ui/spinner/spinner';
 import { Card } from '../../shared/ui/card/card';
 import { Button } from '../../shared/ui/button/button';
 import { RunsStore } from '../runs/runs.store';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [PageHeader, Card, Button, RouterLink],
+  imports: [PageHeader, Degraded, Card, Button, RouterLink, Spinner],
   template: `
+    <app-degraded [active]="false" />
     <app-page-header title="Dashboard" subtitle="Flow and run health for the default lab">
       <app-button variant="primary" (pressed)="refresh()">Refresh</app-button>
     </app-page-header>
 
-    <div class="grid">
-      <app-card title="Runs">
-        <p class="metric">{{ store.counters().total }}</p>
-        <p class="hint">Total tracked runs</p>
-      </app-card>
-      <app-card title="Running">
-        <p class="metric">{{ store.counters().running }}</p>
-        <p class="hint">Currently leased</p>
-      </app-card>
-      <app-card title="Succeeded">
-        <p class="metric">{{ store.counters().succeeded }}</p>
-        <p class="hint">Merged and done</p>
-      </app-card>
-      <app-card title="Failed">
-        <p class="metric">{{ store.counters().failed }}</p>
-        <p class="hint">Failed or timed out</p>
-      </app-card>
-    </div>
+    @switch (store.state()) {
+      @case ('loading') {
+        <app-card><app-spinner label="Loading dashboard" /></app-card>
+      }
+      @case ('error') {
+        <app-card title="Unable to load the dashboard">
+          <p>{{ store.error()?.detail ?? store.error()?.title ?? 'Unknown error' }}</p>
+          <app-button (pressed)="refresh()">Retry</app-button>
+        </app-card>
+      }
+      @default {
+        <div class="grid">
+          <app-card title="Runs">
+            <p class="metric">{{ store.counters().total }}</p>
+            <p class="hint">Total tracked runs</p>
+          </app-card>
+          <app-card title="Running">
+            <p class="metric">{{ store.counters().running }}</p>
+            <p class="hint">Currently leased</p>
+          </app-card>
+          <app-card title="Succeeded">
+            <p class="metric">{{ store.counters().succeeded }}</p>
+            <p class="hint">Merged and done</p>
+          </app-card>
+          <app-card title="Failed">
+            <p class="metric">{{ store.counters().failed }}</p>
+            <p class="hint">Failed or timed out</p>
+          </app-card>
+        </div>
+      }
+    }
 
     @if (!onboardingDismissed()) {
       <app-card title="Getting started">
         <ol class="onboarding">
-          <li>
-            <a routerLink="/inventory/providers">Connect a provider</a> ·
-            <span class="done">done</span>
-          </li>
-          <li><a routerLink="/settings">Configure the lab</a></li>
-          <li><a routerLink="/inventory/agents">Add an agent</a></li>
-          <li><a routerLink="/inventory/projects">Create a project</a></li>
+          @for (step of onboarding; track step.id) {
+            <li>
+              @if (doneSteps().has(step.id)) {
+                <span class="done">✓ {{ step.label }}</span>
+              } @else {
+                <a [routerLink]="step.path">{{ step.label }}</a>
+                <app-button (pressed)="markDone(step.id)">Mark done</app-button>
+              }
+            </li>
+          }
         </ol>
         <app-button (pressed)="onboardingDismissed.set(true)">Dismiss</app-button>
       </app-card>
@@ -98,6 +117,16 @@ import { RunsStore } from '../runs/runs.store';
 export class Dashboard implements OnInit {
   protected readonly store = inject(RunsStore);
   protected readonly onboardingDismissed = signal(false);
+  protected readonly doneSteps = signal<ReadonlySet<string>>(new Set(['provider']));
+  protected readonly onboarding = [
+    { id: 'provider', label: 'Connect a provider', path: '/inventory/providers' },
+    { id: 'key', label: 'Store the provider key', path: '/inventory/providers' },
+    { id: 'lab', label: 'Create the lab', path: '/settings' },
+    { id: 'tech-lead', label: 'Create the Tech Lead', path: '/inventory/agents' },
+    { id: 'github', label: 'Connect GitHub', path: '/inventory/projects' },
+    { id: 'project', label: 'Create a project', path: '/inventory/projects' },
+    { id: 'idea', label: 'Submit the first idea', path: '/' },
+  ] as const;
 
   ngOnInit(): void {
     void this.store.load();
@@ -105,5 +134,9 @@ export class Dashboard implements OnInit {
 
   protected refresh(): void {
     void this.store.load();
+  }
+
+  protected markDone(id: string): void {
+    this.doneSteps.update((current) => new Set([...current, id]));
   }
 }

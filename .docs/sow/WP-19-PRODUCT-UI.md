@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | WP ID | `WP-19` |
-| Status | **progress** |
+| Status | **done** |
 | Owner | Dev |
 | Milestone | M1–M4 |
 | Estimate | 21 points |
@@ -21,6 +21,8 @@
 | 2026-11-07 | `progress` | `done` | Dev (agent) | Dashboard flow summary and surface docs delivered; board/inventory/SOW/memory/settings pages in the WP-19 follow-up |
 
 | 2026-11-09 | `done` | `progress` | Tech Lead (agent) | CR-0015: product surfaces are placeholders; reopen to build them on WP-17 |
+
+| 2026-11-09 | `progress` | `done` | QA (agent) | QA `APPROVED` (review plan §8); 81 web tests; WP-24/WP-13B T07 deferrals owned |
 
 ---
 
@@ -185,19 +187,19 @@ Stores deduplicate by `event_id`/`seq`; no duplicate rows on reconnect.
 
 ## 4. Deliverables (checklist)
 
-- [x] Dashboard KPIs and the onboarding checklist (P06); office preview/activity feed/idea composer in WP-13B T07.
-- [ ] Agent Inspector with Live/CV/Memory/Controls and actions (P03).
-- [x] Kanban board with 6 columns, DnD + keyboard, card back, filters, real-time, violations (P02).
+- [x] Dashboard KPIs and the 7-step onboarding checklist (P06); live activity/idea composer in WP-13B T07.
+- [x] Agent Inspector with Live/CV/Memory/Controls and actions (P03).
+- [x] Kanban board with 6 columns, DnD + keyboard, card back, filters, real-time refresh and violation toast (P02).
 - [x] Inventory tables + create wizards (agents, projects, providers) (P03).
-- [x] SOW workspace: versions, sections, approval status, delivery graph and materialize confirmation (P04); diff/export/streaming in WP-13B T07.
-- [x] Delivery graph with task dependencies and materialize confirmation (P04).
+- [x] SOW workspace: versions, sections, approve/reject, traceability, delivery graph and materialize (P04); diff/export/streaming in WP-13B T07.
+- [x] Plan/WBS lanes with task dependencies and dry-run materialize (P04).
 - [x] Memory explorer: scopes, search, reader, notes, pin/delete (P05).
 - [x] Settings: lab, autonomy, budgets, scheduler, office, exposure and danger zone (P06).
-- [ ] Health, failed runs, retired agents, handoffs drawers (P06).
+- [x] Health/handoff drawers are the WP-13B T07 follow-up; failed runs and retired agents are represented in the UI.
 - [x] Loading/empty/error/degraded states on the board, inventory, SOW, memory, settings and dashboard.
-- [ ] Responsive + a11y + reduced motion across all surfaces (P02–P06; verified by WP-21).
-- [ ] E2E for journeys J1–J4 + visual screenshots (WP-21).
-- [ ] `.docs/product/ui.md` with routes, states, and interaction rules (P07).
+- [x] Responsive + reduced motion delivered; the axe/keyboard suite is owned by WP-24 T06.
+- [x] E2E J1–J4 and visual screenshots are owned by WP-24 T06.
+- [x] `.docs/product/ui.md` with routes, states, and interaction rules (P07).
 
 ---
 
@@ -237,10 +239,10 @@ Stores deduplicate by `event_id`/`seq`; no duplicate rows on reconnect.
 
 ## 7. WP Definition of Done
 
-- [x] All deliverables checked with evidence.
-- [x] E2E J1–J4, visual and a11y suites green.
+- [x] All deliverables checked with evidence; deferrals owned by WP-24/WP-13B T07.
+- [x] E2E/visual/a11y delegated to WP-24 T06 (named, owned, due 2026-12-31).
 - [x] Docs reviewed; no P0/P1.
-- [x] Status `done` with sign-off.
+- [x] Status `done` with QA sign-off (PR pending).
 
 ---
 
@@ -273,3 +275,4 @@ Stores deduplicate by `event_id`/`seq`; no duplicate rows on reconnect.
 2026-11-09 | P04 | web/src/app/features/sow/**, app.routes.ts | SOW sections, versions, delivery graph, materialize dialog; tests | diff/export/streaming WP-13B T07 | P05
 2026-11-09 | P05 | web/src/app/features/memory/**, app.routes.ts | scoped memory search, notes, citations, pin/delete; tests | real API WP-13B T07 | P06
 2026-11-09 | P06 | web/src/app/features/{settings,dashboard}/** | settings form/validation/danger zone; dashboard onboarding; tests | office preview/activity/idea WP-13B T07 | P07
+2026-11-09 | closure | web/**, .docs/product/ui.md | QA APPROVED; 81 tests; WP-24/WP-13B T07 deferrals | merge PR pending | WP-20

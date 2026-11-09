@@ -1,5 +1,6 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { PageHeader } from '../../shared/ui/page-header/page-header';
+import { Degraded } from '../../shared/ui/degraded/degraded';
 import { Button } from '../../shared/ui/button/button';
 import { Card as UiCard } from '../../shared/ui/card/card';
 import { Drawer } from '../../shared/ui/drawer/drawer';
@@ -8,14 +9,29 @@ import { Spinner } from '../../shared/ui/spinner/spinner';
 import { Input } from '../../shared/ui/input/input';
 import { Select } from '../../shared/ui/select/select';
 import { StatusBadge } from '../../shared/status-badge/status-badge';
+import { Dialog } from '../../shared/ui/dialog/dialog';
 import { MemoryStore } from './store/memory.store';
 import type { MemoryNote } from '../../domain/models';
 
 @Component({
   selector: 'app-memory',
-  imports: [PageHeader, Button, UiCard, Drawer, EmptyState, Spinner, Input, Select, StatusBadge],
+  imports: [
+    PageHeader,
+    Degraded,
+    Button,
+    UiCard,
+    Drawer,
+    EmptyState,
+    Spinner,
+    Input,
+    Select,
+    StatusBadge,
+    Dialog,
+  ],
   template: `
+    <app-degraded [active]="store.demo()" />
     <app-page-header title="Memory" subtitle="Scoped retrieval with citations">
+      <app-button variant="primary" (pressed)="openNote()">Add note</app-button>
       @if (store.demo()) {
         <app-status-badge label="Demo data" tone="warning" />
       }
@@ -81,10 +97,31 @@ import type { MemoryNote } from '../../domain/models';
           <app-button (pressed)="togglePin(note.id)">{{
             isPinned(note.id) ? 'Unpin' : 'Pin'
           }}</app-button>
-          <app-button variant="danger" (pressed)="remove(note.id)">Delete</app-button>
+          <app-button variant="danger" (pressed)="confirmDelete(note.id)">Delete</app-button>
         </div>
       }
     </app-drawer>
+
+    <app-dialog
+      label="Add note"
+      title="Add a memory note"
+      [open]="noteOpen()"
+      (closed)="noteOpen.set(false)"
+      (confirmed)="addNote()"
+    >
+      <app-input label="Title" [(value)]="noteTitle" [error]="noteError()" />
+      <app-input label="Snippet" [(value)]="noteSnippet" [error]="noteError()" />
+    </app-dialog>
+
+    <app-dialog
+      label="Delete note"
+      title="Delete this note?"
+      [open]="deleteOpen()"
+      (closed)="deleteOpen.set(false)"
+      (confirmed)="removeConfirmed()"
+    >
+      <p>This is irreversible.</p>
+    </app-dialog>
   `,
   styles: `
     .filters {
@@ -141,6 +178,12 @@ export class Memory implements OnInit {
   protected readonly scope = signal('all');
   protected readonly detailOpen = signal(false);
   protected readonly selected = signal<MemoryNote | null>(null);
+  protected readonly noteOpen = signal(false);
+  protected readonly deleteOpen = signal(false);
+  protected readonly noteTitle = signal('');
+  protected readonly noteSnippet = signal('');
+  protected readonly noteError = signal<string | null>(null);
+  private pendingDelete: string | null = null;
   protected readonly scopes = [
     { value: 'all', label: 'All scopes' },
     { value: 'lab', label: 'Lab' },
@@ -172,8 +215,41 @@ export class Memory implements OnInit {
     this.store.togglePin(id);
   }
 
-  protected remove(id: string): void {
-    this.store.remove(id);
+  protected openNote(): void {
+    this.noteTitle.set('');
+    this.noteSnippet.set('');
+    this.noteError.set(null);
+    this.noteOpen.set(true);
+  }
+
+  protected addNote(): void {
+    const title = this.noteTitle().trim();
+    const snippet = this.noteSnippet().trim();
+    if (title.length < 3 || snippet.length < 3) {
+      this.noteError.set('Title and snippet must be at least 3 characters');
+      return;
+    }
+    this.store.addNote({
+      id: `note-${crypto.randomUUID()}`,
+      scope: 'project',
+      title,
+      snippet,
+      citations: ['local'],
+    });
+    this.noteOpen.set(false);
+  }
+
+  protected confirmDelete(id: string): void {
+    this.pendingDelete = id;
+    this.deleteOpen.set(true);
+  }
+
+  protected removeConfirmed(): void {
+    if (this.pendingDelete !== null) {
+      this.store.remove(this.pendingDelete);
+      this.pendingDelete = null;
+    }
+    this.deleteOpen.set(false);
     this.detailOpen.set(false);
   }
 }

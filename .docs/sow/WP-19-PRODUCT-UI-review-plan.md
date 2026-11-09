@@ -7,7 +7,7 @@
 | Review branches | `review/p01-wp19-data` … `review/p07-wp19-qa` |
 | Reviewer | Chief Software Engineer (agent) |
 | QA reviewer | qa-review-agent (independent subagent) |
-| Status | `in_progress` |
+| Status | `approved` |
 
 ## 1. Contract completeness
 
@@ -45,7 +45,7 @@
 - [x] Settings/danger zone — P06 (`features/settings`).
 - [ ] Health/failed-runs/retired/handoff drawers — P03/P06.
 - [x] Loading/empty/error/degraded on board, inventory, SOW, memory, settings and dashboard.
-- [ ] `.docs/product/ui.md` — P07.
+- [x] `.docs/product/ui.md` — P07.
 - [ ] E2E/visual — WP-21 (owned, due 2026-12-31).
 
 ## 4. Acceptance criteria
@@ -81,19 +81,19 @@
 
 - [x] CR-0015 and the review plan indexed in `AGENTS.md`.
 - [x] `.docs/sow/SOW.md` and the WP status/progress updated.
-- [ ] `.docs/product/ui.md` — P07.
+- [x] `.docs/product/ui.md` — P07.
 
 ## 8. QA review
 
-- [ ] QA subagent verdict: `APPROVED` on P07.
-- [ ] QA evidence recorded after the review.
-- [ ] Every blocking defect fixed and re-reviewed.
+- [x] QA subagent verdict: `APPROVED` (HEAD `400c2c5`).
+- [x] QA evidence: qa-review-agent returned APPROVED with owned WP-24/WP-13B T07 deferrals; 81 tests, gates green.
+- [x] Every blocking defect fixed and re-reviewed (two passes).
 
 ## 9. Deferred items and residual risks
 
 - [ ] Real edge data for board/inventory/SOW/memory/settings — owner: Dev, card: `WP-13B` T07, due 2026-12-31.
-- [ ] E2E/visual/a11y — owner: QA, card: `WP-21`, due 2026-12-31.
-- [ ] Activity feed/idea composer live wiring — P06.
+- [ ] E2E/visual/a11y, activity/idea, health/handoff drawers and SOW diff/export — owner: Dev/QA, card: `WP-24`, due 2026-12-31.
+- [ ] Activity feed/idea composer/live KPIs — owner: Dev, card: `WP-24` T01, due 2026-12-31.
 
 ## 10. Decisions
 
@@ -104,3 +104,4 @@
 2026-11-09 | P04 | web/src/app/features/sow/**, app.routes.ts | SOW sections/graph/materialize; tests | diff/export/streaming WP-13B T07 | P05
 2026-11-09 | P05 | web/src/app/features/memory/**, app.routes.ts | memory search/notes/pin/delete; tests | real API WP-13B T07 | P06
 2026-11-09 | P06 | web/src/app/features/{settings,dashboard}/** | settings + onboarding; tests | activity/idea/health WP-13B T07 | P07
+2026-11-09 | P07 | web/src/app/features/{board,inventory,sow,plan,settings,dashboard}/**, .docs/product/ui.md | inspector, wizards, SOW actions, plan, settings audit, onboarding, board violations; 81 tests | a11y/E2E WP-21, real API/health/handoff WP-13B T07 | QA re-review

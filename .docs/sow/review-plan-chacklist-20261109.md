@@ -59,7 +59,7 @@ scripts/run-web.sh npm run format:check
 - [x] **P06 — WP-19 settings and onboarding.**
   Branch `review/p06-wp19-settings`; `/settings` lab/autonomy/budget/office, onboarding checklist on the dashboard, tests. Depends P01.
 
-- [ ] **P07 — WP-19 QA and closure.**
+- [x] **P07 — WP-19 QA and closure.**
   Branch `review/p07-wp19-qa`; complete the review plan, QA `APPROVED`, fix findings, WP-19 `done`, deferrals to WP-13B T07 (real data) and WP-21 (visual/a11y). Depends P02–P06.
 
 - [ ] **P08 — Reopen WP-20 and deliver metrics/logs.**
@@ -71,14 +71,14 @@ scripts/run-web.sh npm run format:check
 - [ ] **P10 — WP-20 backup/DR/runbooks and QA.**
   Branch `review/p10-wp20-dr`; restore drill, DR and incident runbooks, QA `APPROVED`, WP-20 `done`. Depends P09.
 
-- [ ] **P11 — WP-21 E2E and accessibility tooling.**
-  Branch `review/p11-wp21-e2e`; CR-0017, review plan, Playwright + axe, journeys J1–J5, a11y per route. Depends P07, P10.
+- [ ] **P11 — WP-24 E2E and accessibility tooling.**
+  Branch `review/p11-wp24-e2e`; Playwright + axe, journeys J1–J5, a11y per route; WP-21 is `done`, so these suites are owned by WP-24. Depends P07, P10.
 
-- [ ] **P12 — WP-21 load, chaos, security, fuzz.**
-  Branch `review/p12-wp21-hardening`; k6 load, chaos (worker/runner kill), security and fuzz suites. Depends P11.
+- [ ] **P12 — WP-24 load, chaos, security, fuzz.**
+  Branch `review/p12-wp24-hardening`; k6 load, chaos (worker/runner kill), security and fuzz suites; WP-24 evidence. Depends P11.
 
-- [ ] **P13 — WP-21 coverage and CI wiring.**
-  Branch `review/p13-wp21-coverage`; coverage thresholds (backend 80/domain 90/frontend 80/new 80), CI wiring, QA `APPROVED`, WP-21 `done`. Depends P12.
+- [ ] **P13 — WP-24 coverage and CI wiring.**
+  Branch `review/p13-wp24-coverage`; coverage thresholds (backend 80/domain 90/frontend 80/new 80), CI wiring, QA `APPROVED`, WP-24 `done`. Depends P12.
 
 - [ ] **P14 — Reopen WP-22 and deliver docs/demo/acceptance.**
   Branch `review/p14-wp22-docs`; CR-0018, review plan, docs manifest, acceptance report, demo script, handover. Depends P13.
@@ -142,4 +142,5 @@ scripts/run-web.sh npm run format:check
 | 2026-11-09 | P03 | `review/p03-wp19-inventory` | `6f2e24e` | Inventory lists, detail drawers, create dialog, last4 keys. |
 | 2026-11-09 | P04 | `review/p04-wp19-sow` | `9cd6624` | SOW sections, delivery graph, materialize. |
 | 2026-11-09 | P05 | `review/p05-wp19-memory` | `bd6d940` | Memory search, notes, citations, pin/delete. |
-| 2026-11-09 | P06 | `review/p06-wp19-settings` | merge pending | Settings, onboarding, danger zone. |
+| 2026-11-09 | P06 | `review/p06-wp19-settings` | `dc27438` | Settings, onboarding, danger zone. |
+| 2026-11-09 | P07 | `review/p07-wp19-qa` | merge pending | QA APPROVED; WP-19 done. |

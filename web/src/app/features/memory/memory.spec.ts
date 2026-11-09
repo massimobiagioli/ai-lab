@@ -58,6 +58,11 @@ describe('Memory', () => {
       (button) => button.textContent?.trim() === 'Delete',
     );
     remove?.click();
+    fixture.detectChanges();
+    const confirm = [...element.querySelectorAll('button')].find(
+      (button) => button.textContent?.trim() === 'Confirm',
+    );
+    confirm?.click();
     expect(store.remove).toHaveBeenCalled();
   });
 });
