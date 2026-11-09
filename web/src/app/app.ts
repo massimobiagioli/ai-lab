@@ -1,12 +1,17 @@
-import { Component, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component } from '@angular/core';
+import { Shell } from './layout/shell/shell';
 
 @Component({
-  imports: [RouterOutlet],
   selector: 'app-root',
-  styleUrl: './app.scss',
-  templateUrl: './app.html',
+  imports: [Shell],
+  template: '<app-shell />',
+  styles: `
+    :host {
+      display: block;
+      min-height: 100dvh;
+      background: var(--ailab-color-bg);
+      color: var(--ailab-color-text);
+    }
+  `,
 })
-export class App {
-  protected readonly title = signal('web');
-}
+export class App {}

@@ -1,23 +1,53 @@
 :root {
+  /* Color ramp */
   --ailab-color-bg: #0f172a;
   --ailab-color-surface: #1e293b;
   --ailab-color-surface-raised: #273449;
+  --ailab-color-surface-sunken: #131c2e;
   --ailab-color-text: #f8fafc;
   --ailab-color-muted: #94a3b8;
   --ailab-color-accent: #f2b84b;
+  --ailab-color-accent-strong: #ffd166;
   --ailab-color-success: #57c785;
   --ailab-color-warning: #f2b84b;
   --ailab-color-danger: #e07a5f;
+  --ailab-color-info: #7dd3fc;
+  --ailab-color-overlay: rgb(15 23 42 / 72%);
+
+  /* Borders and radii */
   --ailab-border: 2px solid var(--ailab-color-muted);
+  --ailab-border-accent: 2px solid var(--ailab-color-accent);
   --ailab-radius: 0;
+  --ailab-radius-sm: 2px;
+  --ailab-radius-md: 4px;
+
+  /* Spacing (4 px scale) */
   --ailab-space-1: 0.25rem;
   --ailab-space-2: 0.5rem;
   --ailab-space-3: 0.75rem;
   --ailab-space-4: 1rem;
   --ailab-space-6: 1.5rem;
+  --ailab-space-8: 2rem;
+
+  /* Shadows */
+  --ailab-shadow-hard: 4px 4px 0 var(--ailab-color-bg);
+  --ailab-shadow-raised: 2px 2px 0 var(--ailab-color-bg);
+
+  /* Typography */
   --ailab-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --ailab-font-size-sm: 0.75rem;
   --ailab-font-size-md: 0.875rem;
   --ailab-font-size-lg: 1rem;
+  --ailab-font-size-xl: 1.5rem;
   --ailab-line-height: 1.4;
+
+  /* Motion */
+  --ailab-motion-fast: 80ms;
+  --ailab-motion-base: 160ms;
+  --ailab-motion-slow: 240ms;
+
+  /* Z-index scale */
+  --ailab-z-base: 0;
+  --ailab-z-drawer: 20;
+  --ailab-z-toast: 40;
 }
