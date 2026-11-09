@@ -224,6 +224,8 @@ Use the `quality-gates` skill for the exact commands and evidence rules.
 | `check-openapi-drift` | [`.tools/check-openapi-drift.py`](./.tools/check-openapi-drift.py) | Fail when an OpenAPI path is not served by the edge router. | `.tools/check-openapi-drift.py [--root DIR]` |
 | `check-observability` | [`.tools/check-observability.sh`](./.tools/check-observability.sh) | Validate the SLO, alert and Grafana dashboard artifacts. | `.tools/check-observability.sh` |
 | `run-e2e` | [`.tools/run-e2e.sh`](./.tools/run-e2e.sh) | Run Playwright in the official image (browser deps included). | `.tools/run-e2e.sh [args]` |
+| `run-load` | [`.tools/run-load.sh`](./.tools/run-load.sh) | Run the k6 edge load scenario against the API namespace. | `.tools/run-load.sh [args]` |
+| `chaos-worker-kill` | [`.tools/chaos-worker-kill.sh`](./.tools/chaos-worker-kill.sh) | Kill/restart the worker and verify recovery. | `.tools/chaos-worker-kill.sh` |
 | `check-architecture-fitness` | [`.tools/check-architecture-fitness.sh`](./.tools/check-architecture-fitness.sh) | Validate context ownership, dependency acyclicity, cross-context table access and Compose catalog coverage. | `.tools/check-architecture-fitness.sh [--root DIR]` |
 | `architecture-fitness-self-test` | [`.tools/architecture-fitness-self-test.sh`](./.tools/architecture-fitness-self-test.sh) | Exercise the architecture fitness check against disposable roots. | `.tools/architecture-fitness-self-test.sh` |
 | `check-crate-dependencies` | [`.tools/check-crate-dependencies.sh`](./.tools/check-crate-dependencies.sh) | Validate crate direction, acyclicity, `#![forbid(unsafe_code)]` and the no-unwrap gate. | `.tools/check-crate-dependencies.sh` |
