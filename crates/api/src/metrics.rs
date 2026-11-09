@@ -1,18 +1,26 @@
 //! Prometheus metrics and redacted structured request logs (WP-20).
 
+use std::collections::BTreeMap;
 use std::fmt::Write as _;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicI64, AtomicU64, Ordering};
+use std::sync::{Arc, Mutex};
 
-const BUCKETS: [u64; 7] = [10, 25, 50, 100, 250, 500, 1_000];
+const BUCKETS: [f64; 7] = [0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0];
+
+#[derive(Debug, Default)]
+struct Latency {
+    bucket: [u64; BUCKETS.len()],
+    sum_ms: u64,
+    count: u64,
+}
 
 /// Process metrics for the edge server.
 #[derive(Debug, Default)]
 pub struct Metrics {
-    requests: AtomicU64,
-    errors: AtomicU64,
     in_flight: AtomicI64,
-    latency: [AtomicU64; BUCKETS.len()],
+    requests: Mutex<BTreeMap<(String, u16), u64>>,
+    errors: AtomicU64,
+    latency: Mutex<Latency>,
 }
 
 impl Metrics {
@@ -28,30 +36,42 @@ impl Metrics {
     }
 
     /// Mark a request as finished and record its status/latency.
-    pub fn finish(&self, status: u16, elapsed_ms: u64) {
+    #[allow(clippy::cast_precision_loss)]
+    pub fn finish(&self, method: &str, status: u16, elapsed_ms: u64) {
         self.in_flight.fetch_sub(1, Ordering::Relaxed);
-        self.requests.fetch_add(1, Ordering::Relaxed);
+        if let Ok(mut requests) = self.requests.lock() {
+            *requests.entry((method.to_owned(), status)).or_insert(0) += 1;
+        }
         if status >= 500 {
             self.errors.fetch_add(1, Ordering::Relaxed);
         }
-        let index = BUCKETS
-            .iter()
-            .position(|bucket| elapsed_ms <= *bucket)
-            .unwrap_or(BUCKETS.len() - 1);
-        self.latency[index].fetch_add(1, Ordering::Relaxed);
+        if let Ok(mut latency) = self.latency.lock() {
+            let seconds = elapsed_ms as f64 / 1_000.0;
+            let index = BUCKETS
+                .iter()
+                .position(|bucket| seconds <= *bucket)
+                .unwrap_or(BUCKETS.len() - 1);
+            latency.bucket[index] += 1;
+            latency.sum_ms = latency.sum_ms.saturating_add(elapsed_ms);
+            latency.count += 1;
+        }
     }
 
     /// Render the Prometheus text exposition.
     #[must_use]
+    #[allow(clippy::cast_precision_loss)]
     pub fn render(&self) -> String {
         let mut output = String::new();
         output.push_str("# HELP ailab_http_requests_total Total HTTP requests\n");
         output.push_str("# TYPE ailab_http_requests_total counter\n");
-        let _ = writeln!(
-            output,
-            "ailab_http_requests_total {}",
-            self.requests.load(Ordering::Relaxed)
-        );
+        if let Ok(requests) = self.requests.lock() {
+            for ((method, status), count) in requests.iter() {
+                let _ = writeln!(
+                    output,
+                    "ailab_http_requests_total{{method=\"{method}\",status=\"{status}\"}} {count}"
+                );
+            }
+        }
         output.push_str("# HELP ailab_http_errors_total Total 5xx responses\n");
         output.push_str("# TYPE ailab_http_errors_total counter\n");
         let _ = writeln!(
@@ -66,21 +86,28 @@ impl Metrics {
             "ailab_http_in_flight {}",
             self.in_flight.load(Ordering::Relaxed)
         );
-        output.push_str("# HELP ailab_http_request_duration_ms Request latency\n");
-        output.push_str("# TYPE ailab_http_request_duration_ms histogram\n");
-        let mut cumulative = 0_u64;
-        for (index, bucket) in BUCKETS.iter().enumerate() {
-            cumulative = cumulative.saturating_add(self.latency[index].load(Ordering::Relaxed));
+        output.push_str("# HELP ailab_http_request_duration_seconds Request latency\n");
+        output.push_str("# TYPE ailab_http_request_duration_seconds histogram\n");
+        if let Ok(latency) = self.latency.lock() {
+            let mut cumulative = 0_u64;
+            for (index, bucket) in BUCKETS.iter().enumerate() {
+                cumulative = cumulative.saturating_add(latency.bucket[index]);
+                let _ = writeln!(
+                    output,
+                    "ailab_http_request_duration_seconds_bucket{{le=\"{bucket}\"}} {cumulative}"
+                );
+            }
             let _ = writeln!(
                 output,
-                "ailab_http_request_duration_ms_bucket{{le=\"{bucket}\"}} {cumulative}"
+                "ailab_http_request_duration_seconds_sum {}",
+                latency.sum_ms as f64 / 1_000.0
+            );
+            let _ = writeln!(
+                output,
+                "ailab_http_request_duration_seconds_count {}",
+                latency.count
             );
         }
-        let _ = writeln!(
-            output,
-            "ailab_http_request_duration_ms_count {}",
-            self.requests.load(Ordering::Relaxed)
-        );
         output
     }
 }
@@ -117,16 +144,18 @@ mod tests {
     use super::*;
 
     #[test]
-    fn renders_counters_and_buckets() {
+    fn renders_counters_labels_and_seconds_buckets() {
         let metrics = Metrics::default();
         metrics.start();
         metrics.start();
-        metrics.finish(200, 12);
-        metrics.finish(500, 120);
+        metrics.finish("GET", 200, 12);
+        metrics.finish("GET", 500, 120);
         let text = metrics.render();
-        assert!(text.contains("ailab_http_requests_total 2"));
+        assert!(text.contains("ailab_http_requests_total{method=\"GET\",status=\"200\"} 1"));
+        assert!(text.contains("ailab_http_requests_total{method=\"GET\",status=\"500\"} 1"));
         assert!(text.contains("ailab_http_errors_total 1"));
-        assert!(text.contains("ailab_http_request_duration_ms_bucket{le=\"25\"} 1"));
+        assert!(text.contains("ailab_http_request_duration_seconds_bucket{le=\"0.025\"} 1"));
+        assert!(text.contains("ailab_http_request_duration_seconds_count 2"));
         assert!(text.contains("ailab_http_in_flight 0"));
     }
 

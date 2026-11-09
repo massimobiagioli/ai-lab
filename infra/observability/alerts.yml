@@ -1,25 +1,44 @@
-# Prometheus alert rules (WP-20).
+# Prometheus alert rules (WP-20). Every alert references a runbook.
 groups:
   - name: ailab-edge
     rules:
       - alert: AilabHighErrorRate
-        expr: rate(ailab_http_errors_total[5m]) / rate(ailab_http_requests_total[5m]) > 0.01
+        expr: sum(rate(ailab_http_requests_total{status=~"5.."}[5m])) / sum(rate(ailab_http_requests_total[5m])) > 0.01
         for: 10m
         labels:
           severity: page
         annotations:
           summary: Edge 5xx rate above 1%
+          runbook_url: https://github.com/massimobiagioli/ai-lab/blob/main/.docs/product/runbooks/provider-outage.md
       - alert: AilabHighLatency
-        expr: histogram_quantile(0.95, rate(ailab_http_request_duration_ms_bucket[5m])) > 300
+        expr: histogram_quantile(0.95, sum(rate(ailab_http_request_duration_seconds_bucket[5m])) by (le)) > 0.25
         for: 10m
         labels:
           severity: page
         annotations:
-          summary: Edge p95 latency above 300 ms
+          summary: Edge p95 latency above 250 ms
+          runbook_url: https://github.com/massimobiagioli/ai-lab/blob/main/.docs/product/runbooks/provider-outage.md
       - alert: AilabNoTraffic
-        expr: rate(ailab_http_requests_total[10m]) == 0
+        expr: sum(rate(ailab_http_requests_total[10m])) == 0
         for: 15m
         labels:
           severity: ticket
         annotations:
           summary: No edge traffic for 15 minutes
+          runbook_url: https://github.com/massimobiagioli/ai-lab/blob/main/.docs/product/runbooks/ws-disconnects.md
+      - alert: AilabIntegrityMismatch
+        expr: ailab_integrity_mismatches > 0
+        for: 1m
+        labels:
+          severity: page
+        annotations:
+          summary: A projection mismatch was detected by the integrity job
+          runbook_url: https://github.com/massimobiagioli/ai-lab/blob/main/.docs/product/runbooks/db-restore.md
+      - alert: AilabBudgetExhausted
+        expr: ailab_budget_remaining_microusd < 0
+        for: 5m
+        labels:
+          severity: page
+        annotations:
+          summary: A lab budget is exhausted
+          runbook_url: https://github.com/massimobiagioli/ai-lab/blob/main/.docs/product/runbooks/budget-exhausted.md

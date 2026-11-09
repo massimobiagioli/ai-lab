@@ -1,45 +1,44 @@
+# Prometheus alert rules (WP-20). Every alert references a runbook.
 groups:
-  - name: ailab
+  - name: ailab-edge
     rules:
-      - alert: ApiHighLatency
-        expr: histogram_quantile(0.95, sum(rate(ailab_http_request_duration_seconds_bucket[5m])) by (le)) > 0.12
-        for: 10m
-        labels:
-          severity: warning
-        annotations:
-          summary: API read p95 above 120 ms
-      - alert: ApiErrorRate
+      - alert: AilabHighErrorRate
         expr: sum(rate(ailab_http_requests_total{status=~"5.."}[5m])) / sum(rate(ailab_http_requests_total[5m])) > 0.01
-        for: 5m
-        labels:
-          severity: critical
-        annotations:
-          summary: API 5xx error rate above 1%
-      - alert: RunQueueBacklog
-        expr: ailab_run_queue_depth > 20
         for: 10m
         labels:
-          severity: warning
+          severity: page
         annotations:
-          summary: Run queue is backing up
-      - alert: StaleRuns
-        expr: ailab_lease_age_seconds > 900
-        for: 5m
+          summary: Edge 5xx rate above 1%
+          runbook_url: https://github.com/massimobiagioli/ai-lab/blob/main/.docs/product/runbooks/provider-outage.md
+      - alert: AilabHighLatency
+        expr: histogram_quantile(0.95, sum(rate(ailab_http_request_duration_seconds_bucket[5m])) by (le)) > 0.25
+        for: 10m
         labels:
-          severity: critical
+          severity: page
         annotations:
-          summary: A run lease is older than the TTL
-      - alert: BudgetExhausted
-        expr: ailab_budget_remaining_microusd <= 0
-        for: 1m
-        labels:
-          severity: critical
-        annotations:
-          summary: The lab budget is exhausted
-      - alert: DiskPressure
-        expr: node_filesystem_avail_bytes < 21474836480
+          summary: Edge p95 latency above 250 ms
+          runbook_url: https://github.com/massimobiagioli/ai-lab/blob/main/.docs/product/runbooks/provider-outage.md
+      - alert: AilabNoTraffic
+        expr: sum(rate(ailab_http_requests_total[10m])) == 0
         for: 15m
         labels:
-          severity: warning
+          severity: ticket
         annotations:
-          summary: Less than 20 GB free disk
+          summary: No edge traffic for 15 minutes
+          runbook_url: https://github.com/massimobiagioli/ai-lab/blob/main/.docs/product/runbooks/ws-disconnects.md
+      - alert: AilabIntegrityMismatch
+        expr: ailab_integrity_mismatches > 0
+        for: 1m
+        labels:
+          severity: page
+        annotations:
+          summary: A projection mismatch was detected by the integrity job
+          runbook_url: https://github.com/massimobiagioli/ai-lab/blob/main/.docs/product/runbooks/db-restore.md
+      - alert: AilabBudgetExhausted
+        expr: ailab_budget_remaining_microusd < 0
+        for: 5m
+        labels:
+          severity: page
+        annotations:
+          summary: A lab budget is exhausted
+          runbook_url: https://github.com/massimobiagioli/ai-lab/blob/main/.docs/product/runbooks/budget-exhausted.md

@@ -550,10 +550,15 @@ async fn metrics_layer(State(state): State<AppState>, request: Request, next: Ne
     state.metrics.start();
     let method = request.method().clone();
     let path = request.uri().path().to_owned();
+    let request_id_value = request
+        .headers()
+        .get("x-request-id")
+        .and_then(|value| value.to_str().ok())
+        .map(ToOwned::to_owned);
     let response = next.run(request).await;
     let status = response.status().as_u16();
     let elapsed = u64::try_from(start.elapsed().as_millis()).unwrap_or(u64::MAX);
-    state.metrics.finish(status, elapsed);
+    state.metrics.finish(method.as_str(), status, elapsed);
     let line = serde_json::json!({
         "level": "info",
         "event": "http_request",
@@ -561,6 +566,10 @@ async fn metrics_layer(State(state): State<AppState>, request: Request, next: Ne
         "path": crate::metrics::redact(&path),
         "status": status,
         "duration_ms": elapsed,
+        "timestamp": chrono::Utc::now().to_rfc3339(),
+        "service": "ailab-api",
+        "version": env!("CARGO_PKG_VERSION"),
+        "request_id": request_id_value.as_deref(),
         "trace_id": crate::trace::current(),
     });
     println!("{line}");
@@ -1610,7 +1619,7 @@ mod tests {
             .to_bytes();
         let text = String::from_utf8_lossy(&body);
         assert!(text.contains("ailab_http_requests_total"));
-        assert!(text.contains("ailab_http_request_duration_ms_bucket"));
+        assert!(text.contains("ailab_http_request_duration_seconds_bucket"));
     }
 
     #[tokio::test]

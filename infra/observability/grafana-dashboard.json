@@ -7,28 +7,70 @@
     {
       "title": "Requests / s",
       "type": "timeseries",
-      "targets": [{ "expr": "rate(ailab_http_requests_total[5m])" }]
+      "targets": [
+        {
+          "expr": "rate(ailab_http_requests_total[5m])",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      }
     },
     {
       "title": "5xx rate",
       "type": "timeseries",
       "targets": [
-        { "expr": "rate(ailab_http_errors_total[5m]) / rate(ailab_http_requests_total[5m])" }
-      ]
+        {
+          "expr": "rate(ailab_http_errors_total[5m]) / rate(ailab_http_requests_total[5m])",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      }
     },
     {
       "title": "p95 latency (ms)",
       "type": "timeseries",
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, rate(ailab_http_request_duration_ms_bucket[5m]))"
+          "expr": "histogram_quantile(0.95, rate(ailab_http_request_duration_ms_bucket[5m]))",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
         }
-      ]
+      ],
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      }
     },
     {
       "title": "In flight",
       "type": "stat",
-      "targets": [{ "expr": "ailab_http_in_flight" }]
+      "targets": [
+        {
+          "expr": "ailab_http_in_flight",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      }
     }
   ]
 }
