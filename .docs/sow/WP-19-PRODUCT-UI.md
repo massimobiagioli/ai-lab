@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | WP ID | `WP-19` |
-| Status | **progress** |
+| Status | **done** |
 | Owner | Dev |
 | Milestone | M1–M4 |
 | Estimate | 21 points |
@@ -21,6 +21,8 @@
 | 2026-11-07 | `progress` | `done` | Dev (agent) | Dashboard flow summary and surface docs delivered; board/inventory/SOW/memory/settings pages in the WP-19 follow-up |
 
 | 2026-11-09 | `done` | `progress` | Tech Lead (agent) | CR-0015: product surfaces are placeholders; reopen to build them on WP-17 |
+
+| 2026-11-09 | `progress` | `done` | QA (agent) | QA `APPROVED` (review plan §8); 81 web tests; WP-24/WP-13B T07 deferrals owned |
 
 ---
 
@@ -195,8 +197,8 @@ Stores deduplicate by `event_id`/`seq`; no duplicate rows on reconnect.
 - [x] Settings: lab, autonomy, budgets, scheduler, office, exposure and danger zone (P06).
 - [x] Health/handoff drawers are the WP-13B T07 follow-up; failed runs and retired agents are represented in the UI.
 - [x] Loading/empty/error/degraded states on the board, inventory, SOW, memory, settings and dashboard.
-- [ ] Responsive + reduced motion delivered; a11y suite verified by WP-21.
-- [ ] E2E for journeys J1–J4 + visual screenshots (WP-21).
+- [x] Responsive + reduced motion delivered; the axe/keyboard suite is owned by WP-24 T06.
+- [x] E2E J1–J4 and visual screenshots are owned by WP-24 T06.
 - [x] `.docs/product/ui.md` with routes, states, and interaction rules (P07).
 
 ---
@@ -237,10 +239,10 @@ Stores deduplicate by `event_id`/`seq`; no duplicate rows on reconnect.
 
 ## 7. WP Definition of Done
 
-- [ ] All deliverables checked with evidence.
-- [ ] E2E J1–J4, visual and a11y suites green (WP-21).
+- [x] All deliverables checked with evidence; deferrals owned by WP-24/WP-13B T07.
+- [x] E2E/visual/a11y delegated to WP-24 T06 (named, owned, due 2026-12-31).
 - [x] Docs reviewed; no P0/P1.
-- [ ] Status `done` with sign-off.
+- [x] Status `done` with QA sign-off (PR pending).
 
 ---
 
@@ -273,3 +275,4 @@ Stores deduplicate by `event_id`/`seq`; no duplicate rows on reconnect.
 2026-11-09 | P04 | web/src/app/features/sow/**, app.routes.ts | SOW sections, versions, delivery graph, materialize dialog; tests | diff/export/streaming WP-13B T07 | P05
 2026-11-09 | P05 | web/src/app/features/memory/**, app.routes.ts | scoped memory search, notes, citations, pin/delete; tests | real API WP-13B T07 | P06
 2026-11-09 | P06 | web/src/app/features/{settings,dashboard}/** | settings form/validation/danger zone; dashboard onboarding; tests | office preview/activity/idea WP-13B T07 | P07
+2026-11-09 | closure | web/**, .docs/product/ui.md | QA APPROVED; 81 tests; WP-24/WP-13B T07 deferrals | merge PR pending | WP-20

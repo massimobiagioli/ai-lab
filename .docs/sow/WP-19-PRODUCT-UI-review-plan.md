@@ -7,7 +7,7 @@
 | Review branches | `review/p01-wp19-data` … `review/p07-wp19-qa` |
 | Reviewer | Chief Software Engineer (agent) |
 | QA reviewer | qa-review-agent (independent subagent) |
-| Status | `in_progress` |
+| Status | `approved` |
 
 ## 1. Contract completeness
 
@@ -85,9 +85,9 @@
 
 ## 8. QA review
 
-- [ ] QA subagent verdict: `APPROVED` on P07.
-- [ ] QA evidence recorded after the review.
-- [ ] Every blocking defect fixed and re-reviewed.
+- [x] QA subagent verdict: `APPROVED` (HEAD `400c2c5`).
+- [x] QA evidence: qa-review-agent returned APPROVED with owned WP-24/WP-13B T07 deferrals; 81 tests, gates green.
+- [x] Every blocking defect fixed and re-reviewed (two passes).
 
 ## 9. Deferred items and residual risks
 
