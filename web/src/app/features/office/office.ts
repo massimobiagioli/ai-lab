@@ -2,21 +2,26 @@ import {
   AfterViewInit,
   Component,
   computed,
+  effect,
   ElementRef,
   inject,
   OnDestroy,
   signal,
   viewChild,
 } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { PageHeader } from '../../shared/ui/page-header/page-header';
 import { Card } from '../../shared/ui/card/card';
 import { Button } from '../../shared/ui/button/button';
 import { StatusBadge, StatusTone } from '../../shared/status-badge/status-badge';
+import { Drawer } from '../../shared/ui/drawer/drawer';
+import { WsService } from '../../core/ws/ws.service';
 import {
   CANVAS_HEIGHT,
   CANVAS_WIDTH,
   DESKS,
+  FURNITURE,
+  type Furniture,
   OFFICE_HEIGHT,
   OFFICE_WIDTH,
   OFFSET_Y,
@@ -34,16 +39,16 @@ const AGENTS: ReadonlyArray<{
   state: AgentDomainState;
   deskIndex: number;
 }> = [
-  { id: 'agent-tech-lead', name: 'Tech Lead', state: 'working', deskIndex: 0 },
+  { id: 'agent-tech-lead', name: 'Tech Lead', state: 'idle', deskIndex: 0 },
   { id: 'agent-analyst', name: 'Analyst', state: 'idle', deskIndex: 1 },
-  { id: 'agent-dev', name: 'Dev', state: 'working', deskIndex: 2 },
-  { id: 'agent-qa', name: 'QA', state: 'blocked', deskIndex: 3 },
-  { id: 'agent-lounge', name: 'Lounge', state: 'paused', deskIndex: 4 },
+  { id: 'agent-dev', name: 'Dev', state: 'idle', deskIndex: 2 },
+  { id: 'agent-qa', name: 'QA', state: 'idle', deskIndex: 3 },
+  { id: 'agent-lounge', name: 'Lounge', state: 'idle', deskIndex: 4 },
 ];
 
 @Component({
   selector: 'app-office',
-  imports: [PageHeader, Card, Button, StatusBadge],
+  imports: [PageHeader, Card, Button, StatusBadge, Drawer, RouterLink],
   template: `
     <app-page-header title="Virtual office" subtitle="Agents, desks and truthful states">
       <app-button (pressed)="moveToLounge()">Move to lounge</app-button>
@@ -66,13 +71,14 @@ const AGENTS: ReadonlyArray<{
         </p>
       </app-card>
 
-      <app-card title="Agents">
+      <app-card title="Agents" aria-live="polite">
         <ul class="office__agents">
           @for (agent of engine.list; track agent.id) {
             <li>
               <button
                 class="office__agent"
                 type="button"
+                [attr.data-testid]="'agent-' + agent.id"
                 [class.is-selected]="selectedId() === agent.id"
                 (click)="select(agent.id)"
               >
@@ -102,7 +108,33 @@ const AGENTS: ReadonlyArray<{
           <p class="office__hint">No agent selected.</p>
         }
       </app-card>
+
+      <app-card title="Objects">
+        <ul class="office__agents">
+          @for (object of furniture; track object.id) {
+            <li>
+              <button
+                class="office__agent"
+                type="button"
+                [attr.data-testid]="'object-' + object.id"
+                (click)="openObject(object)"
+              >
+                <span class="office__name">{{ object.name }}</span>
+                <span aria-hidden="true">›</span>
+              </button>
+            </li>
+          }
+        </ul>
+      </app-card>
     </div>
+
+    <app-drawer label="Office object" [open]="panelOpen()" (closed)="closeObject()">
+      @if (selectedObject(); as object) {
+        <h3>{{ object.name }}</h3>
+        <p>{{ object.panel }}</p>
+        <a [routerLink]="object.path" (click)="closeObject()">Open {{ object.panel }}</a>
+      }
+    </app-drawer>
   `,
   styles: `
     .office {
@@ -175,6 +207,7 @@ const AGENTS: ReadonlyArray<{
 })
 export class Office implements AfterViewInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
+  private readonly ws = inject(WsService);
   protected readonly canvas = viewChild.required<ElementRef<HTMLCanvasElement>>('canvas');
   protected readonly width = CANVAS_WIDTH;
   protected readonly height = CANVAS_HEIGHT;
@@ -198,6 +231,9 @@ export class Office implements AfterViewInit, OnDestroy {
     }),
   );
   protected readonly selectedId = signal<string | null>(null);
+  protected readonly selectedObject = signal<Furniture | null>(null);
+  protected readonly panelOpen = signal(false);
+  protected readonly furniture = FURNITURE;
   protected readonly fps = signal(0);
   private readonly revision = signal(0);
   protected readonly selectedAgent = computed(() => {
@@ -214,6 +250,30 @@ export class Office implements AfterViewInit, OnDestroy {
   private last = 0;
   private smoothedFrameMs = 16;
   private reducedMotion = false;
+  private accumulator = 0;
+  private readonly onResize = (): void => this.updateScale();
+
+  constructor() {
+    effect(() => {
+      const event = this.ws.lastEvent();
+      if (event?.event !== 'lab.agent.status_changed') {
+        return;
+      }
+      const id = String(event.payload['agent_id'] ?? '');
+      const state = String(event.payload['state'] ?? '');
+      const allowed: readonly AgentDomainState[] = [
+        'idle',
+        'working',
+        'blocked',
+        'paused',
+        'offline',
+      ];
+      if (allowed.includes(state as AgentDomainState) && this.engine.get(id)) {
+        this.engine.setState(id, state as AgentDomainState);
+        this.revision.update((value) => value + 1);
+      }
+    });
+  }
 
   ngAfterViewInit(): void {
     this.context = this.canvas().nativeElement.getContext('2d');
@@ -223,12 +283,39 @@ export class Office implements AfterViewInit, OnDestroy {
     if (linked !== null && this.engine.get(linked)) {
       this.selectedId.set(linked);
     }
+    const panel = this.route.snapshot.queryParamMap.get('panel');
+    if (panel !== null) {
+      const object = FURNITURE.find((item) => item.id === panel);
+      if (object) {
+        this.openObject(object);
+      }
+    }
+    this.updateScale();
+    window.addEventListener('resize', this.onResize);
     this.last = performance.now();
     this.loop(this.last);
   }
 
   ngOnDestroy(): void {
     cancelAnimationFrame(this.frame);
+    window.removeEventListener('resize', this.onResize);
+  }
+
+  protected openObject(object: Furniture): void {
+    this.selectedObject.set(object);
+    this.panelOpen.set(true);
+  }
+
+  protected closeObject(): void {
+    this.panelOpen.set(false);
+  }
+
+  private updateScale(): void {
+    const canvas = this.canvas().nativeElement;
+    const available = canvas.parentElement?.clientWidth ?? CANVAS_WIDTH;
+    const scale = Math.max(1, Math.min(6, Math.floor(available / CANVAS_WIDTH)));
+    canvas.style.width = `${scale * CANVAS_WIDTH}px`;
+    canvas.style.height = `${scale * CANVAS_HEIGHT}px`;
   }
 
   protected select(id: string): void {
@@ -260,6 +347,11 @@ export class Office implements AfterViewInit, OnDestroy {
     const y = Math.floor(
       (((event.clientY - rect.top) / rect.height) * CANVAS_HEIGHT - OFFSET_Y) / TILE,
     );
+    const object = FURNITURE.find((item) => item.point.x === x && item.point.y === y);
+    if (object) {
+      this.openObject(object);
+      return;
+    }
     const agent = this.engine.agentAt({ x, y });
     if (agent) {
       this.select(agent.id);
@@ -289,7 +381,21 @@ export class Office implements AfterViewInit, OnDestroy {
     const delta = Math.min(100, now - this.last);
     this.last = now;
     this.smoothedFrameMs = this.smoothedFrameMs * 0.9 + delta * 0.1;
-    this.engine.tick(delta, this.reducedMotion);
+    if (this.reducedMotion) {
+      this.engine.tick(delta, true);
+    } else {
+      const step = 1000 / 60;
+      this.accumulator += delta;
+      let steps = 0;
+      while (this.accumulator >= step && steps < 3) {
+        this.engine.tick(step, false);
+        this.accumulator -= step;
+        steps += 1;
+      }
+      if (steps === 3) {
+        this.accumulator = 0;
+      }
+    }
     this.draw();
     this.fps.set(Math.round(1000 / Math.max(1, this.smoothedFrameMs)));
     this.frame = requestAnimationFrame(this.loop);
@@ -326,6 +432,22 @@ export class Office implements AfterViewInit, OnDestroy {
       context.font = '6px monospace';
       context.fillText(desk.name, desk.seat.x * TILE + 1, OFFSET_Y + desk.seat.y * TILE - 1);
     }
+    for (const object of FURNITURE) {
+      context.fillStyle = '#334155';
+      context.fillRect(
+        object.point.x * TILE + 2,
+        OFFSET_Y + object.point.y * TILE + 2,
+        TILE - 4,
+        TILE - 4,
+      );
+      context.fillStyle = '#7dd3fc';
+      context.fillRect(
+        object.point.x * TILE + 4,
+        OFFSET_Y + object.point.y * TILE + 4,
+        TILE - 8,
+        3,
+      );
+    }
     const selected = this.selectedId();
     if (selected !== null) {
       const agent = this.engine.get(selected);
@@ -341,9 +463,10 @@ export class Office implements AfterViewInit, OnDestroy {
         }
       }
     }
-    const ordered = [...this.engine.list].sort(
-      (a, b) => this.engine.renderPosition(a).y - this.engine.renderPosition(b).y,
-    );
+    const ordered = [...this.engine.list].sort((a, b) => {
+      const delta = this.engine.renderPosition(a).y - this.engine.renderPosition(b).y;
+      return delta !== 0 ? delta : a.id.localeCompare(b.id);
+    });
     for (const agent of ordered) {
       const rendered = this.engine.renderPosition(agent);
       const sprite = SPRITES[rendered.animation];

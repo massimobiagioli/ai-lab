@@ -241,14 +241,14 @@ WANDER           IDLE ◄──────────────────�
 - [ ] `web/src/lib/office` engine (layout, A*, simulation) and the Angular canvas host delivered; renderer assets/bridge polish pending.
 - [x] Canvas host at 384×216 internal resolution with pixelated rendering.
 - [ ] Colour tokens/icons/font delivered; the high-contrast theme is deferred to WP-21.
-- [x] Generated in-repo sprite atlas, CC0 manifest and validation test delivered.
-- [x] Tile map, desks, collision, occupancy and y-sort.
+- [x] Generated in-repo sprite atlas, CC0 manifest, validation test and build-failing asset linter.
+- [x] Tile map, desks, collision, occupancy, object footprints and deterministic y-sort.
 - [x] A* pathfinder + walkability (deterministic, tested).
-- [ ] State→animation mapping delivered; speech bubbles deferred to WP-19.
-- [x] Selection, click-to-walk, agent panel and `?agent` deep link delivered.
+- [ ] State→animation mapping is WS-driven; speech bubbles deferred to WP-19.
+- [x] Selection, click-to-walk, agent panel, object drawers and `?agent`/`?panel` deep links.
 - [ ] Ambient life + sound controls deferred to WP-21.
 - [x] Responsive layout, reduced-motion snapping and an accessible agent list.
-- [ ] FPS counter delivered; heap telemetry and the 60 FPS benchmark deferred to WP-21.
+- [ ] Fixed-timestep FPS counter and frame hash delivered; heap telemetry and the 60 FPS benchmark deferred to WP-21.
 - [ ] Engine/sprite/host tests delivered; visual/FPS/a11y suites deferred to WP-21.
 - [x] `.docs/product/office.md` updated for the host increment; assets/perf/licences sections pending.
 
@@ -322,3 +322,4 @@ WANDER           IDLE ◄──────────────────�
 2026-11-07 | T02 | .docs/product/office.md | frontend lint/test/build green (10 tests) | sprite/canvas/interactions deferred WP-18 follow-up/WP-21 | WP-19
 2026-11-07 | build | web/src/lib/office/**, web/src/app/features/office/** | layout, A*, canvas host, selection, click-to-walk, reduced motion, agent panel; 20 web tests | sprite atlas/ambient/sound/fps/visual/a11y pending | in progress
 2026-11-07 | review | .docs/sow/WP-18-VIRTUAL-OFFICE-review-plan.md, web/src/lib/office/**, web/src/app/features/office/** | review plan; 384×216, CC0 sprite atlas, y-sort, FPS, deep link; 59 web tests | ambient/sound/visual/a11y deferred | in review
+2026-11-07 | fix | web/src/lib/office, web/src/app/features/office, web/scripts/lint-assets.mjs | octile A*; integer scaling; fixed timestep; occupancy; WS states; objects; asset linter; 64 tests | ambient/sound/visual/a11y/60fps deferred | QA re-review

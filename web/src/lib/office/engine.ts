@@ -51,6 +51,15 @@ export class OfficeEngine {
     if (!agent) {
       return null;
     }
+    const occupied = this.agents.some(
+      (other) =>
+        other.id !== id &&
+        Math.round(other.position.x) === target.x &&
+        Math.round(other.position.y) === target.y,
+    );
+    if (occupied) {
+      return null;
+    }
     const path = findPath(OFFICE_GRID, agent.position, target);
     if (!path || path.length < 2) {
       return path;
@@ -93,6 +102,16 @@ export class OfficeEngine {
         }
       }
     }
+  }
+
+  /** Stable frame hash for determinism tests. */
+  frameHash(): string {
+    return this.agents
+      .map(
+        (agent) =>
+          `${agent.id}:${agent.position.x.toFixed(3)},${agent.position.y.toFixed(3)}:${agent.state}`,
+      )
+      .join('|');
   }
 
   renderPosition(agent: OfficeAgent): RenderPosition {

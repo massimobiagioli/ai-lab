@@ -43,3 +43,47 @@ describe('OfficeEngine', () => {
     expect(office.get('a')?.position).toEqual({ x: 3, y: 1 });
   });
 });
+
+describe('determinism and occupancy', () => {
+  it('rejects an occupied target', () => {
+    const desk = DESKS[0];
+    if (!desk) {
+      throw new Error('missing desk');
+    }
+    const office = new OfficeEngine([
+      {
+        id: 'a',
+        name: 'A',
+        desk,
+        state: 'idle',
+        position: { x: 1, y: 1 },
+        path: [],
+        progress: 0,
+        elapsedMs: 0,
+      },
+      {
+        id: 'b',
+        name: 'B',
+        desk,
+        state: 'idle',
+        position: { x: 4, y: 1 },
+        path: [],
+        progress: 0,
+        elapsedMs: 0,
+      },
+    ]);
+    expect(office.moveTo('a', { x: 4, y: 1 })).toBeNull();
+  });
+
+  it('produces identical hashes for identical fixed steps', () => {
+    const left = engine();
+    const right = engine();
+    left.moveTo('a', { x: 3, y: 1 });
+    right.moveTo('a', { x: 3, y: 1 });
+    for (let index = 0; index < 60; index += 1) {
+      left.tick(1000 / 60, false);
+      right.tick(1000 / 60, false);
+    }
+    expect(left.frameHash()).toBe(right.frameHash());
+  });
+});

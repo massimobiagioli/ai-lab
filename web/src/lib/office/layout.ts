@@ -37,6 +37,37 @@ export const DESKS: readonly Desk[] = [
   { id: 'desk-5', name: 'Lounge', seat: { x: 19, y: 10 } },
 ];
 
+/** Interactive office objects with their drawer content. */
+export interface Furniture {
+  readonly id: string;
+  readonly name: string;
+  readonly point: Point;
+  readonly panel: string;
+  readonly path: string;
+}
+
+export const FURNITURE: readonly Furniture[] = [
+  {
+    id: 'whiteboard',
+    name: 'Whiteboard',
+    point: { x: 5, y: 4 },
+    panel: 'Kanban board',
+    path: '/projects/demo/board',
+  },
+  {
+    id: 'rack',
+    name: 'Server rack',
+    point: { x: 21, y: 2 },
+    panel: 'System health',
+    path: '/inventory/providers',
+  },
+  { id: 'bookshelf', name: 'Bookshelf', point: { x: 21, y: 11 }, panel: 'Memory', path: '/memory' },
+  { id: 'cabinet', name: 'Cabinet', point: { x: 5, y: 11 }, panel: 'Failed runs', path: '/runs' },
+  { id: 'coffee', name: 'Coffee', point: { x: 17, y: 6 }, panel: 'Lounge', path: '/settings' },
+  { id: 'plant', name: 'Plant', point: { x: 2, y: 11 }, panel: 'Office', path: '/lab/default' },
+  { id: 'door', name: 'Door', point: { x: 0, y: 6 }, panel: 'Exit', path: '/' },
+];
+
 const WALL_KEYS = new Set(WALLS.map((point) => `${point.x},${point.y}`));
 
 /** True when a tile cannot be walked through. */

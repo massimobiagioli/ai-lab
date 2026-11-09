@@ -14,9 +14,10 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test --watch=false",
-    "lint": "eslint .",
+    "lint": "eslint . && npm run lint:assets",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "lint:assets": "node scripts/lint-assets.mjs"
   },
   "dependencies": {
     "@angular/common": "^22.2.0",

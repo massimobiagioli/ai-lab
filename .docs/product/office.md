@@ -21,11 +21,16 @@ The office is the emotional core of AI-Lab. It is a 16-bit pixel office driven e
 
 The framework-agnostic engine lives in `web/src/lib/office/` (ADR-0021):
 
-- `layout.ts`: deterministic 20×12 grid, walls and five desks.
+- `layout.ts`: deterministic 24×13 grid, walls and five desks.
 - `pathfinding.ts`: deterministic 4-directional A* with a stable tie-break.
 - `agent-state.ts`: truthful domain-state → animation mapping.
 - `engine.ts`: agents, A* movement, per-frame interpolation and reduced-motion snapping.
 - `sprites.ts`: generated 8×8 sprite atlas and CC0 manifest (no third-party assets).
+- `web/scripts/lint-assets.mjs`: build-failing asset linter (licence, 8×8 frames, palette).
+
+Interactions cover agents and seven objects (whiteboard, rack, bookshelf, cabinet, coffee, plant, door); the
+objects open a drawer with a route. `?agent=<id>` and `?panel=<id>` restore the selection/panel. The
+simulation uses a fixed 1/60 s step and exposes a stable frame hash for determinism.
 
 The Angular host is `web/src/app/features/office/office.ts`: a 384×216 pixelated canvas, y-sorted
 sprite agents, an accessible agent list, click-to-select/click-to-walk, a path overlay, an FPS

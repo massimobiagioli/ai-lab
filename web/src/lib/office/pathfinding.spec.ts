@@ -45,3 +45,19 @@ describe('findPath', () => {
     expect(findPath(grid([]), { x: 1, y: 1 }, { x: 1, y: 1 })).toEqual([{ x: 1, y: 1 }]);
   });
 });
+
+describe('octile shortcuts', () => {
+  it('takes a diagonal when the corner is clear', () => {
+    const path = findPath(grid([]), { x: 0, y: 0 }, { x: 2, y: 2 });
+    expect(path).toEqual([
+      { x: 0, y: 0 },
+      { x: 1, y: 1 },
+      { x: 2, y: 2 },
+    ]);
+  });
+
+  it('does not cut a blocked corner', () => {
+    const path = findPath(grid([{ x: 1, y: 0 }]), { x: 0, y: 0 }, { x: 2, y: 1 });
+    expect(path?.some((point) => point.x === 1 && point.y === 0)).toBe(false);
+  });
+});
