@@ -83,7 +83,7 @@ scripts/run-web.sh npm run format:check
 - [x] **P14 — Reopen WP-22 and deliver docs/demo/acceptance.**
   Branch `review/p14-wp22-docs`; CR-0018, review plan, docs manifest, acceptance report, demo script, handover. Depends P13.
 
-- [ ] **P15 — WP-22 SBOM, signing, release and QA.**
+- [ ] **P15 — WP-22 SBOM, signing, release and QA.** **SUSPENDED** — production release/deploy (SBOM publication, keyless signing, registry) is suspended by operator decision (2026-11-09); WP-22 stays `progress`; local development continues.
   Branch `review/p15-wp22-release`; syft SBOM, cosign signing/verification, release 1.0 changelog, rollback, QA `APPROVED`, WP-22 `done`. Depends P14.
 
 - [ ] **P16 — Reopen WP-23 and deliver maintenance jobs.**
@@ -149,4 +149,5 @@ scripts/run-web.sh npm run format:check
 | 2026-11-09 | P10 | `review/p10-wp20-dr` | `5eac3c2` | QA APPROVED; WP-20 done. |
 | 2026-11-09 | P11 | `review/p11-wp24-e2e` | `da9cb89` | Playwright/axe, 6/6. |
 | 2026-11-09 | P12 | `review/p12-wp24-hardening` | `15f9d90` | Scripts + fuzz; live load/chaos green after stack reset. |
-| 2026-11-09 | P14 | `review/p14-wp22-docs` | merge pending | CR-0018, manifest, acceptance, handover; P15 release open. |
+| 2026-11-09 | P14 | `review/p14-wp22-docs` | `02dd710` | CR-0018, manifest, acceptance, handover; P15 release open. |
+| 2026-11-09 | P15 | `review/p15-wp22-release` | suspended | Production release/deploy suspended by operator; WP-22 stays progress. |

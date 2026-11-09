@@ -4,7 +4,7 @@ Date: 2026-11-09. Reviewer: qa-review-agent. Author: Analyst/opencode-dev (separ
 
 ## Verdict
 
-**NOT APPROVED.** The documentation package and handover are delivered, but the release evidence is missing (P15) and ten acceptance criteria still have gaps.
+**NOT APPROVED.** The documentation package and handover are delivered, but P15 is suspended (production release/deploy by operator decision; the AC evidence is open) and ten acceptance criteria still have gaps.
 
 ## Review
 

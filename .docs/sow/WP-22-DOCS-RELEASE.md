@@ -232,3 +232,4 @@ The report is signed by Tech Lead and QA; the Human Operator accepts at mileston
 2026-11-07 | T01 | .docs/product/demo-script.md, .docs/product/glossary.md, .docs/product/release-checklist.md, CHANGELOG.md | docs link check | — | T02
 2026-11-07 | T02 | .docs/product/README.md, .docs/sow/SOW.md | 134 doc links; docs manifest current | SBOM/signing/live acceptance deferred WP-22 follow-up | WP-23
 2026-11-09 | P14 | .docs/sow/WP-22-DOCS-RELEASE-review-plan.md, .docs/product/{docs-manifest,acceptance-report,handover,testing}.md | manifest, acceptance, handover, review plan | release/SBOM deferred P15 | P15
+2026-11-09 | P15 | — | production release/SBOM/signing suspended by operator; local development continues | WP-22 stays progress | P16
