@@ -67,4 +67,4 @@ Walking frames are deterministic (`floor(elapsed / 200) % 4`). The UI never inve
 
 - `.docs/technical-specification/AI-LAB-TECHNICAL-SPECIFICATION.md` §11
 - `.docs/adr/adr-0007.md`, `.docs/adr/adr-0021.md`
-- `web/src/app/office/`
+- `web/src/lib/office/`

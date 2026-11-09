@@ -98,6 +98,9 @@ const AGENTS: ReadonlyArray<{
               Animation: <strong>{{ animation(agent) }}</strong>
             </p>
             <p>Position: {{ agent.position.x }}, {{ agent.position.y }}</p>
+            @if (cvOpen()) {
+              <p class="office__cv">CV: {{ agent.name }} · {{ agent.state }}</p>
+            }
             <div class="office__actions">
               @for (desk of desks; track desk.id) {
                 <app-button (pressed)="moveTo(desk.seat)">{{ desk.name }}</app-button>
@@ -232,6 +235,7 @@ export class Office implements AfterViewInit, OnDestroy {
   );
   protected readonly selectedId = signal<string | null>(null);
   protected readonly selectedObject = signal<Furniture | null>(null);
+  protected readonly cvOpen = signal(false);
   protected readonly panelOpen = signal(false);
   protected readonly furniture = FURNITURE;
   protected readonly fps = signal(0);
@@ -260,7 +264,7 @@ export class Office implements AfterViewInit, OnDestroy {
         return;
       }
       const id = String(event.payload['agent_id'] ?? '');
-      const state = String(event.payload['state'] ?? '');
+      const state = String(event.payload['to'] ?? event.payload['state'] ?? '');
       const allowed: readonly AgentDomainState[] = [
         'idle',
         'working',
@@ -284,11 +288,17 @@ export class Office implements AfterViewInit, OnDestroy {
       this.selectedId.set(linked);
     }
     const panel = this.route.snapshot.queryParamMap.get('panel');
-    if (panel !== null) {
+    if (panel === 'cv' || panel === 'inspector') {
+      this.cvOpen.set(true);
+      queueMicrotask(() => this.focusAgent(this.selectedId()));
+    } else if (panel !== null) {
       const object = FURNITURE.find((item) => item.id === panel);
       if (object) {
         this.openObject(object);
       }
+    }
+    if (linked !== null) {
+      queueMicrotask(() => this.focusAgent(linked));
     }
     this.updateScale();
     window.addEventListener('resize', this.onResize);
@@ -299,6 +309,13 @@ export class Office implements AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     cancelAnimationFrame(this.frame);
     window.removeEventListener('resize', this.onResize);
+  }
+
+  private focusAgent(id: string | null): void {
+    if (id === null) {
+      return;
+    }
+    document.querySelector<HTMLElement>(`[data-testid="agent-${id}"]`)?.focus();
   }
 
   protected openObject(object: Furniture): void {

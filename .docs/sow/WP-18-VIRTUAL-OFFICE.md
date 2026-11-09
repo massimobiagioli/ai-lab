@@ -322,4 +322,5 @@ WANDER           IDLE ◄──────────────────�
 2026-11-07 | T02 | .docs/product/office.md | frontend lint/test/build green (10 tests) | sprite/canvas/interactions deferred WP-18 follow-up/WP-21 | WP-19
 2026-11-07 | build | web/src/lib/office/**, web/src/app/features/office/** | layout, A*, canvas host, selection, click-to-walk, reduced motion, agent panel; 20 web tests | sprite atlas/ambient/sound/fps/visual/a11y pending | in progress
 2026-11-07 | review | .docs/sow/WP-18-VIRTUAL-OFFICE-review-plan.md, web/src/lib/office/**, web/src/app/features/office/** | review plan; 384×216, CC0 sprite atlas, y-sort, FPS, deep link; 59 web tests | ambient/sound/visual/a11y deferred | in review
-2026-11-07 | fix | web/src/lib/office, web/src/app/features/office, web/scripts/lint-assets.mjs | octile A*; integer scaling; fixed timestep; occupancy; WS states; objects; asset linter; 64 tests | ambient/sound/visual/a11y/60fps deferred | QA re-review
+2026-11-07 | fix | web/src/lib/office, web/src/app/features/office, web/scripts/lint-assets.mjs | octile A*; integer scaling; fixed timestep; occupancy; WS states; objects; asset linter; 66 tests | ambient/sound/visual/a11y/60fps deferred | QA re-review
+2026-11-07 | fix | web/src/app/features/office/office.ts | WS payload.to; ?panel=cv focus; 66 tests | ambient/sound/visual/a11y/60fps deferred | QA re-review

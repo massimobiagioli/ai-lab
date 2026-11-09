@@ -21,9 +21,9 @@
 - [x] 24×13 grid at 384×216 internal resolution with 16 px tiles and integer 1–6× scaling — evidence: `layout.ts`, `office.ts` (`updateScale`).
 - [x] Sprite atlas generated in-repo under CC0-1.0 with an 8×8 pattern per animation — evidence: `sprites.ts`, `sprites.spec.ts`.
 - [x] Tile map, desks, collision, occupancy, object footprints and deterministic y-sort (y then id) — evidence: `layout.ts`, `engine.ts` (occupancy), `office.ts`.
-- [x] Truthful state → animation mapping driven by WS `lab.agent.status_changed`; agents start idle, never invented work — evidence: `agent-state.ts`, `engine.ts`, `office.ts` (effect).
+- [x] Truthful state → animation mapping driven by WS `lab.agent.status_changed` (`payload.to`); agents start idle, never invented work — evidence: `agent-state.ts`, `engine.ts`, `office.ts` (effect), `office.ws.spec.ts`.
 - [x] Interactions: agent list, click-to-select, click-to-walk, move-to-desk, path overlay and the seven object drawers (whiteboard/rack/bookshelf/cabinet/coffee/plant/door) — evidence: `office.ts`, `office.spec.ts`.
-- [x] Deep link `?agent=<id>&panel=<id>` selects the agent and opens the object drawer with focus — evidence: `office.ts` (`ActivatedRoute`, drawer focus trap).
+- [x] Deep link `?agent=<id>&panel=cv` restores agent focus and the CV panel; furniture `?panel=<id>` opens the object drawer — evidence: `office.ts`, `office.deep-link.spec.ts`.
 - [x] Responsive layout, reduced-motion snapping and an accessible agent list — evidence: `office.ts`, `styles`.
 - [x] Fixed 1/60 s timestep with a 3-step accumulator, stable frame hash and the FPS counter — evidence: `office.ts`, `engine.ts` (`frameHash`), `engine.spec.ts`.
 - [ ] Ambient life, sound controls and the high-contrast theme — deferred to WP-21 (named, owned, due 2026-12-31).
@@ -96,3 +96,4 @@
 
 - [x] CR-0014 — reopen WP-18; alternatives and consequences recorded.
 2026-11-07 | fix | web/src/{lib/office,app/features/office}, web/scripts/lint-assets.mjs | octile A*; integer scaling; fixed timestep+hash; occupancy; WS-driven states; objects/drawers; deep-link panel; asset linter; 64 web tests | ambient/sound/visual/a11y/60fps deferred | QA re-review
+2026-11-07 | fix | web/src/app/features/office/office.ts, office.{ws,deep-link}.spec.ts | WS payload.to; ?panel=cv focus/CV; deep-link tests; 66 web tests | ambient/sound/visual/a11y/60fps deferred | QA re-review
