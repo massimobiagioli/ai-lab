@@ -89,7 +89,7 @@ scripts/run-web.sh npm run format:check
 - [ ] **P16 — Reopen WP-23 and deliver maintenance jobs.** (PARTIAL: scheduler T01 + stale-card scan T05 + Renovate T02 verified; T03/T04/T06–T09 open; QA NOT APPROVED; WP-23 stays `progress`)
   Branch `review/p16-wp23-maintenance`; CR-0019, review plan, Renovate/CV reflection/memory hygiene/stale-card/health jobs, QA `APPROVED`, WP-23 `done`. Depends P15.
 
-- [ ] **P17 — WP-13B review plan and T01 resume.**
+- [ ] **P17 — WP-13B review plan and T01 resume.** (PARTIAL: review plan + audit; recovery mapping/probe exist; resume tail and head-SHA guard open; WP-13B `progress`)
   Branch `review/p17-wp13b-resume`; `WP-13B-FOLLOW-UP-review-plan.md`, open/branch resume with head-SHA handling, tests. Depends P16.
 
 - [ ] **P18 — WP-13B T02 real context provider.**
@@ -152,3 +152,4 @@ scripts/run-web.sh npm run format:check
 | 2026-11-09 | P14 | `review/p14-wp22-docs` | `02dd710` | CR-0018, manifest, acceptance, handover; P15 release open. |
 | 2026-11-09 | P15 | `review/p15-wp22-release` | suspended | Production release/deploy suspended by operator; WP-22 stays progress. |
 | 2026-11-09 | P16 | `review/p16-wp23-maintenance` | partial | Scheduler + stale scan + Renovate; handlers open; WP-23 progress. |
+| 2026-11-09 | P17 | `review/p17-wp13b-resume` | partial | Review plan + T01 audit; resume tail/head-SHA guard open. |
