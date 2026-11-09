@@ -21,6 +21,7 @@ This directory is the canonical record of AI-Lab change requests. Each CR is a s
 | [CR-0015](./CR-0015.md) | Reopen WP-19 for the product UI build | approved | Tech Lead | 2026-11-09 | ADR-0008, ADR-0024 |
 | [CR-0016](./CR-0016.md) | Create WP-24 for the frontend and QA hardening residuals | approved | Tech Lead | 2026-11-09 | ADR-0008, ADR-0024 |
 | [CR-0017](./CR-0017.md) | Reopen WP-20 for the observability build | approved | Tech Lead | 2026-11-09 | ADR-0020 |
+| [CR-0018](./CR-0018.md) | Reopen WP-22 for the documentation, release and handover review | approved | Tech Lead | 2026-11-09 | — |
 
 Rules:
 
