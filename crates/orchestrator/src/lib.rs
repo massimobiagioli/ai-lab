@@ -5,6 +5,7 @@
 pub mod backend;
 pub mod context;
 pub mod docker_backend;
+pub mod maintenance;
 pub mod orchestration;
 pub mod pipeline;
 pub mod postgres;

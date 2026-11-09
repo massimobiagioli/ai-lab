@@ -86,7 +86,7 @@ scripts/run-web.sh npm run format:check
 - [ ] **P15 — WP-22 SBOM, signing, release and QA.** **SUSPENDED** — production release/deploy (SBOM publication, keyless signing, registry) is suspended by operator decision (2026-11-09); WP-22 stays `progress`; local development continues.
   Branch `review/p15-wp22-release`; syft SBOM, cosign signing/verification, release 1.0 changelog, rollback, QA `APPROVED`, WP-22 `done`. Depends P14.
 
-- [ ] **P16 — Reopen WP-23 and deliver maintenance jobs.**
+- [ ] **P16 — Reopen WP-23 and deliver maintenance jobs.** (PARTIAL: scheduler T01 + stale-card scan T05 + Renovate T02 verified; T03/T04/T06–T09 open; QA NOT APPROVED; WP-23 stays `progress`)
   Branch `review/p16-wp23-maintenance`; CR-0019, review plan, Renovate/CV reflection/memory hygiene/stale-card/health jobs, QA `APPROVED`, WP-23 `done`. Depends P15.
 
 - [ ] **P17 — WP-13B review plan and T01 resume.**
@@ -151,3 +151,4 @@ scripts/run-web.sh npm run format:check
 | 2026-11-09 | P12 | `review/p12-wp24-hardening` | `15f9d90` | Scripts + fuzz; live load/chaos green after stack reset. |
 | 2026-11-09 | P14 | `review/p14-wp22-docs` | `02dd710` | CR-0018, manifest, acceptance, handover; P15 release open. |
 | 2026-11-09 | P15 | `review/p15-wp22-release` | suspended | Production release/deploy suspended by operator; WP-22 stays progress. |
+| 2026-11-09 | P16 | `review/p16-wp23-maintenance` | partial | Scheduler + stale scan + Renovate; handlers open; WP-23 progress. |

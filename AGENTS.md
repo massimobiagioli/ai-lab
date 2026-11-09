@@ -147,6 +147,7 @@ Every document under `.docs` is listed here. When a document is created, renamed
 | WP-22 Docs and release | Documentation, release, acceptance, handover. | [`.docs/sow/WP-22-DOCS-RELEASE.md`](./.docs/sow/WP-22-DOCS-RELEASE.md) |
 | WP-22 review plan | Documentation, release and handover review checklist and evidence. | [`.docs/sow/WP-22-DOCS-RELEASE-review-plan.md`](./.docs/sow/WP-22-DOCS-RELEASE-review-plan.md) |
 | WP-23 Maintenance | Maintenance jobs, dependency updates, memory hygiene. | [`.docs/sow/WP-23-MAINTENANCE.md`](./.docs/sow/WP-23-MAINTENANCE.md) |
+| WP-23 review plan | Maintenance scheduler and handler review checklist and evidence. | [`.docs/sow/WP-23-MAINTENANCE-review-plan.md`](./.docs/sow/WP-23-MAINTENANCE-review-plan.md) |
 | Product documentation index | Gateway to product documentation, governance pages, templates, CRs and backlog cards. | [`.docs/product/README.md`](./.docs/product/README.md) |
 
 Product documentation under `.docs/product/` is indexed by `.docs/product/README.md`; individual product files are not listed here. The ADR registry is the only index for ADR files. Every accepted ADR is linked from it.

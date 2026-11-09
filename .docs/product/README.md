@@ -25,6 +25,7 @@ This directory holds product documentation. Program control (technical specifica
 | [handover.md](./handover.md) | Operator handover, ownership, limitations and support boundaries |
 | [testing.md](./testing.md) | Test commands, fixtures, seed, flaky policy and coverage status |
 | [qa/WP-22-DOCS-RELEASE-qa-report.md](./qa/WP-22-DOCS-RELEASE-qa-report.md) | WP-22 QA verdict (NOT APPROVED) and the release gaps |
+| [qa/WP-23-MAINTENANCE-qa-report.md](./qa/WP-23-MAINTENANCE-qa-report.md) | WP-23 QA verdict (NOT APPROVED) and the open maintenance handlers |
 | [qa-merge.md](./qa-merge.md) | Review pipeline, merge conditions, hard stops and error codes |
 | [frontend.md](./frontend.md) | Angular shell, pixel tokens, status badge and accessibility |
 | [design-system.md](./design-system.md) | Pixel design tokens, UI primitives and accessibility rules |

@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | WP ID | `WP-23` |
-| Status | **done** |
+| Status | **progress** |
 | Owner | Dev |
 | Milestone | M8+ (continuous) |
 | Estimate | 13 points (initial activation) |
@@ -19,6 +19,7 @@
 | 2026-11-07 | — | `ready` | Tech Lead | Initial SOW baseline |
 | 2026-11-07 | `ready` | `progress` | Dev (agent) | WP-22 done |
 | 2026-11-07 | `progress` | `done` | Dev (agent) | Maintenance job catalog, dependency policy, CV reflection and memory hygiene documented; scheduling in the WP-23 follow-up |
+| 2026-11-09 | `done` | `progress` | Tech Lead (agent) | CR-0019: reopen for the scheduler and local maintenance handlers (P16) |
 
 ---
 
@@ -220,3 +221,4 @@ Keep AI-Lab **healthy, secure, current and improving** after release: automated 
 
 2026-11-07 | T01 | .docs/product/maintenance.md | job catalog, dependency policy, CV reflection, memory hygiene | — | T02
 2026-11-07 | T02 | .docs/sow/SOW.md | docs link check; all WPs done | scheduling/dry-run/tabletop deferred WP-23 follow-up | complete
+2026-11-09 | P16 | crates/orchestrator/src/maintenance.rs, crates/worker/src/main.rs | scheduler T01 + stale-card scan T05; 4 tests; Renovate T02 verified | T03/T04/T06-T09 open | P17
