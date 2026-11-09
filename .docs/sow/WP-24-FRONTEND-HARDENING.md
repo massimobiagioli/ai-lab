@@ -142,3 +142,4 @@ Playwright covers J1–J4, axe covers every route, visual snapshots cover 1280/7
 
 2026-11-09 | P11 | web/{playwright.config.ts,e2e/smoke.spec.ts}, .tools/run-e2e.sh | Playwright + axe, 6/6 green | load/chaos/coverage P12/P13 | P12
 2026-11-09 | P12 | infra/load/board.js, .tools/{run-load,chaos-worker-kill}.sh, crates/orchestrator/src/tools.rs | scripts + fuzz test; live load/chaos blocked by Compose migrate auth/API listener | operator/WP-03 | P13
+2026-11-09 | P13 | .tools/check-coverage.sh, .github/workflows/ci.yml, WP-24 QA report | coverage 77.56/88.99/76.06; thresholds unmet | QA NOT APPROVED; WP-24 stays progress | P14
