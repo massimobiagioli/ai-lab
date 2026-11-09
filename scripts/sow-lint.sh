@@ -133,7 +133,7 @@ for f in "${WP_FILES[@]}"; do
   case "$base" in
     *-review-plan.md) continue ;;
   esac
-  id="$(printf '%s' "$base" | sed -E 's/^(WP-[0-9]{2})-.*/\1/')"
+  id="$(printf '%s' "$base" | sed -E 's/^(WP-[0-9]{2}[A-Z]?)-.*/\1/')"
   if [ "$id" = "$base" ]; then
     fail "invalid WP filename: $base"
     continue
@@ -165,7 +165,7 @@ for f in "${WP_FILES[@]}"; do
 
   deps="$(field_value "$f" 'Depends on')"
   if [ -n "$deps" ] && [ "$deps" != "—" ]; then
-    for dep in $(printf '%s' "$deps" | grep -oE 'WP-[0-9]{2}' | sort -u); do
+    for dep in $(printf '%s' "$deps" | grep -oE 'WP-[0-9]{2}[A-Z]?' | sort -u); do
       printf '%s %s\n' "$id" "$dep" >> "$EDGES_FILE"
     done
   fi
@@ -208,9 +208,9 @@ pass "WP structure checked"
 # 2. Index parsing and status agreement
 # ---------------------------------------------------------------------------
 awk -F'|' '
-  /^\| \[WP-[0-9][0-9]\]/ {
+  /^\| \[WP-[0-9][0-9][A-Z]?\]/ {
     link=$2; gsub(/^[[:space:]]+|[[:space:]]+$/, "", link);
-    if (match(link, /WP-[0-9][0-9]/)) {
+    if (match(link, /WP-[0-9][0-9][A-Z]?/)) {
       id=substr(link, RSTART, RLENGTH);
       status=$4; gsub(/[*`[:space:]]/, "", status);
       print id "\t" status;

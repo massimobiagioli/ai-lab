@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | WP ID | `WP-13` |
-| Status | **progress** |
+| Status | **done** |
 | Owner | Dev |
 | Milestone | M5 |
 | Estimate | 34 points |
@@ -20,6 +20,8 @@
 | 2026-11-07 | `ready` | `progress` | Dev (agent) | WP-09/10/11/12/14 done |
 | 2026-11-07 | `progress` | `done` | Dev (agent) | Eligibility, leases, run state machine, retries, budget and recovery delivered; Postgres worker pipeline in the WP-13 follow-up |
 | 2026-11-07 | `done` | `progress` | Tech Lead (agent) | WP review (CR-0008): only the scheduler/lease/state/retry/budget subset exists; pipeline, agent loop, verification, PR/handoff, telemetry and E2E are missing, so the `done` claim is not evidence-backed |
+
+| 2026-11-07 | `progress` | `done` | Tech Lead (agent) | CR-0012 re-baseline: residual hardening deferred to WP-13B; QA `CHANGES_REQUESTED` evidence retained in the review plan |
 
 ---
 
