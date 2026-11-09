@@ -65,7 +65,7 @@ scripts/run-web.sh npm run format:check
 - [x] **P08 — Reopen WP-20 and deliver metrics/logs.**
   Branch `review/p08-wp20-metrics`; CR-0016, review plan, structured logs, `/metrics`, redaction tests. Depends P07.
 
-- [ ] **P09 — WP-20 traces, SLOs, dashboards, alerts.**
+- [x] **P09 — WP-20 traces, SLOs, dashboards, alerts.**
   Branch `review/p09-wp20-tracing`; OTel trace wiring (consumes WP-13B T03), SLOs, dashboards, alert rules. Depends P08.
 
 - [ ] **P10 — WP-20 backup/DR/runbooks and QA.**
@@ -144,4 +144,5 @@ scripts/run-web.sh npm run format:check
 | 2026-11-09 | P05 | `review/p05-wp19-memory` | `bd6d940` | Memory search, notes, citations, pin/delete. |
 | 2026-11-09 | P06 | `review/p06-wp19-settings` | `dc27438` | Settings, onboarding, danger zone. |
 | 2026-11-09 | P07 | `review/p07-wp19-qa` | `ad4c65c` | QA APPROVED; WP-19 done. |
-| 2026-11-09 | P08 | `review/p08-wp20-metrics` | merge pending | Metrics, redacted logs. |
+| 2026-11-09 | P08 | `review/p08-wp20-metrics` | `b0b90e1` | Metrics, redacted logs. |
+| 2026-11-09 | P09 | `review/p09-wp20-tracing` | merge pending | Trace propagation, SLOs, dashboard, alerts. |

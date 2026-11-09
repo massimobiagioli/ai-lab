@@ -561,6 +561,7 @@ async fn metrics_layer(State(state): State<AppState>, request: Request, next: Ne
         "path": crate::metrics::redact(&path),
         "status": status,
         "duration_ms": elapsed,
+        "trace_id": crate::trace::current(),
     });
     println!("{line}");
     response
@@ -626,10 +627,12 @@ async fn auth(State(state): State<AppState>, request: Request, next: Next) -> Re
 
 async fn not_found() -> Response {
     let mut details = ProblemDetails::from(DomainError::NotFound);
-    details.trace_id = Some(format!(
-        "{:x}",
-        chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
-    ));
+    details.trace_id = Some(crate::trace::current().unwrap_or_else(|| {
+        format!(
+            "{:x}",
+            chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
+        )
+    }));
     details.instance = Some("about:blank".to_owned());
     (
         StatusCode::NOT_FOUND,
@@ -694,10 +697,12 @@ fn bad_request(detail: impl Into<String>) -> Response {
     let mut details = ProblemDetails::from(DomainError::validation("request", detail));
     details.status = 400;
     "BAD_REQUEST".clone_into(&mut details.code);
-    details.trace_id = Some(format!(
-        "{:x}",
-        chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
-    ));
+    details.trace_id = Some(crate::trace::current().unwrap_or_else(|| {
+        format!(
+            "{:x}",
+            chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
+        )
+    }));
     details.instance = Some("about:blank".to_owned());
     (
         StatusCode::BAD_REQUEST,
@@ -752,10 +757,12 @@ async fn origin_guard(request: Request, next: Next) -> Response {
 fn problem_parts(error: DomainError) -> (u16, serde_json::Value, Response) {
     let status = StatusCode::from_u16(error.status()).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
     let mut details = ProblemDetails::from(error);
-    details.trace_id = Some(format!(
-        "{:x}",
-        chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
-    ));
+    details.trace_id = Some(crate::trace::current().unwrap_or_else(|| {
+        format!(
+            "{:x}",
+            chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
+        )
+    }));
     details.instance = Some("about:blank".to_owned());
     let body = serde_json::to_value(&details).unwrap_or(serde_json::Value::Null);
     let response = (
@@ -771,10 +778,12 @@ fn problem_status(status: StatusCode, code: &'static str, detail: &str) -> Respo
     let mut details = ProblemDetails::from(DomainError::policy(code, detail));
     details.status = status.as_u16();
     code.clone_into(&mut details.code);
-    details.trace_id = Some(format!(
-        "{:x}",
-        chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
-    ));
+    details.trace_id = Some(crate::trace::current().unwrap_or_else(|| {
+        format!(
+            "{:x}",
+            chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
+        )
+    }));
     details.instance = Some("about:blank".to_owned());
     (
         status,
@@ -804,10 +813,12 @@ async fn problem_status_layer(request: Request, next: Next) -> Response {
 fn problem(error: DomainError) -> Response {
     let status = StatusCode::from_u16(error.status()).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
     let mut details = ProblemDetails::from(error);
-    details.trace_id = Some(format!(
-        "{:x}",
-        chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
-    ));
+    details.trace_id = Some(crate::trace::current().unwrap_or_else(|| {
+        format!(
+            "{:x}",
+            chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
+        )
+    }));
     details.instance = Some("about:blank".to_owned());
     (
         status,
@@ -955,10 +966,12 @@ async fn not_implemented() -> Response {
     ));
     details.status = 501;
     "NOT_IMPLEMENTED".clone_into(&mut details.code);
-    details.trace_id = Some(format!(
-        "{:x}",
-        chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
-    ));
+    details.trace_id = Some(crate::trace::current().unwrap_or_else(|| {
+        format!(
+            "{:x}",
+            chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
+        )
+    }));
     details.instance = Some("about:blank".to_owned());
     (
         StatusCode::NOT_IMPLEMENTED,

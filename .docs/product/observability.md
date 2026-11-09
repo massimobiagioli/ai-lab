@@ -80,3 +80,14 @@ Every request is logged as a single JSON line (`level`, `event`, `method`, `path
 `duration_ms`). Bearer tokens, `token=` and `api_key=` values are redacted before logging; no request
 headers, bodies or secrets are logged. OTel spans, SLOs, dashboards and alerts are delivered in the
 WP-20 follow-up increments and depend on the WP-13B T03 exporter.
+
+## SLOs, dashboards and alerts
+
+`infra/observability/slo.yml` defines edge availability (99.9%/30d), p95 latency (300 ms/95%) and run
+success (99%/7d). `alerts.yml` pages on a 5xx rate above 1%, p95 above 300 ms and no traffic for 15
+minutes. `grafana-dashboard.json` renders requests/s, 5xx rate, p95 latency and in-flight requests.
+`.tools/check-observability.sh` validates the artifacts.
+
+Requests carry a W3C `traceparent`/`x-trace-id` trace id; the id is echoed as `x-trace-id`, attached to
+Problem Details and included in the structured request log. OTel span export is delivered with
+WP-13B T03.

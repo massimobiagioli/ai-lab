@@ -5,6 +5,7 @@
 pub mod metrics;
 pub mod postgres_store;
 pub mod server;
+pub mod trace;
 
 use ailab_domain::{EventId, LabId};
 use chrono::{DateTime, Utc};
