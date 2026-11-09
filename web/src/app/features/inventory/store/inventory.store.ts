@@ -15,6 +15,18 @@ export class InventoryStore {
   readonly error = signal<Problem | null>(null);
   readonly demo = this.api.usingDemo;
 
+  addAgent(agent: Agent): void {
+    this.agents.update((agents) => [...agents, agent]);
+  }
+
+  addProject(project: Project): void {
+    this.projects.update((projects) => [...projects, project]);
+  }
+
+  addProvider(provider: Provider): void {
+    this.providers.update((providers) => [...providers, provider]);
+  }
+
   async load(): Promise<void> {
     this.state.set('loading');
     this.error.set(null);
