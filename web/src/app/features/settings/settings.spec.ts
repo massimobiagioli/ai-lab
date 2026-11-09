@@ -53,6 +53,12 @@ describe('Settings', () => {
     );
     archive?.click();
     fixture.detectChanges();
+    const dialogInput = element.querySelector<HTMLInputElement>('app-dialog input');
+    if (dialogInput) {
+      dialogInput.value = 'ARCHIVE';
+      dialogInput.dispatchEvent(new Event('input'));
+    }
+    fixture.detectChanges();
     const confirm = [...element.querySelectorAll('button')].find(
       (button) => button.textContent?.trim() === 'Confirm',
     );

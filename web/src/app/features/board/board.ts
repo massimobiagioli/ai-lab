@@ -1,4 +1,4 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, effect, inject, OnInit, signal } from '@angular/core';
 import { input } from '@angular/core';
 import { PageHeader } from '../../shared/ui/page-header/page-header';
 import { Button } from '../../shared/ui/button/button';
@@ -9,6 +9,7 @@ import { Spinner } from '../../shared/ui/spinner/spinner';
 import { StatusBadge, StatusTone } from '../../shared/status-badge/status-badge';
 import { Select } from '../../shared/ui/select/select';
 import { BoardStore } from './store/board.store';
+import { WsService } from '../../core/ws/ws.service';
 import type { Card } from '../../domain/models';
 
 const COLUMNS = [
@@ -65,6 +66,7 @@ const COLUMNS = [
                     draggable="true"
                     [class.is-moving]="moveMode() === card.id"
                     (dragstart)="dragCard.set(card.id)"
+                    (dragend)="dragCard.set(null)"
                     (click)="openCard(card)"
                     (keydown)="onCardKey($event, card)"
                     tabindex="0"
@@ -96,6 +98,12 @@ const COLUMNS = [
     }
 
     <p class="announce" aria-live="polite">{{ announcement() }}</p>
+    @if (store.lastViolation(); as violation) {
+      <div class="violation" role="alert">
+        <span>{{ violation }}</span>
+        <app-button (pressed)="store.clearViolation()">Dismiss</app-button>
+      </div>
+    }
 
     <app-drawer label="Card" [open]="detailOpen()" (closed)="detailOpen.set(false)">
       @if (selectedCard(); as card) {
@@ -180,6 +188,16 @@ const COLUMNS = [
       font-size: var(--ailab-font-size-sm);
       min-height: 1.2em;
     }
+    .violation {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--ailab-space-2);
+      border: 2px solid var(--ailab-color-danger);
+      color: var(--ailab-color-danger);
+      padding: var(--ailab-space-2);
+      margin-top: var(--ailab-space-2);
+    }
     .center {
       display: flex;
       justify-content: center;
@@ -197,6 +215,7 @@ export class Board implements OnInit {
   readonly card = input<string | null>(null);
   readonly assignee = signal<string>('all');
   protected readonly store = inject(BoardStore);
+  private readonly ws = inject(WsService);
   protected readonly columns = COLUMNS;
   protected readonly detailOpen = signal(false);
   protected readonly selectedCard = signal<Card | null>(null);
@@ -211,6 +230,15 @@ export class Board implements OnInit {
       ...[...ids].sort().map((id) => ({ value: id, label: id })),
     ];
   });
+
+  constructor() {
+    effect(() => {
+      const event = this.ws.lastEvent();
+      if (event?.event.startsWith('kanban.card') || event?.event.startsWith('delivery.')) {
+        void this.store.load(this.projectId());
+      }
+    });
+  }
 
   ngOnInit(): void {
     void this.store.load(this.projectId());

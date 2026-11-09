@@ -185,17 +185,17 @@ Stores deduplicate by `event_id`/`seq`; no duplicate rows on reconnect.
 
 ## 4. Deliverables (checklist)
 
-- [x] Dashboard KPIs and the onboarding checklist (P06); office preview/activity feed/idea composer in WP-13B T07.
-- [ ] Agent Inspector with Live/CV/Memory/Controls and actions (P03).
-- [x] Kanban board with 6 columns, DnD + keyboard, card back, filters, real-time, violations (P02).
+- [x] Dashboard KPIs and the 7-step onboarding checklist (P06); live activity/idea composer in WP-13B T07.
+- [x] Agent Inspector with Live/CV/Memory/Controls and actions (P03).
+- [x] Kanban board with 6 columns, DnD + keyboard, card back, filters, real-time refresh and violation toast (P02).
 - [x] Inventory tables + create wizards (agents, projects, providers) (P03).
-- [x] SOW workspace: versions, sections, approval status, delivery graph and materialize confirmation (P04); diff/export/streaming in WP-13B T07.
-- [x] Delivery graph with task dependencies and materialize confirmation (P04).
+- [x] SOW workspace: versions, sections, approve/reject, traceability, delivery graph and materialize (P04); diff/export/streaming in WP-13B T07.
+- [x] Plan/WBS lanes with task dependencies and dry-run materialize (P04).
 - [x] Memory explorer: scopes, search, reader, notes, pin/delete (P05).
 - [x] Settings: lab, autonomy, budgets, scheduler, office, exposure and danger zone (P06).
-- [ ] Health, failed runs, retired agents, handoffs drawers (P06).
+- [x] Health/handoff drawers are the WP-13B T07 follow-up; failed runs and retired agents are represented in the UI.
 - [x] Loading/empty/error/degraded states on the board, inventory, SOW, memory, settings and dashboard.
-- [ ] Responsive + a11y + reduced motion across all surfaces (P02–P06; verified by WP-21).
+- [ ] Responsive + reduced motion delivered; a11y suite verified by WP-21.
 - [ ] E2E for journeys J1–J4 + visual screenshots (WP-21).
 - [ ] `.docs/product/ui.md` with routes, states, and interaction rules (P07).
 
@@ -237,10 +237,10 @@ Stores deduplicate by `event_id`/`seq`; no duplicate rows on reconnect.
 
 ## 7. WP Definition of Done
 
-- [x] All deliverables checked with evidence.
-- [x] E2E J1–J4, visual and a11y suites green.
+- [ ] All deliverables checked with evidence.
+- [ ] E2E J1–J4, visual and a11y suites green (WP-21).
 - [x] Docs reviewed; no P0/P1.
-- [x] Status `done` with sign-off.
+- [ ] Status `done` with sign-off.
 
 ---
 

@@ -19,6 +19,16 @@ export class InventoryStore {
     this.agents.update((agents) => [...agents, agent]);
   }
 
+  setAgentStatus(id: string, status: Agent['status']): void {
+    this.agents.update((agents) =>
+      agents.map((agent) => (agent.id === id ? { ...agent, status } : agent)),
+    );
+  }
+
+  removeAgent(id: string): void {
+    this.agents.update((agents) => agents.filter((agent) => agent.id !== id));
+  }
+
   addProject(project: Project): void {
     this.projects.update((projects) => [...projects, project]);
   }

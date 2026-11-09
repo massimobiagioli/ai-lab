@@ -1,4 +1,4 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, effect, inject, OnInit, signal } from '@angular/core';
 import { input } from '@angular/core';
 import { PageHeader } from '../../shared/ui/page-header/page-header';
 import { Button } from '../../shared/ui/button/button';
@@ -7,11 +7,12 @@ import { Dialog } from '../../shared/ui/dialog/dialog';
 import { EmptyState } from '../../shared/ui/empty-state/empty-state';
 import { Spinner } from '../../shared/ui/spinner/spinner';
 import { StatusBadge, StatusTone } from '../../shared/status-badge/status-badge';
+import { Input } from '../../shared/ui/input/input';
 import { SowStore } from './store/sow.store';
 
 @Component({
   selector: 'app-sow',
-  imports: [PageHeader, Button, UiCard, Dialog, EmptyState, Spinner, StatusBadge],
+  imports: [PageHeader, Button, UiCard, Dialog, EmptyState, Spinner, StatusBadge, Input],
   template: `
     <app-page-header title="SOW workspace" subtitle="Sections, delivery graph and materialize">
       @if (store.demo()) {
@@ -81,6 +82,53 @@ import { SowStore } from './store/sow.store';
     }
 
     <app-dialog
+      label="Approve"
+      title="Approve this SOW?"
+      [open]="approveOpen()"
+      (closed)="approveOpen.set(false)"
+      (confirmed)="decide('approved')"
+    >
+      <p>The SOW becomes approved and can be materialized.</p>
+    </app-dialog>
+
+    <app-dialog
+      label="Reject"
+      title="Reject this SOW"
+      [open]="rejectOpen()"
+      (closed)="rejectOpen.set(false)"
+      (confirmed)="decide('rejected')"
+    >
+      <app-input label="Reason" [(value)]="rejectReason" />
+    </app-dialog>
+
+    <app-dialog
+      label="Traceability"
+      title="Traceability"
+      [open]="traceOpen()"
+      (closed)="traceOpen.set(false)"
+      (confirmed)="traceOpen.set(false)"
+    >
+      <ul>
+        @for (task of store.sow()?.tasks ?? []; track task.id) {
+          <li>{{ task.id }} → {{ task.title }} ({{ task.status }})</li>
+        }
+      </ul>
+    </app-dialog>
+
+    <app-dialog
+      label="Dry run"
+      title="Materialize preview"
+      [open]="dryRunOpen()"
+      (closed)="dryRunOpen.set(false)"
+      (confirmed)="dryRunOpen.set(false)"
+    >
+      <p>
+        {{ store.sow()?.tasks?.length ?? 0 }} tasks and
+        {{ store.sow()?.sections?.length ?? 0 }} sections would be materialized.
+      </p>
+    </app-dialog>
+
+    <app-dialog
       label="Materialize"
       title="Materialize the SOW?"
       [open]="confirmOpen()"
@@ -126,6 +174,12 @@ import { SowStore } from './store/sow.store';
       color: var(--ailab-color-success);
       font-size: var(--ailab-font-size-sm);
     }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--ailab-space-1);
+      margin-top: var(--ailab-space-2);
+    }
     .center {
       display: flex;
       justify-content: center;
@@ -137,8 +191,24 @@ export class Sow implements OnInit {
   readonly projectId = input.required<string>();
   protected readonly store = inject(SowStore);
   protected readonly confirmOpen = signal(false);
+  protected readonly approveOpen = signal(false);
+  protected readonly rejectOpen = signal(false);
+  protected readonly traceOpen = signal(false);
+  protected readonly dryRunOpen = signal(false);
+  protected readonly rejectReason = signal('');
+  protected readonly status = signal('');
+  protected readonly history = signal<readonly string[]>([]);
   protected readonly materialized = signal(false);
   protected readonly title = computed(() => this.store.sow()?.id ?? 'SOW');
+
+  constructor() {
+    effect(() => {
+      const sow = this.store.sow();
+      if (sow !== null && this.status() === '') {
+        this.status.set(sow.status);
+      }
+    });
+  }
 
   ngOnInit(): void {
     void this.store.load(this.projectId());
@@ -148,9 +218,21 @@ export class Sow implements OnInit {
     void this.store.load(this.projectId());
   }
 
+  protected decide(next: 'approved' | 'rejected'): void {
+    this.status.set(next);
+    this.history.update((entries) => [
+      ...entries,
+      `${next}${next === 'rejected' && this.rejectReason().trim() !== '' ? `: ${this.rejectReason()}` : ''}`,
+    ]);
+    this.approveOpen.set(false);
+    this.rejectOpen.set(false);
+    this.rejectReason.set('');
+  }
+
   protected materialize(): void {
     this.confirmOpen.set(false);
     this.materialized.set(true);
+    this.history.update((entries) => [...entries, 'materialized (demo)']);
   }
 
   protected tone(status: string): StatusTone {

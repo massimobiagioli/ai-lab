@@ -27,6 +27,12 @@ export const routes: Routes = [
     loadComponent: () => import('./features/board/board').then((module) => module.Board),
   },
   {
+    path: 'projects/:projectId/plan',
+    title: 'AI-Lab · Plan',
+    canActivate: [paramGuard],
+    loadComponent: () => import('./features/plan/plan').then((module) => module.Plan),
+  },
+  {
     path: 'projects/:projectId/sow',
     title: 'AI-Lab · SOW',
     canActivate: [paramGuard],

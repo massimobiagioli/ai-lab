@@ -13,6 +13,7 @@ export class BoardStore {
   readonly state = signal<LoadState>('idle');
   readonly cards = signal<readonly Card[]>([]);
   readonly error = signal<Problem | null>(null);
+  readonly lastViolation = signal<string | null>(null);
   readonly demo = this.api.usingDemo;
   readonly columns = computed(() => {
     const groups = new Map<string, Card[]>();
@@ -37,6 +38,7 @@ export class BoardStore {
   }
 
   async moveCard(cardId: string, to: string): Promise<void> {
+    this.lastViolation.set(null);
     const snapshot = this.cards();
     const current = snapshot.find((card) => card.id === cardId);
     if (current === undefined) {
@@ -65,7 +67,13 @@ export class BoardStore {
         snapshot,
       );
     } catch (error) {
-      this.error.set(toProblem(error));
+      const problem = toProblem(error);
+      this.error.set(problem);
+      this.lastViolation.set(problem.detail ?? problem.title ?? problem.code);
     }
+  }
+
+  clearViolation(): void {
+    this.lastViolation.set(null);
   }
 }

@@ -9,7 +9,11 @@ import { Dialog } from '../../shared/ui/dialog/dialog';
 import { EmptyState } from '../../shared/ui/empty-state/empty-state';
 import { Spinner } from '../../shared/ui/spinner/spinner';
 import { Input } from '../../shared/ui/input/input';
+import { Select } from '../../shared/ui/select/select';
 import { StatusBadge } from '../../shared/status-badge/status-badge';
+import { Tabs } from '../../shared/ui/tabs/tabs';
+import { PixelCheckbox } from '../../shared/ui/pixel-checkbox/pixel-checkbox';
+import { DEMO_MEMORY } from '../../core/demo/demo-data';
 import { InventoryStore } from './store/inventory.store';
 import type { Agent, Project, Provider } from '../../domain/models';
 
@@ -24,6 +28,9 @@ interface Column {
   selector: 'app-inventory',
   imports: [
     PageHeader,
+    Tabs,
+    PixelCheckbox,
+    Select,
     Button,
     PixelTable,
     Drawer,
@@ -87,7 +94,31 @@ interface Column {
       (closed)="closeNew()"
       (confirmed)="create()"
     >
-      <app-input label="Name" [(value)]="name" [error]="formError()" />
+      @switch (section()) {
+        @case ('agents') {
+          <app-select label="Role" [options]="roleOptions" [(value)]="role" />
+          <app-select label="Character" [options]="characterOptions" [(value)]="character" />
+          <app-input label="Name" [(value)]="name" [error]="formError()" />
+          <app-select label="Model" [options]="modelOptions" [(value)]="model" />
+          <app-select label="Autonomy" [options]="autonomyChoices" [(value)]="autonomy" />
+        }
+        @case ('projects') {
+          <app-input label="Name" [(value)]="name" [error]="formError()" />
+          <app-input label="Repository" [(value)]="repo" placeholder="owner/repo" />
+          <app-input label="Branch" [(value)]="branch" />
+          <app-select label="Autonomy" [options]="autonomyChoices" [(value)]="autonomy" />
+        }
+        @default {
+          <app-input label="Name" [(value)]="name" [error]="formError()" />
+          <app-input
+            label="API key"
+            type="password"
+            [(value)]="providerKey"
+            [error]="formError()"
+          />
+          <app-pixel-checkbox label="Verify before saving" [(checked)]="verify" />
+        }
+      }
     </app-dialog>
   `,
   styles: `
@@ -106,6 +137,45 @@ export class Inventory implements OnInit {
   protected readonly name = signal('');
   protected readonly formError = signal<string | null>(null);
   protected readonly selected = signal<Agent | Project | Provider | null>(null);
+  protected readonly inspectorOpen = signal(false);
+  protected readonly activeTab = signal('live');
+  protected readonly role = signal('dev');
+  protected readonly character = signal('pixel-ada');
+  protected readonly model = signal('deepseek-flash');
+  protected readonly autonomy = signal('2');
+  protected readonly repo = signal('');
+  protected readonly branch = signal('main');
+  protected readonly providerKey = signal('');
+  protected readonly verify = signal(true);
+  protected readonly inspectorTabs = [
+    { id: 'live', label: 'Live' },
+    { id: 'cv', label: 'CV' },
+    { id: 'memory', label: 'Memory' },
+    { id: 'controls', label: 'Controls' },
+  ] as const;
+  protected readonly autonomyChoices = [
+    { value: '0', label: 'A0' },
+    { value: '1', label: 'A1' },
+    { value: '2', label: 'A2' },
+    { value: '3', label: 'A3' },
+  ] as const;
+  protected readonly roleOptions = [
+    { value: 'tech_lead', label: 'Tech Lead' },
+    { value: 'analyst', label: 'Analyst' },
+    { value: 'dev', label: 'Dev' },
+    { value: 'qa', label: 'QA' },
+  ] as const;
+  protected readonly characterOptions = [
+    { value: 'pixel-ada', label: 'Ada' },
+    { value: 'pixel-alan', label: 'Alan' },
+    { value: 'pixel-grace', label: 'Grace' },
+  ] as const;
+  protected readonly modelOptions = [
+    { value: 'deepseek-flash', label: 'deepseek-flash' },
+    { value: 'deepseek-v4', label: 'deepseek-v4' },
+    { value: 'deepseek-v4-pro', label: 'deepseek-v4-pro' },
+  ] as const;
+  protected readonly memoryNotes = DEMO_MEMORY;
 
   protected readonly title = computed(() => this.sectionLabel());
   protected readonly subtitle = computed(() => `Manage ${this.sectionLabel().toLowerCase()}.`);
@@ -187,8 +257,14 @@ export class Inventory implements OnInit {
         : this.section() === 'projects'
           ? this.store.projects()
           : this.store.providers();
-    this.selected.set(items[index] ?? null);
-    this.detailOpen.set(true);
+    const item = items[index] ?? null;
+    this.selected.set(item);
+    if (this.section() === 'agents') {
+      this.inspectorOpen.set(true);
+      this.activeTab.set('live');
+    } else {
+      this.detailOpen.set(true);
+    }
   }
 
   protected entries(item: Agent | Project | Provider): readonly (readonly [string, string])[] {
@@ -224,10 +300,23 @@ export class Inventory implements OnInit {
     this.newOpen.set(false);
   }
 
+  protected setAgentStatus(id: string, status: Agent['status']): void {
+    this.store.setAgentStatus(id, status);
+  }
+
+  protected retire(id: string): void {
+    this.store.removeAgent(id);
+    this.inspectorOpen.set(false);
+  }
+
   protected create(): void {
     const name = this.name().trim();
     if (name.length < 2) {
       this.formError.set('Name must be at least 2 characters');
+      return;
+    }
+    if (this.section() === 'providers' && this.providerKey().length < 8) {
+      this.formError.set('API key must be at least 8 characters');
       return;
     }
     const id = `local-${crypto.randomUUID()}`;
@@ -236,10 +325,10 @@ export class Inventory implements OnInit {
         this.store.addAgent({
           id,
           name,
-          role: 'dev',
+          role: this.role() as Agent['role'],
           status: 'idle',
-          autonomyLevel: 2,
-          model: 'deepseek-flash',
+          autonomyLevel: Number(this.autonomy()),
+          model: this.model(),
           maxConcurrent: 1,
         });
         break;
@@ -248,9 +337,12 @@ export class Inventory implements OnInit {
           id,
           labId: 'default',
           name,
-          repo: `ai-lab/${name.toLowerCase().replace(/\s+/g, '-')}`,
-          branch: 'main',
-          autonomyLevel: 2,
+          repo:
+            this.repo().trim() === ''
+              ? `ai-lab/${name.toLowerCase().replace(/\s+/g, '-')}`
+              : this.repo(),
+          branch: this.branch() || 'main',
+          autonomyLevel: Number(this.autonomy()),
         });
         break;
       default:
@@ -259,7 +351,7 @@ export class Inventory implements OnInit {
           name,
           kind: 'deepseek',
           status: 'active',
-          last4: '0000',
+          last4: this.providerKey().slice(-4),
         });
     }
     this.newOpen.set(false);

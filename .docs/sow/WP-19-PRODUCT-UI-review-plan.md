@@ -45,7 +45,7 @@
 - [x] Settings/danger zone — P06 (`features/settings`).
 - [ ] Health/failed-runs/retired/handoff drawers — P03/P06.
 - [x] Loading/empty/error/degraded on board, inventory, SOW, memory, settings and dashboard.
-- [ ] `.docs/product/ui.md` — P07.
+- [x] `.docs/product/ui.md` — P07.
 - [ ] E2E/visual — WP-21 (owned, due 2026-12-31).
 
 ## 4. Acceptance criteria
@@ -81,7 +81,7 @@
 
 - [x] CR-0015 and the review plan indexed in `AGENTS.md`.
 - [x] `.docs/sow/SOW.md` and the WP status/progress updated.
-- [ ] `.docs/product/ui.md` — P07.
+- [x] `.docs/product/ui.md` — P07.
 
 ## 8. QA review
 
@@ -104,3 +104,4 @@
 2026-11-09 | P04 | web/src/app/features/sow/**, app.routes.ts | SOW sections/graph/materialize; tests | diff/export/streaming WP-13B T07 | P05
 2026-11-09 | P05 | web/src/app/features/memory/**, app.routes.ts | memory search/notes/pin/delete; tests | real API WP-13B T07 | P06
 2026-11-09 | P06 | web/src/app/features/{settings,dashboard}/** | settings + onboarding; tests | activity/idea/health WP-13B T07 | P07
+2026-11-09 | P07 | web/src/app/features/{board,inventory,sow,plan,settings,dashboard}/**, .docs/product/ui.md | inspector, wizards, SOW actions, plan, settings audit, onboarding, board violations; 81 tests | a11y/E2E WP-21, real API/health/handoff WP-13B T07 | QA re-review

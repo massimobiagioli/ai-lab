@@ -2,6 +2,7 @@ import { computed, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { DEMO_CARDS } from '../../core/demo/demo-data';
+import { WsService } from '../../core/ws/ws.service';
 import { Board } from './board';
 import { BoardStore } from './store/board.store';
 
@@ -11,7 +12,9 @@ function fakeStore() {
     state: signal('ready'),
     cards,
     error: signal(null),
+    lastViolation: signal(null),
     demo: signal(true),
+    clearViolation: vi.fn(),
     columns: computed(() => {
       const groups = new Map<string, (typeof DEMO_CARDS)[number][]>();
       for (const card of cards()) {
@@ -30,7 +33,11 @@ describe('Board', () => {
   it('renders the six columns and cards', async () => {
     await TestBed.configureTestingModule({
       imports: [Board],
-      providers: [provideRouter([]), { provide: BoardStore, useValue: fakeStore() }],
+      providers: [
+        provideRouter([]),
+        { provide: BoardStore, useValue: fakeStore() },
+        { provide: WsService, useValue: { lastEvent: signal(null) } },
+      ],
     }).compileComponents();
     const fixture = TestBed.createComponent(Board);
     fixture.componentRef.setInput('projectId', 'demo');
@@ -44,7 +51,11 @@ describe('Board', () => {
     const store = fakeStore();
     await TestBed.configureTestingModule({
       imports: [Board],
-      providers: [provideRouter([]), { provide: BoardStore, useValue: store }],
+      providers: [
+        provideRouter([]),
+        { provide: BoardStore, useValue: store },
+        { provide: WsService, useValue: { lastEvent: signal(null) } },
+      ],
     }).compileComponents();
     const fixture = TestBed.createComponent(Board);
     fixture.componentRef.setInput('projectId', 'demo');
@@ -61,7 +72,11 @@ describe('Board', () => {
   it('opens the card detail drawer', async () => {
     await TestBed.configureTestingModule({
       imports: [Board],
-      providers: [provideRouter([]), { provide: BoardStore, useValue: fakeStore() }],
+      providers: [
+        provideRouter([]),
+        { provide: BoardStore, useValue: fakeStore() },
+        { provide: WsService, useValue: { lastEvent: signal(null) } },
+      ],
     }).compileComponents();
     const fixture = TestBed.createComponent(Board);
     fixture.componentRef.setInput('projectId', 'demo');
