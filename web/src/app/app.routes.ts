@@ -56,9 +56,7 @@ export const routes: Routes = [
   {
     path: 'memory',
     title: 'AI-Lab · Memory',
-    loadComponent: () =>
-      import('./features/placeholder/placeholder').then((module) => module.Placeholder),
-    data: { title: 'Memory', body: 'Memory browser (WP-19).' },
+    loadComponent: () => import('./features/memory/memory').then((module) => module.Memory),
   },
   {
     path: 'settings',

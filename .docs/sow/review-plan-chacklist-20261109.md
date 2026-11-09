@@ -53,7 +53,7 @@ scripts/run-web.sh npm run format:check
 - [x] **P04 — WP-19 SOW and delivery graph.**
   Branch `review/p04-wp19-sow`; `/projects/:projectId/sow` sections, task graph, materialize confirmation, tests. Depends P01.
 
-- [ ] **P05 — WP-19 memory.**
+- [x] **P05 — WP-19 memory.**
   Branch `review/p05-wp19-memory`; `/memory` scoped search, notes, citations, empty/loading/error, tests. Depends P01.
 
 - [ ] **P06 — WP-19 settings and onboarding.**
@@ -140,4 +140,5 @@ scripts/run-web.sh npm run format:check
 | 2026-11-09 | P01 | `review/p01-wp19-data` | `58dd820` | Data layer, demo fallback, stores, board rollback. |
 | 2026-11-09 | P02 | `review/p02-wp19-kanban` | `0dcfa90` | Six-column board, DnD, keyboard, filters, drawer, tests. |
 | 2026-11-09 | P03 | `review/p03-wp19-inventory` | `6f2e24e` | Inventory lists, detail drawers, create dialog, last4 keys. |
-| 2026-11-09 | P04 | `review/p04-wp19-sow` | merge pending | SOW sections, delivery graph, materialize. |
+| 2026-11-09 | P04 | `review/p04-wp19-sow` | `9cd6624` | SOW sections, delivery graph, materialize. |
+| 2026-11-09 | P05 | `review/p05-wp19-memory` | merge pending | Memory search, notes, citations, pin/delete. |
