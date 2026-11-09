@@ -205,7 +205,7 @@ All WPs start as **ready**. Estimates are relative story points (Fibonacci). `M`
 | [WP-14](./WP-14-SANDBOX-RUNNER.md) | Sandbox Runner & Tool Policy | **done** | Dev | M5 | 21 | WP-05, WP-06, WP-12 | Ephemeral containers, tool registry, allowlists, egress policy, resource limits |
 | [WP-15](./WP-15-QA-MERGE.md) | QA, Review, Merge & Autonomy Policy | **done** | QA | M5 | 13 | WP-09, WP-12, WP-13 | Verification matrix, review verdicts, separation of duties, merge policy, A0–A3 |
 | [WP-16](./WP-16-API-REALTIME.md) | API & Realtime Contracts | **done** | Dev | M2/M5 | 21 | WP-06, WP-09 | REST, OpenAPI, WebSocket hub, event backfill, rate limits, Problem Details |
-| [WP-17](./WP-17-FRONTEND-PLATFORM.md) | Frontend Platform & Design System | **progress** | Dev | M0/M3 | 21 | WP-01, WP-16 | Angular 22 shell, routing, signals, tokens, pixel UI kit, a11y, telemetry |
+| [WP-17](./WP-17-FRONTEND-PLATFORM.md) | Frontend Platform & Design System | **done** | Dev | M0/M3 | 21 | WP-01, WP-16 | Angular 22 shell, routing, signals, tokens, pixel UI kit, a11y, telemetry |
 | [WP-18](./WP-18-VIRTUAL-OFFICE.md) | Virtual Office Engine | **done** | Dev | M3 | 34 | WP-17, WP-09 | Canvas engine, sprite pipeline, A*, agent state machine, interactions, 60 FPS |
 | [WP-19](./WP-19-PRODUCT-UI.md) | Product UI Surfaces | **done** | Dev | M1–M4 | 21 | WP-07, WP-08, WP-09, WP-10, WP-17 | Dashboard, inventory, Kanban, SOW, memory, settings, onboarding |
 | [WP-20](./WP-20-OBSERVABILITY-SRE.md) | Observability, SRE & Operations | **done** | Dev | M7 | 21 | WP-03, WP-04, WP-05, WP-16 | Logs, metrics, traces, SLOs, dashboards, alerts, backup/DR, runbooks |

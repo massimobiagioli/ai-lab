@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | WP ID | `WP-17` |
-| Status | **progress** |
+| Status | **done** |
 | Owner | Dev |
 | Milestone | M0 (shell) / M3 (system) |
 | Estimate | 21 points |
@@ -20,6 +20,8 @@
 | 2026-11-07 | `ready` | `progress` | Dev (agent) | WP-01 and WP-16 done |
 | 2026-11-07 | `progress` | `done` | Dev (agent) | Pixel tokens, status badge, a11y and frontend docs delivered; full kit/routes in the WP-17 follow-up, office and pages in WP-18/WP-19 |
 | 2026-11-07 | `done` | `progress` | Tech Lead (agent) | CR-0013: the workspace is still the Angular starter with an empty router and no core services; reopen to deliver the shell, services, stores and UI kit |
+
+| 2026-11-07 | `progress` | `done` | QA (agent) | QA `APPROVED` (review plan §8); 52 web tests; deferrals to WP-21/WP-20/WP-13B/WP-19 named |
 
 ---
 
@@ -193,13 +195,13 @@ web/e2e/                  # Playwright
 - [x] Angular workspace configured (zoneless, strict, budgets, ESLint/Prettier).
 - [x] App shell: sidebar, topbar, drawer host, toast host and error boundary.
 - [x] Routing with lazy loading, guards, 404, deep-link query inputs and a design gallery.
-- [ ] Hand-written typed API client delivered; OpenAPI code generation pending.
+- [x] Hand-written typed API client delivered; OpenAPI code generation deferred to WP-13B T09 (owner Dev, due 2026-12-31).
 - [x] WebSocket service (topics, reconnect, resume, dedupe, backpressure).
 - [x] Signal store pattern + base utilities; optimistic update helper with rollback.
 - [x] Design tokens, 27 UI primitives (including the mandated set), the 11-icon pixel set and the in-repo PixelText bitmap font.
 - [x] Focus trap, keyboard DnD, reduced-motion CSS and the shell a11y baseline delivered.
 - [x] Telemetry + error reporting.
-- [ ] Unit/component tests delivered (52); Playwright/visual/a11y scaffolding deferred to WP-21.
+- [x] Unit/component tests delivered (52); Playwright/visual/a11y deferred to WP-21 (owner QA, due 2026-12-31).
 - [x] `.docs/product/frontend.md` and `.docs/product/design-system.md` delivered; gallery optional pending.
 
 ---
@@ -239,11 +241,11 @@ web/e2e/                  # Playwright
 
 ## 7. WP Definition of Done
 
-- [ ] All deliverables checked with evidence (several deferrals remain).
-- [ ] Unit/component suites green; E2E/visual/a11y deferred to WP-21.
-- [ ] Bundle budgets green; Lighthouse budgets deferred to WP-21.
+- [x] All deliverables checked with evidence; deferrals recorded in the review plan §9.
+- [x] Unit/component suites green (52); E2E/visual/a11y deferred to WP-21 (owned/scheduled).
+- [x] Bundle budgets green; Lighthouse budgets deferred to WP-21 (owned/scheduled).
 - [x] Docs reviewed; no P0/P1.
-- [ ] Status `done` with sign-off after QA.
+- [x] Status `done` with QA sign-off (PR #3; QA APPROVED).
 
 ---
 
@@ -276,3 +278,4 @@ web/e2e/                  # Playwright
 2026-11-07 | review | .docs/sow/WP-17-FRONTEND-PLATFORM-review-plan.md, web/src/app/shared/{ui/pixel-text,directives} | review plan; pixel bitmap font; keyboard DnD; 19 web tests | Playwright/axe/lighthouse/offline/generated client deferred to WP-21/WP-20/WP-13B/WP-19 | in review
 2026-11-07 | fix | web/src/app/{app.routes.ts,core/ws,core/state,shared/ui} | lazy placeholder/404 chunks; WS resync backfill; optimistic helper; mandated PixelPanel/Table/IconButton/Textarea/Checkbox; Escape-close; 23 web tests | Playwright/axe/lighthouse/offline/generated client deferred | QA re-review
 2026-11-07 | fix | web/src/app/shared/ui | primitive disabled/loading/error states; tabs/menu keyboard; aria-describedby; 48 web tests | Playwright/axe/lighthouse/offline/generated client deferred | QA re-review
+2026-11-07 | closure | web/**, .docs/sow/WP-17-FRONTEND-PLATFORM-review-plan.md | QA APPROVED; 52 tests; deferrals owned | merge PR #3 | WP-18
