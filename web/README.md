@@ -13,6 +13,7 @@ scripts/run-web.sh npm start        # dev server
 scripts/run-web.sh npm run build    # production build + budgets
 scripts/run-web.sh npm run lint
 scripts/run-web.sh npm test
+.tools/run-e2e.sh              # Playwright + axe (official Playwright image)
 ```
 
 ## Structure
