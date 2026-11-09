@@ -384,3 +384,4 @@ Outputs are stored in `run_steps` (type `verification`) and attached to the PR b
 2026-11-07 | build | crates/orchestrator/src/postgres.rs | merged recovery allows READY→DONE; reaped attempt>=4 dead-letters | runner-client/open recovery open | QA review
 2026-11-07 | build | crates/orchestrator/src/runner_client.rs, crates/worker/src/main.rs | HTTP runner client + contract test; worker selects it via env; 54 tests | context/open-resume/metrics/E2E open | QA review
 2026-11-07 | build | crates/orchestrator/src/{runner_client,wired}.rs, crates/worker/src/main.rs, adr-0025 | SSE logs; sandbox guard; fakes gated; coordinator ADR; 54 tests | context/resume/metrics/E2E open | QA review
+2026-11-07 | build | crates/orchestrator/src/{wired,worker,postgres}.rs | card_key propagation; CI/DoD evidence gates; 54 tests | resume/context/OTel/E2E open | QA review

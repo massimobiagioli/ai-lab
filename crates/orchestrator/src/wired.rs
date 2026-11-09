@@ -101,8 +101,8 @@ impl WiredExecutor {
         self.last.lock().ok().and_then(|last| last.clone())
     }
 
-    fn branch(&self) -> Result<BranchName, ExecError> {
-        BranchName::for_card(&self.card_key, "run")
+    fn branch_for(card_key: &str) -> Result<BranchName, ExecError> {
+        BranchName::for_card(card_key, "run")
             .map_err(|error| ExecError::Terminal(error.to_string()))
     }
 
@@ -316,8 +316,9 @@ impl RunExecutor for WiredExecutor {
         &self,
         _card_id: ailab_domain::CardId,
         _run_id: ailab_domain::RunId,
+        card_key: &str,
     ) -> Option<(RecoveryAction, Option<String>)> {
-        let branch = self.branch().ok()?;
+        let branch = Self::branch_for(card_key).ok()?;
         match self.scm.find_pull_request(&self.repo, &branch).await {
             Ok(Some(pr)) => {
                 let sha = self.scm.merged_sha(&self.repo, pr.number).await;
@@ -337,6 +338,10 @@ impl RunExecutor for WiredExecutor {
 
     #[allow(clippy::too_many_lines)]
     async fn execute(&self, run: &QueuedRun) -> Result<RunPipeline, ExecError> {
+        let card_key = run
+            .card_key
+            .clone()
+            .unwrap_or_else(|| self.card_key.clone());
         let limit = std::env::var("AILAB_RUN_BUDGET_MICROUSD")
             .ok()
             .and_then(|value| value.parse::<i64>().ok())
@@ -358,7 +363,7 @@ impl RunExecutor for WiredExecutor {
         advance(&mut pipeline)?; // Context
         let bundle = build_context(
             vec![
-                ContextSection::new("task", format!("Implement card {}", self.card_key), 0),
+                ContextSection::new("task", format!("Implement card {card_key}"), 0),
                 ContextSection::new("repo_map", "repository map".to_owned(), 1),
                 ContextSection::new("card", format!("card {}", run.card_id), 2),
                 ContextSection::new("memory", "memory top-8 relevant notes", 3),
@@ -369,7 +374,7 @@ impl RunExecutor for WiredExecutor {
             8_000,
         )
         .with_citations(vec![
-            format!("card:{}", self.card_key),
+            format!("card:{card_key}"),
             format!("run:{}", run.run_id),
             "memory:top-8".to_owned(),
             "files:src/lib.rs".to_owned(),
@@ -494,16 +499,16 @@ impl RunExecutor for WiredExecutor {
         }
 
         advance(&mut pipeline)?; // Commit
-        let branch = self.branch()?;
+        let branch = Self::branch_for(&card_key)?;
         self.scm
             .create_branch(&self.repo, &branch, "base-sha")
             .await
             .map_err(|error| ExecError::Transient(error.to_string()))?;
         let message = format!(
             "feat({}): run implementation\n\nAI-Lab-Run: {}\nAI-Lab-Card: {}\nAI-Lab-Agent: {}\n\n<!-- ailab:run:{}:commit -->",
-            self.card_key.to_lowercase(),
+            card_key.to_lowercase(),
             run.run_id,
-            self.card_key,
+            card_key,
             run.agent_id,
             run.run_id
         );
@@ -519,6 +524,20 @@ impl RunExecutor for WiredExecutor {
             .await
             .map_err(|error| ExecError::Transient(error.to_string()))?;
         pipeline.record_step("commit", "commit", 0, Some(0), commit.clone());
+        let checks = self
+            .scm
+            .get_checks(&self.repo, &commit)
+            .await
+            .map_err(|error| ExecError::Transient(error.to_string()))?;
+        let ci_green = checks.status == CheckStatus::Green;
+        let dod_complete = {
+            let verification: Vec<_> = pipeline
+                .steps
+                .iter()
+                .filter(|step| step.kind == "verification")
+                .collect();
+            verification.len() >= 4 && verification.iter().all(|step| step.exit_code == Some(0))
+        };
 
         let mut review_pipeline = ailab_application::ReviewPipeline::new();
         for step in pipeline
@@ -543,20 +562,20 @@ impl RunExecutor for WiredExecutor {
             .validate()
             .map_err(|violation| ExecError::Terminal(format!("review invalid: {violation:?}")))?;
         let pre_checks = ailab_application::MergeChecks {
-            ci_green: true,
+            ci_green,
             pr_merged: false,
             pr_open: true,
             pr_draft: false,
             base_is_default: true,
-            diff_clean: true,
+            diff_clean: no_secrets,
             merge_sha: false,
-            dod_complete: true,
+            dod_complete,
             p0p1_open: false,
-            budget_remaining: true,
+            budget_remaining,
             head_sha: commit.clone(),
             reviewed_sha: commit.clone(),
             branch_protected: false,
-            human_approved: true,
+            human_approved: false,
             already_merged: false,
         };
         let pre_decision = ailab_application::evaluate_pre_merge(
@@ -589,7 +608,7 @@ impl RunExecutor for WiredExecutor {
                 .open_pull_request(
                     &self.repo,
                     &PullRequestRequest {
-                        title: format!("[{}] wired run", self.card_key),
+                        title: format!("[{card_key}] wired run"),
                         body: "AI-Lab trace".to_owned(),
                         head: branch.clone(),
                         base: "main".to_owned(),
@@ -636,11 +655,6 @@ impl RunExecutor for WiredExecutor {
         pipeline.record_step("review", "review", 0, Some(0), "approved");
 
         advance(&mut pipeline)?; // Merge
-        let checks = self
-            .scm
-            .get_checks(&self.repo, &commit)
-            .await
-            .map_err(|error| ExecError::Transient(error.to_string()))?;
         let merge = self
             .scm
             .merge_pull_request(
@@ -757,17 +771,8 @@ mod tests {
 
     #[test]
     fn branch_name_uses_the_card_key() {
-        let executor = WiredExecutor::new(
-            Arc::new(FakeLlm::new(Vec::new())),
-            Arc::new(FakeScm::default()),
-            Arc::new(InMemoryBackend::new()),
-            RepoRef::parse("example/ai-lab").expect("repo"),
-            "AIL-1",
-            "dev",
-            "qa",
-        );
         assert_eq!(
-            executor.branch().expect("branch").as_str(),
+            WiredExecutor::branch_for("AIL-1").expect("branch").as_str(),
             "ailab/AIL-1-run"
         );
     }

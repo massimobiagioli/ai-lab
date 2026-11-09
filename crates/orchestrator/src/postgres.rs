@@ -26,6 +26,8 @@ pub struct ScheduledRun {
     pub attempt: u8,
     /// Lab scope.
     pub lab_id: LabId,
+    /// Card key.
+    pub card_key: String,
 }
 
 /// Durable scheduler over Postgres.
@@ -63,7 +65,7 @@ impl PostgresScheduler {
         let mut scheduled = Vec::new();
         // Claim explicitly queued runs first (API `POST /cards/{id}/runs`).
         let queued = sqlx::query(
-            "SELECT r.id, r.card_id, r.agent_id, r.attempt, r.lab_id FROM runs r \
+            "SELECT r.id, r.card_id, r.agent_id, r.attempt, r.lab_id, c.card_key FROM runs r \
              JOIN cards c ON c.id = r.card_id JOIN agents a ON a.id = r.agent_id \
              JOIN projects p ON p.id = c.project_id JOIN labs l ON l.id = p.lab_id \
              WHERE r.status = 'queued' AND r.created_at <= $1 AND r.attempt <= 4 \
@@ -84,6 +86,7 @@ impl PostgresScheduler {
             let agent_id: Uuid = run.get("agent_id");
             let attempt: i16 = run.get("attempt");
             let lab_id: Uuid = run.get("lab_id");
+            let card_key: String = run.get("card_key");
             sqlx::query(
                 "UPDATE runs SET status = 'running', lease_id = $2, started_at = $3, heartbeat_at = $3 WHERE id = $1",
             )
@@ -104,6 +107,7 @@ impl PostgresScheduler {
                 agent_id: AgentId::new(agent_id).map_err(|_| sqlx::Error::RowNotFound)?,
                 attempt: u8::try_from(attempt).unwrap_or(1),
                 lab_id: LabId::new(lab_id).map_err(|_| sqlx::Error::RowNotFound)?,
+                card_key,
             });
         }
         let remaining = limit.saturating_sub(i64::try_from(scheduled.len()).unwrap_or(0));
@@ -112,7 +116,7 @@ impl PostgresScheduler {
             return Ok(scheduled);
         }
         let cards = sqlx::query(
-            "SELECT c.id, c.project_id, c.assignee_id FROM cards c \
+            "SELECT c.id, c.project_id, c.assignee_id, c.card_key FROM cards c \
              JOIN agents a ON a.id = c.assignee_id \
              JOIN projects p ON p.id = c.project_id JOIN labs l ON l.id = p.lab_id \
              WHERE c.column_name = 'READY' AND c.assignee_id IS NOT NULL \
@@ -132,6 +136,7 @@ impl PostgresScheduler {
             let card_id: Uuid = card.get("id");
             let project_id: Uuid = card.get("project_id");
             let agent_id: Uuid = card.get("assignee_id");
+            let card_key: String = card.get("card_key");
             let lab_id: Uuid = sqlx::query_scalar("SELECT lab_id FROM projects WHERE id = $1")
                 .bind(project_id)
                 .fetch_one(&mut *tx)
@@ -169,6 +174,7 @@ impl PostgresScheduler {
                 agent_id: AgentId::new(agent_id).map_err(|_| sqlx::Error::RowNotFound)?,
                 attempt: u8::try_from(attempt).unwrap_or(1),
                 lab_id: LabId::new(lab_id).map_err(|_| sqlx::Error::RowNotFound)?,
+                card_key,
             });
         }
         tx.commit().await?;
@@ -434,10 +440,11 @@ impl PostgresScheduler {
     pub async fn latest_run(
         &self,
         card_id: CardId,
-    ) -> Result<Option<(RunId, Option<String>, LabId, i16)>, sqlx::Error> {
+    ) -> Result<Option<(RunId, Option<String>, LabId, i16, String)>, sqlx::Error> {
         let row = sqlx::query(
-            "SELECT id, merge_sha, lab_id, attempt FROM runs WHERE card_id = $1 \
-             ORDER BY attempt DESC LIMIT 1",
+            "SELECT r.id, r.merge_sha, r.lab_id, r.attempt, c.card_key FROM runs r \
+             JOIN cards c ON c.id = r.card_id WHERE r.card_id = $1 \
+             ORDER BY r.attempt DESC LIMIT 1",
         )
         .bind(card_id.as_uuid())
         .fetch_optional(&self.pool)
@@ -447,11 +454,13 @@ impl PostgresScheduler {
         let merge_sha: Option<String> = row.get("merge_sha");
         let lab_id: Uuid = row.get("lab_id");
         let attempt: i16 = row.get("attempt");
+        let card_key: String = row.get("card_key");
         Ok(Some((
             RunId::new(id).map_err(|_| sqlx::Error::RowNotFound)?,
             merge_sha,
             LabId::new(lab_id).map_err(|_| sqlx::Error::RowNotFound)?,
             attempt,
+            card_key,
         )))
     }
 
@@ -597,10 +606,10 @@ impl PostgresWorker {
     pub async fn tick(&self, now: DateTime<Utc>) -> Result<PostgresTickReport, sqlx::Error> {
         let reaped_cards = self.scheduler.reap(now).await?;
         for card in &reaped_cards {
-            if let Some((run_id, merge_sha, _lab_id, attempt)) =
+            if let Some((run_id, merge_sha, _lab_id, attempt, card_key)) =
                 self.scheduler.latest_run(*card).await?
             {
-                let action = self.executor.recover(*card, run_id).await;
+                let action = self.executor.recover(*card, run_id, &card_key).await;
                 let recovered_sha = action.as_ref().and_then(|(action, sha)| {
                     (*action == crate::pipeline::RecoveryAction::Done)
                         .then(|| sha.clone())
@@ -635,7 +644,8 @@ impl PostgresWorker {
             self.scheduler
                 .emit_event("delivery.run.started", &run, now)
                 .await?;
-            let queued = crate::worker::QueuedRun::new(run.run_id, run.card_id, run.agent_id, now);
+            let queued = crate::worker::QueuedRun::new(run.run_id, run.card_id, run.agent_id, now)
+                .with_card_key(run.card_key.clone());
             let heartbeat = {
                 let scheduler = self.scheduler.clone();
                 let run_id = run.run_id;
@@ -760,6 +770,7 @@ mod tests {
             agent_id: AgentId::generate(),
             attempt: 1,
             lab_id: LabId::generate(),
+            card_key: "AIL-1".to_owned(),
         };
         assert_eq!(run.attempt, 1);
     }

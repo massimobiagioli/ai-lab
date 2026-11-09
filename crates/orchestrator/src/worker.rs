@@ -24,6 +24,8 @@ pub struct QueuedRun {
     pub attempt: u8,
     /// Enqueued at.
     pub enqueued_at: DateTime<Utc>,
+    /// Card key for branch/PR identity.
+    pub card_key: Option<String>,
 }
 
 impl QueuedRun {
@@ -41,7 +43,15 @@ impl QueuedRun {
             agent_id,
             attempt: 1,
             enqueued_at,
+            card_key: None,
         }
+    }
+
+    /// Attach the card key.
+    #[must_use]
+    pub fn with_card_key(mut self, card_key: impl Into<String>) -> Self {
+        self.card_key = Some(card_key.into());
+        self
     }
 }
 
@@ -81,6 +91,7 @@ pub trait RunExecutor: Send + Sync {
         &self,
         _card_id: CardId,
         _run_id: RunId,
+        _card_key: &str,
     ) -> Option<(crate::pipeline::RecoveryAction, Option<String>)> {
         None
     }
