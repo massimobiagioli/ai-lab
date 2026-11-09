@@ -33,12 +33,13 @@ impl PostgresRunStore {
             started_at: row.try_get::<Option<DateTime<Utc>>, _>("started_at").ok()?,
             ended_at: row.try_get::<Option<DateTime<Utc>>, _>("ended_at").ok()?,
             cost_microusd: row.try_get::<i64, _>("cost_microusd").ok()?,
+            created_at: row.try_get::<DateTime<Utc>, _>("created_at").ok()?,
         })
     }
 
     async fn fetch_run(&self, id: Uuid) -> Option<RunView> {
         let row = sqlx::query(
-            "SELECT id, card_id, lab_id, status, attempt, started_at, ended_at, cost_microusd \
+            "SELECT id, card_id, lab_id, status, attempt, started_at, ended_at, cost_microusd, created_at \
              FROM runs WHERE id = $1",
         )
         .bind(id)
@@ -113,7 +114,12 @@ impl RunStore for PostgresRunStore {
         }
     }
 
-    async fn list_by_lab(&self, lab_id: &str, limit: u32, offset: usize) -> Page<RunView> {
+    async fn list_by_lab(
+        &self,
+        lab_id: &str,
+        limit: u32,
+        cursor: Option<crate::server::RunCursor>,
+    ) -> Page<RunView> {
         let Ok(lab) = Uuid::parse_str(lab_id) else {
             return Page {
                 data: Vec::new(),
@@ -122,14 +128,20 @@ impl RunStore for PostgresRunStore {
             };
         };
         let limit = i64::from(limit);
-        let offset = i64::try_from(offset).unwrap_or(0);
+        let cursor_ts = cursor.as_ref().map(|cursor| cursor.created_at);
+        let cursor_id = cursor
+            .as_ref()
+            .and_then(|cursor| Uuid::parse_str(&cursor.id).ok());
         let rows = sqlx::query(
-            "SELECT id, card_id, lab_id, status, attempt, started_at, ended_at, cost_microusd \
-             FROM runs WHERE lab_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3",
+            "SELECT id, card_id, lab_id, status, attempt, started_at, ended_at, cost_microusd, created_at \
+             FROM runs WHERE lab_id = $1 \
+               AND ($2::timestamptz IS NULL OR (created_at, id) < ($2, $3::uuid)) \
+             ORDER BY created_at DESC, id DESC LIMIT $4",
         )
         .bind(lab)
+        .bind(cursor_ts)
+        .bind(cursor_id)
         .bind(limit)
-        .bind(offset)
         .fetch_all(&self.pool)
         .await
         .unwrap_or_default();
@@ -139,10 +151,15 @@ impl RunStore for PostgresRunStore {
             .await
             .unwrap_or(0);
         let data: Vec<RunView> = rows.iter().filter_map(Self::run_from_row).collect();
-        let next = usize::try_from(offset).unwrap_or(0) + data.len();
+        let next_cursor = (data.len() == usize::try_from(limit).unwrap_or(usize::MAX))
+            .then(|| {
+                data.last()
+                    .map(|run| format!("{}|{}", run.created_at.to_rfc3339(), run.id))
+            })
+            .flatten();
         Page {
             data,
-            next_cursor: (next < usize::try_from(total).unwrap_or(0)).then(|| next.to_string()),
+            next_cursor,
             total_estimate: u64::try_from(total).unwrap_or(0),
         }
     }

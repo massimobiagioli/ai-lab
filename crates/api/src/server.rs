@@ -44,6 +44,8 @@ pub struct RunView {
     pub ended_at: Option<DateTime<Utc>>,
     /// Cost so far.
     pub cost_microusd: i64,
+    /// Creation timestamp.
+    pub created_at: DateTime<Utc>,
 }
 
 /// Run step.
@@ -84,7 +86,12 @@ pub trait RunStore: Send + Sync {
     /// Cancel a queued/running run.
     async fn cancel(&self, id: &str) -> Result<RunView, StoreError>;
     /// List runs for a lab.
-    async fn list_by_lab(&self, lab_id: &str, limit: u32, offset: usize) -> Page<RunView>;
+    async fn list_by_lab(
+        &self,
+        lab_id: &str,
+        limit: u32,
+        cursor: Option<RunCursor>,
+    ) -> Page<RunView>;
     /// Enqueue a run for a card.
     async fn enqueue_card(&self, card_id: &str) -> Result<RunView, StoreError>;
     /// Events after a sequence.
@@ -145,7 +152,12 @@ impl RunStore for InMemoryRunStore {
         Ok(view)
     }
 
-    async fn list_by_lab(&self, lab_id: &str, limit: u32, offset: usize) -> Page<RunView> {
+    async fn list_by_lab(
+        &self,
+        lab_id: &str,
+        limit: u32,
+        cursor: Option<RunCursor>,
+    ) -> Page<RunView> {
         let Some(data) = self.data.lock().ok() else {
             return Page {
                 data: Vec::new(),
@@ -153,18 +165,32 @@ impl RunStore for InMemoryRunStore {
                 total_estimate: 0,
             };
         };
-        let all: Vec<RunView> = data
+        let mut all: Vec<RunView> = data
             .runs
             .values()
             .filter(|run| run.lab_id == lab_id)
             .cloned()
             .collect();
+        all.sort_by(|a, b| {
+            b.created_at
+                .cmp(&a.created_at)
+                .then_with(|| b.id.cmp(&a.id))
+        });
+        if let Some(cursor) = &cursor {
+            all.retain(|run| {
+                run.created_at < cursor.created_at
+                    || (run.created_at == cursor.created_at && run.id < cursor.id)
+            });
+        }
         let limit = usize::try_from(limit).unwrap_or(usize::MAX);
-        let page: Vec<RunView> = all.iter().skip(offset).take(limit).cloned().collect();
-        let next = offset + page.len();
+        let page: Vec<RunView> = all.iter().take(limit).cloned().collect();
+        let next_cursor = (page.len() == limit && !page.is_empty()).then(|| {
+            let last = page.last().expect("non-empty");
+            format!("{}|{}", last.created_at.to_rfc3339(), last.id)
+        });
         Page {
             data: page,
-            next_cursor: (next < all.len()).then(|| next.to_string()),
+            next_cursor,
             total_estimate: u64::try_from(all.len()).unwrap_or(u64::MAX),
         }
     }
@@ -180,6 +206,7 @@ impl RunStore for InMemoryRunStore {
             started_at: None,
             ended_at: None,
             cost_microusd: 0,
+            created_at: Utc::now(),
         };
         data.runs.insert(run.id.clone(), run.clone());
         data.steps.insert(run.id.clone(), Vec::new());
@@ -475,6 +502,7 @@ pub fn router(state: AppState) -> Router {
         .layer(axum::extract::DefaultBodyLimit::max(2_097_152))
         .layer(middleware::from_fn(request_id))
         .layer(middleware::from_fn(origin_guard))
+        .layer(middleware::from_fn(problem_status_layer))
         .with_state(state)
 }
 
@@ -684,6 +712,58 @@ async fn origin_guard(request: Request, next: Next) -> Response {
     next.run(request).await
 }
 
+fn problem_parts(error: DomainError) -> (u16, serde_json::Value, Response) {
+    let status = StatusCode::from_u16(error.status()).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+    let mut details = ProblemDetails::from(error);
+    details.trace_id = Some(format!(
+        "{:x}",
+        chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
+    ));
+    details.instance = Some("about:blank".to_owned());
+    let body = serde_json::to_value(&details).unwrap_or(serde_json::Value::Null);
+    let response = (
+        status,
+        [(axum::http::header::CONTENT_TYPE, "application/problem+json")],
+        Json(details),
+    )
+        .into_response();
+    (status.as_u16(), body, response)
+}
+
+fn problem_status(status: StatusCode, code: &'static str, detail: &str) -> Response {
+    let mut details = ProblemDetails::from(DomainError::policy(code, detail));
+    details.status = status.as_u16();
+    code.clone_into(&mut details.code);
+    details.trace_id = Some(format!(
+        "{:x}",
+        chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
+    ));
+    details.instance = Some("about:blank".to_owned());
+    (
+        status,
+        [(axum::http::header::CONTENT_TYPE, "application/problem+json")],
+        Json(details),
+    )
+        .into_response()
+}
+
+async fn problem_status_layer(request: Request, next: Next) -> Response {
+    let response = next.run(request).await;
+    match response.status() {
+        StatusCode::METHOD_NOT_ALLOWED => problem_status(
+            StatusCode::METHOD_NOT_ALLOWED,
+            "METHOD_NOT_ALLOWED",
+            "method not allowed",
+        ),
+        StatusCode::PAYLOAD_TOO_LARGE => problem_status(
+            StatusCode::PAYLOAD_TOO_LARGE,
+            "PAYLOAD_TOO_LARGE",
+            "request body too large",
+        ),
+        _ => response,
+    }
+}
+
 fn problem(error: DomainError) -> Response {
     let status = StatusCode::from_u16(error.status()).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
     let mut details = ProblemDetails::from(error);
@@ -755,6 +835,27 @@ fn b64decode(input: &str) -> Option<Vec<u8>> {
         }
     }
     Some(output)
+}
+
+/// Run keyset cursor.
+#[derive(Debug, Clone)]
+pub struct RunCursor {
+    /// Creation timestamp of the last row.
+    pub created_at: DateTime<Utc>,
+    /// Run id of the last row.
+    pub id: String,
+}
+
+fn decode_run_cursor(cursor: &str) -> Option<RunCursor> {
+    let text = String::from_utf8(b64decode(cursor)?).ok()?;
+    let (timestamp, id) = text.split_once('|')?;
+    let created_at = chrono::DateTime::parse_from_rfc3339(timestamp)
+        .ok()?
+        .with_timezone(&Utc);
+    Some(RunCursor {
+        created_at,
+        id: id.to_owned(),
+    })
 }
 
 fn encode_cursor(offset: usize) -> String {
@@ -931,9 +1032,15 @@ async fn cancel_run(
             return replay(status, body);
         }
         if !state.idempotency.try_start(key) {
+            for _ in 0..50 {
+                if let Some((status, body)) = state.idempotency.get(key) {
+                    return replay(status, body);
+                }
+                tokio::time::sleep(Duration::from_millis(100)).await;
+            }
             return problem(DomainError::policy(
-                "IDEMPOTENCY_IN_PROGRESS",
-                "a request with this key is in progress",
+                "IDEMPOTENCY_TIMEOUT",
+                "a request with this key is still in progress",
             ));
         }
     }
@@ -948,13 +1055,22 @@ async fn cancel_run(
         }
         Err(StoreError::NotFound) => {
             if let Some(key) = key.as_deref() {
+                let (status, body, response) = problem_parts(DomainError::NotFound);
+                state.idempotency.put(key, status, body);
                 state.idempotency.finish(key);
+                return response;
             }
             problem(DomainError::NotFound)
         }
         Err(StoreError::Conflict) => {
             if let Some(key) = key.as_deref() {
+                let (status, body, response) = problem_parts(DomainError::policy(
+                    "INVALID_RUN_STATE",
+                    "the run cannot be cancelled in its current state",
+                ));
+                state.idempotency.put(key, status, body);
                 state.idempotency.finish(key);
+                return response;
             }
             problem(DomainError::policy(
                 "INVALID_RUN_STATE",
@@ -977,19 +1093,17 @@ async fn list_runs(
         Ok(limit) => limit,
         Err(message) => return problem(DomainError::validation("limit", message)),
     };
-    let offset = match query.cursor.as_deref() {
-        Some(cursor) => match decode_cursor(cursor) {
-            Some(offset) => offset,
+    let cursor = match query.cursor.as_deref() {
+        Some(cursor) => match decode_run_cursor(cursor) {
+            Some(cursor) => Some(cursor),
             None => {
                 return problem(DomainError::validation("cursor", "invalid cursor"));
             }
         },
-        None => 0,
+        None => None,
     };
-    let mut page = state.store.list_by_lab(&id, limit, offset).await;
-    page.next_cursor = page
-        .next_cursor
-        .map(|_| encode_cursor(offset + usize::try_from(limit).unwrap_or(0)));
+    let mut page = state.store.list_by_lab(&id, limit, cursor).await;
+    page.next_cursor = page.next_cursor.map(|raw| b64encode(raw.as_bytes()));
     Json(page).into_response()
 }
 
@@ -1008,9 +1122,15 @@ async fn enqueue_run(
             return replay(status, body);
         }
         if !state.idempotency.try_start(key) {
+            for _ in 0..50 {
+                if let Some((status, body)) = state.idempotency.get(key) {
+                    return replay(status, body);
+                }
+                tokio::time::sleep(Duration::from_millis(100)).await;
+            }
             return problem(DomainError::policy(
-                "IDEMPOTENCY_IN_PROGRESS",
-                "a request with this key is in progress",
+                "IDEMPOTENCY_TIMEOUT",
+                "a request with this key is still in progress",
             ));
         }
     }
@@ -1025,13 +1145,22 @@ async fn enqueue_run(
         }
         Err(StoreError::NotFound) => {
             if let Some(key) = key.as_deref() {
+                let (status, body, response) = problem_parts(DomainError::NotFound);
+                state.idempotency.put(key, status, body);
                 state.idempotency.finish(key);
+                return response;
             }
             problem(DomainError::NotFound)
         }
         Err(StoreError::Conflict) => {
             if let Some(key) = key.as_deref() {
+                let (status, body, response) = problem_parts(DomainError::policy(
+                    "RUN_NOT_ALLOWED",
+                    "a run cannot be queued for this card",
+                ));
+                state.idempotency.put(key, status, body);
                 state.idempotency.finish(key);
+                return response;
             }
             problem(DomainError::policy(
                 "RUN_NOT_ALLOWED",
@@ -1159,7 +1288,7 @@ async fn get_metrics(
     }
     let runs = state
         .store
-        .list_by_lab(&id, u32::MAX, 0)
+        .list_by_lab(&id, u32::MAX, None)
         .await
         .total_estimate;
     Json(serde_json::json!({ "lab_id": id, "runs": runs })).into_response()
@@ -1335,6 +1464,7 @@ mod tests {
                 started_at: None,
                 ended_at: None,
                 cost_microusd: 0,
+                created_at: Utc::now(),
             },
             vec![StepView {
                 seq: 1,
