@@ -21,6 +21,7 @@ This directory holds product documentation. Program control (technical specifica
 | [qa.md](./qa.md) | Review verdicts, separation of duties and autonomy merge policy |
 | [qa-merge.md](./qa-merge.md) | Review pipeline, merge conditions, hard stops and error codes |
 | [frontend.md](./frontend.md) | Angular shell, pixel tokens, status badge and accessibility |
+| [design-system.md](./design-system.md) | Pixel design tokens, UI primitives and accessibility rules |
 | [office.md](./office.md) | Canvas office, A* pathfinding, state mapping and accessibility |
 | [product-ui.md](./product-ui.md) | Dashboard, surfaces, UX states and accessibility |
 | [observability.md](./observability.md) | Logs, metrics, traces, SLOs, alerts and backup |

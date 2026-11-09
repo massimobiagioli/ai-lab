@@ -3,19 +3,20 @@ import { Button } from '../../shared/ui/button/button';
 import { RouterOutlet } from '@angular/router';
 import { Sidebar } from '../sidebar/sidebar';
 import { Topbar } from '../topbar/topbar';
+import { Drawer } from '../../shared/ui/drawer/drawer';
 import { WsService } from '../../core/ws/ws.service';
 import { Telemetry } from '../../core/telemetry/telemetry.service';
 import { ErrorState } from '../../core/errors/error-state';
 
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, Sidebar, Topbar, Button],
+  imports: [RouterOutlet, Sidebar, Topbar, Button, Drawer],
   template: `
     <a class="skip-link" href="#main">Skip to content</a>
     <div class="shell">
       <app-sidebar />
       <div class="shell__content">
-        <app-topbar [connection]="connection()" [labId]="labId()" />
+        <app-topbar [connection]="connection()" [labId]="labId()" (menu)="drawerOpen.set(true)" />
         @if (errorState.error(); as failure) {
           <div class="error-boundary" role="alert">
             <p>
@@ -33,6 +34,9 @@ import { ErrorState } from '../../core/errors/error-state';
         </main>
       </div>
     </div>
+    <app-drawer label="Navigation" [open]="drawerOpen()" (closed)="drawerOpen.set(false)">
+      <app-sidebar />
+    </app-drawer>
     <div class="toast-host" role="status" aria-live="polite" aria-atomic="true">
       @if (toast() !== null) {
         <p class="toast">{{ toast() }}</p>
@@ -111,6 +115,7 @@ export class Shell implements OnInit {
   protected readonly labId = signal('default');
   protected readonly connection = this.ws.state;
   protected readonly toast = signal<string | null>(null);
+  protected readonly drawerOpen = signal(false);
 
   ngOnInit(): void {
     this.ws.connect(this.labId());

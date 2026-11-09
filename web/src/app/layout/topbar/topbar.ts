@@ -1,4 +1,4 @@
-import { Component, input, signal } from '@angular/core';
+import { Component, input, output, signal } from '@angular/core';
 import { StatusBadge, StatusTone } from '../../shared/status-badge/status-badge';
 import { Button } from '../../shared/ui/button/button';
 import type { ConnectionState } from '../../core/ws/ws.service';
@@ -8,6 +8,7 @@ import type { ConnectionState } from '../../core/ws/ws.service';
   imports: [StatusBadge, Button],
   template: `
     <div class="topbar">
+      <app-button class="topbar__menu" (pressed)="menu.emit()">Menu</app-button>
       <div class="topbar__lab">
         <span class="topbar__label">Lab</span>
         <strong>{{ labId() }}</strong>
@@ -42,6 +43,14 @@ import type { ConnectionState } from '../../core/ws/ws.service';
       text-transform: uppercase;
       letter-spacing: 0.08em;
     }
+    .topbar__menu {
+      display: none;
+    }
+    @media (max-width: 767px) {
+      .topbar__menu {
+        display: inline-flex;
+      }
+    }
     .topbar__actions {
       display: flex;
       align-items: center;
@@ -52,6 +61,7 @@ import type { ConnectionState } from '../../core/ws/ws.service';
 export class Topbar {
   readonly connection = input<ConnectionState>('offline');
   readonly labId = input('default');
+  readonly menu = output<void>();
   protected readonly muted = signal(false);
 
   protected connectionTone(): StatusTone {

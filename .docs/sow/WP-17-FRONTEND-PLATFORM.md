@@ -191,8 +191,8 @@ web/e2e/                  # Playwright
 ## 4. Deliverables (checklist)
 
 - [x] Angular workspace configured (zoneless, strict, budgets, ESLint/Prettier).
-- [ ] App shell: sidebar, topbar, toast host and error boundary delivered; drawer host pending.
-- [ ] Routing with lazy loading and 404 delivered; guards and deep-link state pending.
+- [x] App shell: sidebar, topbar, drawer host, toast host and error boundary.
+- [ ] Routing with lazy loading, guards and 404 delivered; deep-link UI state pending.
 - [ ] Hand-written typed API client delivered; OpenAPI code generation pending.
 - [x] WebSocket service (topics, reconnect, resume, dedupe, backpressure).
 - [x] Signal store pattern + base utilities; optimistic update helper.
@@ -200,7 +200,7 @@ web/e2e/                  # Playwright
 - [ ] Focus trap and reduced-motion CSS delivered; keyboard DnD and full a11y audit pending.
 - [x] Telemetry + error reporting.
 - [ ] Unit/component tests delivered (15); Playwright/visual/a11y scaffolding pending.
-- [ ] `.docs/product/frontend.md` updated; `design-system.md` and the gallery pending.
+- [x] `.docs/product/frontend.md` and `.docs/product/design-system.md` delivered; gallery optional pending.
 
 ---
 
@@ -271,3 +271,4 @@ web/e2e/                  # Playwright
 2026-11-07 | T01 | web/src/styles/_tokens.scss, web/src/styles.scss, web/src/app/shared/status-badge/* | Angular 22 tokens + badge; lint/test/build green (initial 217.98 kB) | — | T02
 2026-11-07 | T02 | .docs/product/frontend.md | component test + a11y role | full kit/routes deferred WP-17 follow-up; office/pages WP-18/WP-19 | WP-18
 2026-11-07 | build | web/src/app/**, web/README.md, .docs/product/frontend.md | shell, routes, api client, ws service, runs store, 5 UI primitives, error boundary, focus trap, 15 tests | drawer/deep links/22-kit/e2e/visual/a11y/design-system pending | in progress
+2026-11-07 | build | web/src/app/{shared/ui,layout,core}, .docs/product/design-system.md | drawer host, route guards, input/select/tabs, CSP, design-system doc; 15 tests | deep links, 22-kit, e2e/a11y/visual, lighthouse pending | in progress

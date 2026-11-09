@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { Placeholder } from './features/placeholder/placeholder';
 import { NotFound } from './features/not-found/not-found';
+import { paramGuard } from './core/guards/param.guard';
 
 /** Lazy application routes. */
 export const routes: Routes = [
@@ -18,18 +19,21 @@ export const routes: Routes = [
   {
     path: 'lab/:labId',
     title: 'AI-Lab · Office',
+    canActivate: [paramGuard],
     loadComponent: () => Promise.resolve(Placeholder),
     data: { title: 'Office', body: 'Virtual office host (WP-18).' },
   },
   {
     path: 'projects/:projectId/board',
     title: 'AI-Lab · Board',
+    canActivate: [paramGuard],
     loadComponent: () => Promise.resolve(Placeholder),
     data: { title: 'Kanban board', body: 'Board surface (WP-19).' },
   },
   {
     path: 'projects/:projectId/sow',
     title: 'AI-Lab · SOW',
+    canActivate: [paramGuard],
     loadComponent: () => Promise.resolve(Placeholder),
     data: { title: 'SOW & delivery graph', body: 'SOW surface (WP-19).' },
   },
