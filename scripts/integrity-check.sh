@@ -26,3 +26,11 @@ if bad:
     sys.exit(1)
 print("INTEGRITY: OK")
 PY
+
+# Expose the integrity result to the /metrics textfile collector.
+mkdir -p "$ROOT/artifacts/metrics"
+MISMATCHES=0
+if [ -f "$ROOT/artifacts/integrity-report.json" ]; then
+  MISMATCHES="$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(sum(1 for v in d.values() if v))' "$ROOT/artifacts/integrity-report.json" 2>/dev/null || echo 0)"
+fi
+printf 'ailab_integrity_mismatches %s\n' "$MISMATCHES" > "$ROOT/artifacts/metrics/integrity.prom"

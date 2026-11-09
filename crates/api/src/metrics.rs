@@ -99,6 +99,10 @@ impl Metrics {
             }
             let _ = writeln!(
                 output,
+                "ailab_http_request_duration_seconds_bucket{{le=\"+Inf\"}} {cumulative}"
+            );
+            let _ = writeln!(
+                output,
                 "ailab_http_request_duration_seconds_sum {}",
                 latency.sum_ms as f64 / 1_000.0
             );

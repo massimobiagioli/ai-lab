@@ -25,8 +25,8 @@
 - [x] Integrity P1 alert and the restore-drill report artifact.
 - [x] Eight runbooks + on-call checklist — `.docs/product/runbooks/`.
 - [x] `slo.md`, `observability.md`, `operations.md` updated.
-- [ ] Full DB/Redis/queue/LLM/SCM/sandbox/domain/WS metric families and OTel span export — WP-13B T03 (owner Dev, due 2026-12-31).
-- [ ] Seven Grafana dashboards, cost dashboard, post-incident template and the load/integrity/runbook tabletop — WP-24 T07 (owner QA, due 2026-12-31).
+- [ ] Full DB/Redis/queue/LLM/SCM/sandbox/domain/WS metric families, OTel spans and run-context log fields — WP-13B T03 (owner Dev, due 2026-12-31).
+- [ ] Six remaining dashboards, cost dashboard, post-incident template, load/soak, injected-integrity test, synthetic alert test and runbook tabletop — WP-24 T07 (owner QA, due 2026-12-31).
 
 ## 3. Deliverables
 
@@ -47,14 +47,14 @@
 
 ## 4. Acceptance criteria (contract §6)
 
-1. **FAIL (deferred WP-13B T03 for run context).** Logs are structured and redacted, but lab/project/card/agent/run ids are not yet in the general request log.
-2. **FAIL (deferred WP-13B T03).** HTTP metric families are labeled and in seconds; the DB/Redis/queue/LLM/SCM/sandbox/domain/WS families depend on the WP-13B T03 pipeline. `/metrics` is internal-only.
-3. **DEFERRED (WP-13B T03).** W3C propagation is delivered; span export is WP-13B T03.
-4. **PASS.** SLO definitions, error-budget policy and alert rules exist with runbook links; `.tools/check-observability.sh` validates the alert/SLO names.
+1. **DEFERRED (WP-13B T03 for run context).** Logs carry timestamp/service/version/request-id/span-id/code/message and are redacted; lab/project/card/agent/run ids are WP-13B T03. The trace id is propagated (test).
+2. **DEFERRED (WP-13B T03).** HTTP families are labeled, in seconds, with the `+Inf` bucket; the remaining families are WP-13B T03. `/metrics` is internal-only.
+3. **PASS (propagation) / DEFERRED (spans, WP-13B T03).** The traceparent is echoed as `x-trace-id` and attached to Problem Details; span export is WP-13B T03.
+4. **PASS (definitions) / DEFERRED (synthetic fire test, WP-24 T07).** The nine §3.4 SLIs, error-budget policy and runbook-linked alerts exist; the synthetic fire test is WP-24 T07.
 5. **PASS (edge).** The edge dashboard is provisioned with the Prometheus datasource; the remaining six dashboards are WP-24 T07.
 6. **PASS.** Readiness debounces after three consecutive failures.
-7. **PARTIAL (WP-24 T07).** The integrity alert and report exist; the injected-mismatch test is WP-24 T07.
-8. **PASS.** The restore drill verifies SHA/row counts/checksums/integrity, writes a stored report and enforces the RTO; execution is operator/CI-owned.
+7. **PARTIAL (WP-24 T07).** The integrity alert and the textfile metric writer exist; the injected-mismatch test is WP-24 T07.
+8. **PASS.** The restore drill ran on 2026-11-09 (52 s) and verified checksums/row counts/integrity; evidence: `.docs/product/evidence/WP-20-restore-drill.md`.
 9. **DEFERRED (WP-24 T07).** Load/soak evidence is WP-24 T07.
 10. **PASS (tabletop WP-24 T07).** The eight runbooks and the on-call checklist exist and are link-checked; the tabletop is WP-24 T07.
 

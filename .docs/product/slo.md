@@ -13,18 +13,18 @@
 | SLO | Target | Window | Indicator |
 |---|---|---|---|
 | Edge availability | 99.9% | 30d | `1 - 5xx/requests` |
-| Edge latency (read) | p95 ≤ 120 ms | 30d | latency histogram |
-| Edge latency (write) | p95 ≤ 250 ms | 30d | latency histogram |
-| Run success | 99% | 7d | completed / (completed + failed) |
-| Queue latency | p95 ≤ 60 s | 7d | queue-wait histogram |
-| LLM error rate | ≤ 1% | 30d | LLM errors / requests |
-| SCM error rate | ≤ 1% | 30d | SCM errors / requests |
-| Sandbox failure | ≤ 1% | 30d | sandbox failures / starts |
-| Memory retrieval | p95 ≤ 500 ms | 7d | retrieval histogram |
+| Edge latency (read) | p95 ≤ 120 ms | 7d | latency histogram |
+| Edge latency (write) | p95 ≤ 250 ms | 7d | latency histogram |
+| Run success | 95% | 7d | completed / (completed + failed) |
+| Outbox lag | p95 ≤ 2 s | 1d | outbox-lag histogram |
+| WS event latency | p95 ≤ 250 ms | 1d | WS delivery histogram |
+| Cost per day | within budget | 1d | cost counter |
+| Backup age | ≤ 24 h | 1d | backup timestamp |
+| Memory retrieval | p95 ≤ 80 ms | 1d | retrieval histogram |
 
-The edge SLOs use the `/metrics` HTTP series. The run, queue, LLM, SCM, sandbox and memory series are
-exported with the WP-13B T03 OTel/metrics pipeline; until then the definitions are declared and the
-dashboard panels are wired to the HTTP series.
+The edge SLOs use the `/metrics` HTTP series. The run, outbox, WebSocket, memory, cost and backup series are exported with the WP-13B T03
+OTel/metrics pipeline; until then the definitions are declared and the dashboard panels are wired to
+the HTTP series.
 
 ## 2. Error-budget policy
 

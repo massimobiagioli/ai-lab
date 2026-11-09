@@ -240,8 +240,8 @@ Each alert: severity, runbook link, summary, first action. No alert without a ru
 
 ## 7. WP Definition of Done
 
-- [ ] All deliverables checked with evidence.
-- [ ] Alerts and the edge dashboard verified; drills/load are owned follow-ups.
+- [ ] All deliverables checked with evidence; WP-13B T03/WP-24 T07 deferrals owned.
+- [x] The edge dashboard, alerts and the restore drill are verified; load/tabletop are WP-24 T07.
 - [x] Docs reviewed; no P0/P1.
 - [ ] Status `done` with QA sign-off.
 

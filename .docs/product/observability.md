@@ -42,7 +42,7 @@ OTLP HTTP/gRPC from api, worker and runner to the collector. Sampling: 100% erro
 
 ## 4. SLOs and alerts
 
-`infra/prometheus/alerts.yml` covers API p95, 5xx rate, queue backlog, stale leases, budget exhaustion and disk pressure. Targets (spec §17): read p95 ≤ 120 ms, write p95 ≤ 250 ms, WS event → render p95 ≤ 250 ms, office ≥ 58 FPS, restore drill ≤ RTO.
+`infra/observability/alerts.yml` covers API p95, 5xx rate, queue backlog, stale leases, budget exhaustion and disk pressure. Targets (spec §17): read p95 ≤ 120 ms, write p95 ≤ 250 ms, WS event → render p95 ≤ 250 ms, office ≥ 58 FPS, restore drill ≤ RTO.
 
 ## 5. Health and readiness
 
@@ -73,7 +73,7 @@ OTLP HTTP/gRPC from api, worker and runner to the collector. Sampling: 100% erro
 
 `GET /metrics` exposes the Prometheus text exposition with
 `ailab_http_requests_total`, `ailab_http_errors_total`, `ailab_http_in_flight` and the
-`ailab_http_request_duration_ms` histogram (10/25/50/100/250/500/1000 ms buckets). The edge middleware
+`ailab_http_request_duration_seconds` histogram (10/25/50/100/250/500/1000 ms buckets). The edge middleware
 increments them for every request.
 
 Every request is logged as a single JSON line (`level`, `event`, `method`, `path`, `status`,
@@ -84,7 +84,7 @@ WP-20 follow-up increments and depend on the WP-13B T03 exporter.
 ## SLOs, dashboards and alerts
 
 `infra/observability/slo.yml` defines edge availability (99.9%/30d), p95 latency (300 ms/95%) and run
-success (99%/7d). `alerts.yml` pages on a 5xx rate above 1%, p95 above 300 ms and no traffic for 15
+success (99%/7d). `alerts.yml` pages on a 5xx rate above 1%, p95 above 250 ms and no traffic for 15
 minutes. `grafana-dashboard.json` renders requests/s, 5xx rate, p95 latency and in-flight requests.
 `.tools/check-observability.sh` validates the artifacts.
 

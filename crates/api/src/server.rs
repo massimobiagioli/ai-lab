@@ -507,10 +507,11 @@ pub fn router(state: AppState) -> Router {
         .route("/metrics", get(metrics_endpoint))
         .fallback(not_found)
         .layer(axum::extract::DefaultBodyLimit::max(2_097_152))
-        .layer(middleware::from_fn(request_id))
         .layer(middleware::from_fn(origin_guard))
         .layer(middleware::from_fn(problem_status_layer))
         .layer(middleware::from_fn_with_state(state.clone(), metrics_layer))
+        .layer(middleware::from_fn(request_id))
+        .layer(middleware::from_fn(crate::trace::trace_layer))
         .with_state(state)
 }
 
@@ -554,10 +555,16 @@ async fn metrics_layer(State(state): State<AppState>, request: Request, next: Ne
     let method = request.method().clone();
     let path = request.uri().path().to_owned();
     let request_id_value = request
-        .headers()
-        .get("x-request-id")
-        .and_then(|value| value.to_str().ok())
-        .map(ToOwned::to_owned);
+        .extensions()
+        .get::<RequestId>()
+        .map(|id| id.0.clone())
+        .or_else(|| {
+            request
+                .headers()
+                .get("x-request-id")
+                .and_then(|value| value.to_str().ok())
+                .map(ToOwned::to_owned)
+        });
     let response = next.run(request).await;
     let status = response.status().as_u16();
     let elapsed = u64::try_from(start.elapsed().as_millis()).unwrap_or(u64::MAX);
@@ -573,19 +580,37 @@ async fn metrics_layer(State(state): State<AppState>, request: Request, next: Ne
         "service": "ailab-api",
         "version": env!("CARGO_PKG_VERSION"),
         "request_id": request_id_value.as_deref(),
+        "span_id": crate::trace::current(),
         "trace_id": crate::trace::current(),
+        "code": status,
+        "message": format!("{method} {path}"),
     });
     println!("{line}");
     response
 }
 
 async fn metrics_endpoint(State(state): State<AppState>) -> Response {
+    let mut body = state.metrics.render();
+    let directory = std::env::var("AILAB_METRICS_TEXTFILE_DIR")
+        .unwrap_or_else(|_| "artifacts/metrics".to_owned());
+    if let Ok(entries) = std::fs::read_dir(&directory) {
+        for entry in entries.flatten() {
+            if entry.path().extension().and_then(|value| value.to_str()) == Some("prom")
+                && let Ok(text) = std::fs::read_to_string(entry.path())
+            {
+                body.push_str(&text);
+                if !text.ends_with('\n') {
+                    body.push('\n');
+                }
+            }
+        }
+    }
     (
         [(
             axum::http::header::CONTENT_TYPE,
             "text/plain; version=0.0.4",
         )],
-        state.metrics.render(),
+        body,
     )
         .into_response()
 }
@@ -1614,6 +1639,37 @@ mod tests {
         let body = runs.into_body().collect().await.expect("body").to_bytes();
         let value: serde_json::Value = serde_json::from_slice(&body).expect("json");
         assert!(value["data"].is_array());
+    }
+
+    #[tokio::test]
+    async fn traceparent_is_echoed_and_attached_to_problems() {
+        let app = router(seeded());
+        let trace = "4bf92f3577b34da6a3ce929d0e0e4736";
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/api/v1/runs/does-not-exist")
+                    .header("traceparent", format!("00-{trace}-00f067aa0ba902b7-01"))
+                    .body(Body::empty())
+                    .expect("request"),
+            )
+            .await
+            .expect("response");
+        assert_eq!(
+            response
+                .headers()
+                .get("x-trace-id")
+                .and_then(|value| value.to_str().ok()),
+            Some(trace)
+        );
+        let body = response
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let value: serde_json::Value = serde_json::from_slice(&body).expect("json");
+        assert_eq!(value["trace_id"], trace);
     }
 
     #[tokio::test]

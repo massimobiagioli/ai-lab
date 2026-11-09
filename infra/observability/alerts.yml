@@ -34,11 +34,3 @@ groups:
         annotations:
           summary: A projection mismatch was detected by the integrity job
           runbook_url: https://github.com/massimobiagioli/ai-lab/blob/main/.docs/product/runbooks/db-restore.md
-      - alert: AilabBudgetExhausted
-        expr: ailab_budget_remaining_microusd < 0
-        for: 5m
-        labels:
-          severity: page
-        annotations:
-          summary: A lab budget is exhausted
-          runbook_url: https://github.com/massimobiagioli/ai-lab/blob/main/.docs/product/runbooks/budget-exhausted.md
