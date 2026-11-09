@@ -51,6 +51,22 @@ jobs:
           fi
           cargo clippy --workspace --all-targets -- -D warnings
 
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.99.1
+        with:
+          components: llvm-tools-preview
+      - uses: taiki-e/install-action@cargo-llvm-cov
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install web dependencies
+        run: npm --prefix web ci
+      - name: Coverage thresholds
+        run: .tools/check-coverage.sh
+
   rust-unit:
     runs-on: ubuntu-latest
     steps:
