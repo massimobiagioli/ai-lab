@@ -1,0 +1,18 @@
+# AI-Lab SLO definitions (WP-20).
+slos:
+  - name: edge-availability
+    description: Successful edge requests over the rolling window.
+    target: 99.9
+    window: 30d
+    indicator: 1 - (rate(ailab_http_errors_total[5m]) / rate(ailab_http_requests_total[5m]))
+  - name: edge-latency
+    description: p95 edge latency under the reference load.
+    target: 95
+    threshold_ms: 300
+    window: 30d
+    indicator: histogram_quantile(0.95, rate(ailab_http_request_duration_ms_bucket[5m]))
+  - name: run-success
+    description: Runs that succeed after a lease.
+    target: 99
+    window: 7d
+    indicator: delivery.run.completed / (delivery.run.completed + delivery.run.failed)

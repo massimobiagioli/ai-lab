@@ -18,8 +18,8 @@
 
 - [x] Prometheus text metrics with requests, 5xx, in-flight and latency buckets — `crates/api/src/metrics.rs`, `/metrics`.
 - [x] Redacted structured request logs (bearer/token/api_key) — `metrics::redact` and the request middleware.
-- [ ] OTel traces for LLM/SCM/sandbox and queue/lease/run metrics — P09, depends on WP-13B T03.
-- [ ] SLOs, dashboards and alert rules — P09.
+- [x] W3C traceparent/x-trace-id propagation with trace ids in Problem Details and logs — P09; OTel span export depends on WP-13B T03.
+- [x] SLOs (`slo.yml`), Grafana dashboard and alert rules (`alerts.yml`) — P09, validated by `.tools/check-observability.sh`.
 - [ ] Backup/restore drill evidence and DR/incident runbooks — P10.
 - [ ] Health/readiness component checks — WP-13B T10.
 
@@ -27,7 +27,7 @@
 
 - [x] `/metrics` Prometheus endpoint and metrics middleware — P08.
 - [x] Structured JSON request logs with redaction — P08.
-- [ ] Trace pipeline, SLOs, dashboards, alerts — P09.
+- [x] Trace propagation and the SLO/dashboard/alert artifacts — P09.
 - [ ] Backup/DR/runbooks — P10.
 - [ ] Operations evidence and QA — P10.
 
@@ -35,8 +35,8 @@
 
 1. [x] Metrics expose requests, errors, in-flight and latency buckets — test `metrics_endpoint_renders_prometheus`.
 2. [x] Logs are structured and never contain bearer/token/api_key values — test `redacts_tokens`.
-3. [ ] Traces link LLM/SCM/sandbox spans — P09.
-4. [ ] SLOs/alerts/dashboards exist and are validated — P09.
+3. [ ] OTel span export links LLM/SCM/sandbox spans — WP-13B T03; request trace propagation is delivered.
+4. [x] SLOs/alerts/dashboards exist and are validated — `.tools/check-observability.sh`.
 5. [ ] Backup/restore drill passes — P10.
 6. [ ] Runbooks cover incidents and DR — P10.
 
@@ -48,7 +48,7 @@
 
 ## 6. Security and quality gates
 
-- [x] No secrets in logs (redaction) and metrics contain no labels with secrets.
+- [x] No secrets in logs (redaction), metrics contain no secrets and trace ids are non-sensitive.
 - [x] `harness-lint`, `sow-lint`, `make check`, frontend gates green on P08.
 - [ ] Full gate run on P10.
 
@@ -72,3 +72,4 @@
 ## 10. Decisions
 
 - [x] CR-0017 — reopen WP-20.
+2026-11-09 | P09 | crates/api/src/{trace,server,metrics}.rs, infra/observability/**, .tools/check-observability.sh | trace propagation; SLOs/dashboard/alerts; validator | OTel exporter WP-13B T03 | P10
