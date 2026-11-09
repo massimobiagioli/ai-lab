@@ -57,7 +57,7 @@ All jobs are idempotent, observable, bounded and non-destructive unless explicit
 
 ## 7. Tests and follow-ups
 
-The job catalog is seeded by `migrations/0001_init.sql`. Scheduling and execution are owned by WP-20/WP-23; the follow-up adds dry-run, job metrics and a tabletop restore drill.
+The job catalog is seeded by `migrations/0001_init.sql`. The scheduler and the stale-card scan are delivered in `crates/orchestrator/src/maintenance.rs` and ticked by the worker; the remaining handlers (CV reflection, memory hygiene, dependency/EOL, integrity/backup/cert/disk, cost and flow) are open in WP-23.
 
 ## 8. References
 

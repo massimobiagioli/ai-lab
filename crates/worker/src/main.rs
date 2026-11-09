@@ -6,6 +6,7 @@ use std::time::Duration;
 
 use ailab_llm::{FakeLlm, LlmProvider};
 use ailab_orchestrator::backend::{InMemoryBackend, SandboxBackend};
+use ailab_orchestrator::maintenance::{MaintenanceScheduler, PostgresMaintenance, StaleCardScan};
 use ailab_orchestrator::postgres::{PostgresCancelProbe, PostgresScheduler, PostgresWorker};
 use ailab_orchestrator::runner_client::HttpSandboxBackend;
 use ailab_orchestrator::wired::WiredExecutor;
@@ -54,10 +55,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .with_cancel_probe(probe),
     );
+    let pool = scheduler.pool().clone();
     let worker = PostgresWorker::new(scheduler, executor, 4);
+    let hygiene = PostgresMaintenance::new(pool);
+    let maintenance = MaintenanceScheduler::new(hygiene.clone(), StaleCardScan::new(hygiene));
     loop {
         if let Err(error) = worker.tick(chrono::Utc::now()).await {
             eprintln!("worker tick failed: {error}");
+        }
+        if let Err(error) = maintenance.tick(chrono::Utc::now()).await {
+            eprintln!("maintenance tick failed: {error}");
         }
         tokio::time::sleep(Duration::from_secs(5)).await;
     }
