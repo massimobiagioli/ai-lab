@@ -74,7 +74,7 @@ scripts/run-web.sh npm run format:check
 - [x] **P11 — WP-24 E2E and accessibility tooling.**
   Branch `review/p11-wp24-e2e`; Playwright + axe, journeys J1–J5, a11y per route; WP-21 is `done`, so these suites are owned by WP-24. Depends P07, P10.
 
-- [ ] **P12 — WP-24 load, chaos, security, fuzz.**
+- [ ] **P12 — WP-24 load, chaos, security, fuzz.** (scripts + fuzz delivered; live load/chaos blocked by Compose migrate auth — owner WP-03/operator)
   Branch `review/p12-wp24-hardening`; k6 load, chaos (worker/runner kill), security and fuzz suites; WP-24 evidence. Depends P11.
 
 - [ ] **P13 — WP-24 coverage and CI wiring.**
@@ -147,4 +147,5 @@ scripts/run-web.sh npm run format:check
 | 2026-11-09 | P08 | `review/p08-wp20-metrics` | `b0b90e1` | Metrics, redacted logs. |
 | 2026-11-09 | P09 | `review/p09-wp20-tracing` | `d6af2b3` | Trace propagation, SLOs, dashboard, alerts. |
 | 2026-11-09 | P10 | `review/p10-wp20-dr` | `5eac3c2` | QA APPROVED; WP-20 done. |
-| 2026-11-09 | P11 | `review/p11-wp24-e2e` | merge pending | Playwright/axe, 6/6. |
+| 2026-11-09 | P11 | `review/p11-wp24-e2e` | `da9cb89` | Playwright/axe, 6/6. |
+| 2026-11-09 | P12 | `review/p12-wp24-hardening` | blocked | Scripts + fuzz delivered; live load/chaos blocked by Compose migrate auth. |

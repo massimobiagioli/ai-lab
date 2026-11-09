@@ -143,6 +143,9 @@ services:
     environment:
       <<: *app-env
       AILAB_METRICS_TEXTFILE_DIR: /metrics-textfile
+      AILAB_BIND: 0.0.0.0
+      AILAB_API_LISTEN: 0.0.0.0:3000
+      AILAB_API_TOKEN: ${AILAB_API_TOKEN:-change-me-in-env-please-change-123456}
     volumes:
       - ../../artifacts/metrics:/metrics-textfile:ro
     depends_on:

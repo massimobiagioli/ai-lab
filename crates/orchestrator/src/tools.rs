@@ -654,6 +654,26 @@ mod tests {
     }
 
     #[test]
+    fn malformed_inputs_are_rejected_without_panicking() {
+        let registry = ToolRegistry::v1();
+        let inputs = [
+            json!({}),
+            json!({"path": null}),
+            json!({"path": ""}),
+            json!({"path": "\u{0}"}),
+            json!({"argv": []}),
+            json!({"argv": [null]}),
+            json!({"argv": "--force"}),
+            json!({"text": 1}),
+        ];
+        for input in inputs {
+            let _ = registry.authorize(AgentRole::Dev, "shell.run", &input);
+            let _ = registry.authorize(AgentRole::Dev, "fs.read", &input);
+            let _ = registry.authorize(AgentRole::Qa, "fs.write", &input);
+        }
+    }
+
+    #[test]
     fn command_policy_allows_tests_and_denies_hosts_and_force_push() {
         let registry = ToolRegistry::v1();
         assert!(
