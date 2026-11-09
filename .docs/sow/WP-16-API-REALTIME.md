@@ -332,3 +332,4 @@ Server → client:
 2026-11-07 | build | crates/api/src/{main,server}.rs | steps cursor/2MB/BAD_REQUEST/Origin/bind-guard/hello-seq; 14 tests | surface/Redis/utoipa open | QA review
 2026-11-07 | build | crates/api/src/{server,postgres_store}.rs, .tools/check-openapi-drift.py | 202 replay; 1000 backfill; events Page; methods; 14 tests | Redis/utoipa/keyset open | QA review
 2026-11-07 | build | .docs/product/api/openapi.source.json, crates/api/src/server.rs | openapi regenerated (202/events params); extra methods; 14 tests | Redis/keyset/surface open | QA review
+2026-11-07 | build | crates/api/src/{server,postgres_store}.rs | keyset cursor; idempotent wait/4xx; 405/413 problem; 14 tests | Redis/utoipa/surface/WS open | QA review
