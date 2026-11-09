@@ -13,6 +13,8 @@ exec docker run --rm \
   -e BASE_URL=http://127.0.0.1:3000 \
   -e TOKEN="$TOKEN" \
   -e LAB_ID="$LAB_ID" \
+  -e VUS="${VUS:-5}" \
+  -e DURATION="${DURATION:-15s}" \
   -v "$ROOT/infra/load:/scripts:ro" \
   -w /scripts \
   grafana/k6:1.2.3 run board.js "$@"

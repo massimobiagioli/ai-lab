@@ -28,5 +28,5 @@ export default function () {
     headers,
   });
   check(events, { 'events accepted': (response) => response.status < 500 });
-  sleep(0.1);
+  sleep(1.2);
 }
