@@ -53,7 +53,7 @@
 3. [x] All routes lazy-load and 404 is handled; deep-link inputs exist. Full deep-link UI restoration follows WP-19.
 4. [ ] API client generated from OpenAPI — deferred to WP-13B T07/T09; the hand-written client maps errors to `Problem`.
 5. [x] WS resumes with `?since`, backfills on `resync`, dedupes by `event_id`/`seq` and reconnects — evidence: `ws.service.ts`, `ws.service.spec.ts`.
-6. [x] Primitives expose disabled/loading/error where applicable and dialogs/drawers close on Escape — evidence: `/design` gallery, `dialog.spec.ts`, component styles.
+6. [x] Primitives expose disabled/loading/error where applicable, dialogs/drawers close on Escape, tabs/menu implement WAI-ARIA keyboard navigation and error text is linked via `aria-describedby` — evidence: `ui-kit.spec.ts`, `dialog.spec.ts`, component templates.
 7. [ ] axe zero critical/serious — deferred to WP-21.
 8. [x] Reduced motion disables non-essential animation — evidence: `styles.scss`, spinner/skeleton CSS.
 9. [ ] Lighthouse ≥ 90 — deferred to WP-21.
@@ -67,6 +67,7 @@
 - [x] Runs store — tests: `runs.store.spec.ts`.
 - [x] Pixel text and keyboard DnD — tests: `pixel-text.spec.ts`, `keyboard-dnd.spec.ts`.
 - [x] No real external API in tests (fetch/WebSocket are stubbed).
+- [x] Every primitive has a TestBed creation test and the interactive ones cover states/keyboard — test: `ui-kit.spec.ts`.
 - [x] WS resync, optimistic rollback, Escape-close and pixel font — tests: `ws.service.spec.ts`, `store-utils.spec.ts`, `dialog.spec.ts`, `pixel-text.spec.ts`.
 - [ ] Coverage thresholds — reported with the WP-21 coverage run.
 

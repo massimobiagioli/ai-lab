@@ -9,11 +9,12 @@ import { Component, input, model } from '@angular/core';
         class="pixel-textarea__control"
         [value]="value()"
         [attr.aria-invalid]="error() !== null"
+        [attr.aria-describedby]="error() !== null ? errorId : null"
         [rows]="rows()"
         (input)="onInput($event)"
       ></textarea>
       @if (error() !== null) {
-        <span class="pixel-textarea__error" role="alert">{{ error() }}</span>
+        <span class="pixel-textarea__error" [id]="errorId" role="alert">{{ error() }}</span>
       }
     </label>
   `,
@@ -49,6 +50,7 @@ export class PixelTextarea {
   readonly value = model('');
   readonly rows = input(3);
   readonly error = input<string | null>(null);
+  protected readonly errorId = `textarea-error-${crypto.randomUUID()}`;
 
   protected onInput(event: Event): void {
     const target = event.target;

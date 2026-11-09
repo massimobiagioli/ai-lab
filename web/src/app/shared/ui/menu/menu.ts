@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { Component, ElementRef, input, output, signal, viewChildren } from '@angular/core';
 
 export interface MenuItem {
   readonly id: string;
@@ -8,13 +8,21 @@ export interface MenuItem {
 @Component({
   selector: 'app-menu',
   template: `
-    <ul class="ui-menu" role="menu" [attr.aria-label]="label()">
-      @for (item of items(); track item.id) {
+    <ul
+      class="ui-menu"
+      role="menu"
+      tabindex="-1"
+      [attr.aria-label]="label()"
+      (keydown)="onKey($event)"
+    >
+      @for (item of items(); track item.id; let index = $index) {
         <li role="none">
           <button
+            #menuItem
             class="ui-menu__item"
             role="menuitem"
             type="button"
+            [attr.tabindex]="index === activeIndex() ? 0 : -1"
             (click)="selected.emit(item.id)"
           >
             {{ item.label }}
@@ -54,4 +62,36 @@ export class Menu {
   readonly label = input.required<string>();
   readonly items = input.required<readonly MenuItem[]>();
   readonly selected = output<string>();
+  readonly closed = output<void>();
+  protected readonly activeIndex = signal(0);
+  private readonly buttons = viewChildren<ElementRef<HTMLButtonElement>>('menuItem');
+
+  protected onKey(event: KeyboardEvent): void {
+    const items = this.items();
+    const current = this.activeIndex();
+    let next!: number;
+    switch (event.key) {
+      case 'ArrowDown':
+        next = Math.min(items.length - 1, current + 1);
+        break;
+      case 'ArrowUp':
+        next = Math.max(0, current - 1);
+        break;
+      case 'Home':
+        next = 0;
+        break;
+      case 'End':
+        next = Math.max(0, items.length - 1);
+        break;
+      case 'Escape':
+        event.preventDefault();
+        this.closed.emit();
+        return;
+      default:
+        return;
+    }
+    event.preventDefault();
+    this.activeIndex.set(next);
+    this.buttons()[next]?.nativeElement.focus();
+  }
 }

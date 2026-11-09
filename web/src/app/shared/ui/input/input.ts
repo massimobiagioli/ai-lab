@@ -12,10 +12,11 @@ import { Component, input, model } from '@angular/core';
         [placeholder]="placeholder()"
         [attr.autocomplete]="autocomplete()"
         [attr.aria-invalid]="error() !== null"
+        [attr.aria-describedby]="error() !== null ? errorId : null"
         (input)="onInput($event)"
       />
       @if (error() !== null) {
-        <span class="ui-input__error" role="alert">{{ error() }}</span>
+        <span class="ui-input__error" [id]="errorId" role="alert">{{ error() }}</span>
       }
     </label>
   `,
@@ -58,6 +59,7 @@ export class Input {
   readonly placeholder = input('');
   readonly autocomplete = input<string | null>(null);
   readonly error = input<string | null>(null);
+  protected readonly errorId = `input-error-${crypto.randomUUID()}`;
 
   protected onInput(event: Event): void {
     const target = event.target;

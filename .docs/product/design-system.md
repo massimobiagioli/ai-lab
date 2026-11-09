@@ -60,7 +60,9 @@ The design system is a pixel-art, accessible set of tokens and primitives. It is
 - No colour-only meaning; icons and text accompany colour.
 - The drawer traps Tab focus and restores it on close.
 - The shell exposes a skip link, a `main` landmark and an `aria-live` toast host.
-- Errors use `role="alert"` and include a trace id.
+- Errors use `role="alert"` and include a trace id; form errors are linked with `aria-describedby`.
+- Tabs implement roving tabindex plus Arrow/Home/End; menus implement Arrow/Home/End/Escape.
+- Interactive primitives expose disabled/loading/error states where applicable.
 
 ## 4. Usage rules
 

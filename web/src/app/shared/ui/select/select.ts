@@ -10,11 +10,21 @@ export interface SelectOption {
   template: `
     <label class="ui-select">
       <span class="ui-select__label">{{ label() }}</span>
-      <select class="ui-select__control" [value]="value()" (change)="onChange($event)">
+      <select
+        class="ui-select__control"
+        [value]="value()"
+        [disabled]="disabled()"
+        [attr.aria-invalid]="error() !== null"
+        [attr.aria-describedby]="error() !== null ? errorId : null"
+        (change)="onChange($event)"
+      >
         @for (option of options(); track option.value) {
           <option [value]="option.value">{{ option.label }}</option>
         }
       </select>
+      @if (error() !== null) {
+        <span class="ui-select__error" [id]="errorId" role="alert">{{ error() }}</span>
+      }
     </label>
   `,
   styles: `
@@ -28,6 +38,13 @@ export interface SelectOption {
       color: var(--ailab-color-muted);
       text-transform: uppercase;
       letter-spacing: 0.08em;
+      font-size: var(--ailab-font-size-sm);
+    }
+    .ui-select__control:disabled {
+      opacity: 0.5;
+    }
+    .ui-select__error {
+      color: var(--ailab-color-danger);
       font-size: var(--ailab-font-size-sm);
     }
     .ui-select__control {
@@ -44,6 +61,9 @@ export class Select {
   readonly label = input.required<string>();
   readonly options = input.required<readonly SelectOption[]>();
   readonly value = model('');
+  readonly disabled = input(false);
+  readonly error = input<string | null>(null);
+  protected readonly errorId = `select-error-${crypto.randomUUID()}`;
 
   protected onChange(event: Event): void {
     const target = event.target;
