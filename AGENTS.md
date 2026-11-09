@@ -138,6 +138,7 @@ Every document under `.docs` is listed here. When a document is created, renamed
 | WP-18 Virtual office | Canvas engine, sprites, pathfinding, interactions. | [`.docs/sow/WP-18-VIRTUAL-OFFICE.md`](./.docs/sow/WP-18-VIRTUAL-OFFICE.md) |
 | WP-18 review plan | Virtual office review checklist and evidence. | [`.docs/sow/WP-18-VIRTUAL-OFFICE-review-plan.md`](./.docs/sow/WP-18-VIRTUAL-OFFICE-review-plan.md) |
 | WP-19 Product UI | Dashboard, inventory, Kanban, SOW, memory, settings. | [`.docs/sow/WP-19-PRODUCT-UI.md`](./.docs/sow/WP-19-PRODUCT-UI.md) |
+| WP-19 review plan | Product UI review checklist and evidence. | [`.docs/sow/WP-19-PRODUCT-UI-review-plan.md`](./.docs/sow/WP-19-PRODUCT-UI-review-plan.md) |
 | WP-20 Observability and SRE | Logs, metrics, traces, SLOs, backup, runbooks. | [`.docs/sow/WP-20-OBSERVABILITY-SRE.md`](./.docs/sow/WP-20-OBSERVABILITY-SRE.md) |
 | WP-21 Testing | Test strategy, suites, fixtures, gates. | [`.docs/sow/WP-21-TESTING.md`](./.docs/sow/WP-21-TESTING.md) |
 | WP-22 Docs and release | Documentation, release, acceptance, handover. | [`.docs/sow/WP-22-DOCS-RELEASE.md`](./.docs/sow/WP-22-DOCS-RELEASE.md) |

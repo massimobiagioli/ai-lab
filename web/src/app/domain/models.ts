@@ -67,3 +67,91 @@ export interface FlowMetrics {
   readonly throughputWeekly: number;
   readonly blockedShare: number;
 }
+
+/** A Kanban card. */
+export interface Card {
+  readonly id: string;
+  readonly key: string;
+  readonly projectId: string;
+  readonly title: string;
+  readonly column: string;
+  readonly priority: 'must' | 'should' | 'could' | 'wont';
+  readonly assigneeId: string | null;
+  readonly labels: readonly string[];
+  readonly estimate: number | null;
+  readonly blockedReason: string | null;
+  readonly prUrl: string | null;
+}
+
+/** An agent profile. */
+export interface Agent {
+  readonly id: string;
+  readonly name: string;
+  readonly role: 'tech_lead' | 'analyst' | 'dev' | 'qa';
+  readonly status: 'idle' | 'working' | 'blocked' | 'paused' | 'offline';
+  readonly autonomyLevel: number | null;
+  readonly model: string;
+  readonly maxConcurrent: number;
+}
+
+/** A project bound to a lab and repository. */
+export interface Project {
+  readonly id: string;
+  readonly labId: string;
+  readonly name: string;
+  readonly repo: string;
+  readonly branch: string;
+  readonly autonomyLevel: number;
+}
+
+/** A provider credential view (secrets are write-only). */
+export interface Provider {
+  readonly id: string;
+  readonly name: string;
+  readonly kind: 'deepseek';
+  readonly status: 'active' | 'invalid' | 'revoked';
+  readonly last4: string;
+}
+
+/** A SOW section. */
+export interface SowSection {
+  readonly id: string;
+  readonly title: string;
+  readonly body: string;
+}
+
+/** A SOW task. */
+export interface SowTask {
+  readonly id: string;
+  readonly title: string;
+  readonly status: 'todo' | 'doing' | 'done';
+  readonly dependsOn: readonly string[];
+}
+
+/** A SOW document. */
+export interface Sow {
+  readonly id: string;
+  readonly projectId: string;
+  readonly version: number;
+  readonly status: 'draft' | 'approved' | 'rejected';
+  readonly sections: readonly SowSection[];
+  readonly tasks: readonly SowTask[];
+}
+
+/** A memory note. */
+export interface MemoryNote {
+  readonly id: string;
+  readonly scope: 'lab' | 'project' | 'agent';
+  readonly title: string;
+  readonly snippet: string;
+  readonly citations: readonly string[];
+}
+
+/** Lab settings. */
+export interface LabSettings {
+  readonly labId: string;
+  readonly autonomyLevel: number;
+  readonly monthlyBudgetMicrousd: number;
+  readonly schedulerTickMs: number;
+  readonly officeTheme: 'default' | 'high-contrast';
+}
