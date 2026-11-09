@@ -210,7 +210,7 @@ All WPs start as **ready**. Estimates are relative story points (Fibonacci). `M`
 | [WP-19](./WP-19-PRODUCT-UI.md) | Product UI Surfaces | **done** | Dev | M1–M4 | 21 | WP-07, WP-08, WP-09, WP-10, WP-17 | Dashboard, inventory, Kanban, SOW, memory, settings, onboarding |
 | [WP-20](./WP-20-OBSERVABILITY-SRE.md) | Observability, SRE & Operations | **done** | Dev | M7 | 21 | WP-03, WP-04, WP-05, WP-16 | Logs, metrics, traces, SLOs, dashboards, alerts, backup/DR, runbooks |
 | [WP-21](./WP-21-TESTING.md) | Testing & Quality Engineering | **done** | QA | M7 | 21 | WP-04..WP-20 | Test strategy, fixtures, E2E, visual, load, chaos, security, fuzz, gates |
-| [WP-22](./WP-22-DOCS-RELEASE.md) | Documentation, Release & Handover | **done** | Analyst | M8 | 13 | WP-00..WP-21 | Docs manifest, ADRs, API docs, demo, SBOM, signed images, release 1.0 |
+| [WP-22](./WP-22-DOCS-RELEASE.md) | Documentation, Release & Handover | **progress** | Analyst | M8 | 13 | WP-00..WP-21 | Docs manifest, ADRs, API docs, demo, SBOM, signed images, release 1.0 |
 | [WP-23](./WP-23-MAINTENANCE.md) | Maintenance & Continuous Evolution | **done** | Dev | M8+ | 13 | WP-22 | Dependency updates, CV reflection, memory hygiene, stale cards, health jobs |
 | [WP-13B](./WP-13B-FOLLOW-UP.md) | Backend Hardening Follow-up (WP-13/WP-16 residuals) | **ready** | Dev | M8+ | 34 | WP-13, WP-16, WP-20 | Resume, real context, OTel, DoD, adapters, Redis, full REST/WS, generated OpenAPI |
 | [WP-24](./WP-24-FRONTEND-HARDENING.md) | Frontend & QA Hardening Follow-up (WP-19/WP-21 residuals) | **progress** | Dev | M8+ | 21 | WP-19, WP-21, WP-18 | Activity/idea/KPIs, drawers, SOW diff/export, WBS DAG/timeline, board filters/card back, E2E/axe/visual/Lighthouse |

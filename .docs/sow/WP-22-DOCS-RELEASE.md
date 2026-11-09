@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | WP ID | `WP-22` |
-| Status | **done** |
+| Status | **progress** |
 | Owner | Analyst |
 | Milestone | M8 |
 | Estimate | 13 points |
@@ -19,6 +19,7 @@
 | 2026-11-07 | — | `ready` | Tech Lead | Initial SOW baseline |
 | 2026-11-07 | `ready` | `progress` | Analyst (agent) | WP-00..21 done |
 | 2026-11-07 | `progress` | `done` | Analyst (agent) | Docs manifest, demo, glossary and release checklist delivered; SBOM/signing/live acceptance in the WP-22 follow-up |
+| 2026-11-09 | `done` | `progress` | Tech Lead (agent) | CR-0018: reopen for the independent documentation/release review (P14/P15) |
 
 ---
 
@@ -230,3 +231,4 @@ The report is signed by Tech Lead and QA; the Human Operator accepts at mileston
 
 2026-11-07 | T01 | .docs/product/demo-script.md, .docs/product/glossary.md, .docs/product/release-checklist.md, CHANGELOG.md | docs link check | — | T02
 2026-11-07 | T02 | .docs/product/README.md, .docs/sow/SOW.md | 134 doc links; docs manifest current | SBOM/signing/live acceptance deferred WP-22 follow-up | WP-23
+2026-11-09 | P14 | .docs/sow/WP-22-DOCS-RELEASE-review-plan.md, .docs/product/{docs-manifest,acceptance-report,handover,testing}.md | manifest, acceptance, handover, review plan | release/SBOM deferred P15 | P15

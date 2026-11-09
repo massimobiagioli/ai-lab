@@ -80,7 +80,7 @@ scripts/run-web.sh npm run format:check
 - [ ] **P13 — WP-24 coverage and CI wiring.** (coverage 77.56/88.99/76.06, below 80/90/80; QA NOT APPROVED; WP-24 stays `progress`; owner WP-24/WP-21)
   Branch `review/p13-wp24-coverage`; coverage thresholds (backend 80/domain 90/frontend 80/new 80), CI wiring, QA `APPROVED`, WP-24 `done`. Depends P12. Blocked: thresholds unmet and T01/T03/T06/T07 open; re-review after WP-13B T07.
 
-- [ ] **P14 — Reopen WP-22 and deliver docs/demo/acceptance.**
+- [x] **P14 — Reopen WP-22 and deliver docs/demo/acceptance.**
   Branch `review/p14-wp22-docs`; CR-0018, review plan, docs manifest, acceptance report, demo script, handover. Depends P13.
 
 - [ ] **P15 — WP-22 SBOM, signing, release and QA.**
@@ -149,3 +149,4 @@ scripts/run-web.sh npm run format:check
 | 2026-11-09 | P10 | `review/p10-wp20-dr` | `5eac3c2` | QA APPROVED; WP-20 done. |
 | 2026-11-09 | P11 | `review/p11-wp24-e2e` | `da9cb89` | Playwright/axe, 6/6. |
 | 2026-11-09 | P12 | `review/p12-wp24-hardening` | `15f9d90` | Scripts + fuzz; live load/chaos green after stack reset. |
+| 2026-11-09 | P14 | `review/p14-wp22-docs` | merge pending | CR-0018, manifest, acceptance, handover; P15 release open. |

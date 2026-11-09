@@ -145,6 +145,7 @@ Every document under `.docs` is listed here. When a document is created, renamed
 | WP-20 review plan | Observability and SRE review checklist and evidence. | [`.docs/sow/WP-20-OBSERVABILITY-SRE-review-plan.md`](./.docs/sow/WP-20-OBSERVABILITY-SRE-review-plan.md) |
 | WP-21 Testing | Test strategy, suites, fixtures, gates. | [`.docs/sow/WP-21-TESTING.md`](./.docs/sow/WP-21-TESTING.md) |
 | WP-22 Docs and release | Documentation, release, acceptance, handover. | [`.docs/sow/WP-22-DOCS-RELEASE.md`](./.docs/sow/WP-22-DOCS-RELEASE.md) |
+| WP-22 review plan | Documentation, release and handover review checklist and evidence. | [`.docs/sow/WP-22-DOCS-RELEASE-review-plan.md`](./.docs/sow/WP-22-DOCS-RELEASE-review-plan.md) |
 | WP-23 Maintenance | Maintenance jobs, dependency updates, memory hygiene. | [`.docs/sow/WP-23-MAINTENANCE.md`](./.docs/sow/WP-23-MAINTENANCE.md) |
 | Product documentation index | Gateway to product documentation, governance pages, templates, CRs and backlog cards. | [`.docs/product/README.md`](./.docs/product/README.md) |
 
