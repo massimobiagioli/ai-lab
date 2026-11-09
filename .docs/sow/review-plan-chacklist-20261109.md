@@ -41,10 +41,10 @@ scripts/run-web.sh npm run format:check
 - [x] **P00 — Canonical checklist and governance cleanup.**
   Branch `review/p00-review-checklist`; add this file, index it in `AGENTS.md`, close the duplicate PR #6. Merged `1ca3da8`.
 
-- [ ] **P01 — Reopen WP-19, review plan and data layer.**
-  Branch `review/p01-wp19-data`; CR-0015, `WP-19-PRODUCT-UI-review-plan.md`, typed models, ApiClient board/inventory/SOW/memory/settings with the explicit demo fallback, signal stores, tests. Acceptance: stores with `idle|loading|ready|error`, optimistic move with rollback, demo flag, tests, gates green.
+- [x] **P01 — Reopen WP-19, review plan and data layer.**
+  Branch `review/p01-wp19-data`; CR-0015, `WP-19-PRODUCT-UI-review-plan.md`, typed models, ApiClient board/inventory/SOW/memory/settings with the explicit demo fallback, signal stores, tests. Merged `58dd820`.
 
-- [ ] **P02 — WP-19 Kanban board.**
+- [x] **P02 — WP-19 Kanban board.**
   Branch `review/p02-wp19-kanban`; `/projects/:projectId/board`, six columns, card detail, filters, DnD + keyboard move (`M`, arrows, Enter), optimistic rollback, tests. Depends P01.
 
 - [ ] **P03 — WP-19 inventory.**
@@ -137,3 +137,5 @@ scripts/run-web.sh npm run format:check
 | Date | Point | Branch | Merge SHA | Notes |
 |---|---|---|---|---|
 | 2026-11-09 | P00 | `review/p00-review-checklist` | `1ca3da8` | Checklist created and indexed. |
+| 2026-11-09 | P01 | `review/p01-wp19-data` | `58dd820` | Data layer, demo fallback, stores, board rollback. |
+| 2026-11-09 | P02 | `review/p02-wp19-kanban` | merge pending | Six-column board, DnD, keyboard, filters, drawer, tests. |
