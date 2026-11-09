@@ -7,7 +7,7 @@
 | Review branches | `review/p08-wp20-metrics`, `review/p09-wp20-tracing`, `review/p10-wp20-dr` |
 | Reviewer | Chief Software Engineer (agent) |
 | QA reviewer | qa-review-agent (independent subagent) |
-| Status | `in_review` |
+| Status | `approved` |
 
 ## 1. Contract completeness
 
@@ -79,9 +79,9 @@
 
 ## 8. QA review
 
-- [ ] QA subagent verdict: `APPROVED`.
-- [ ] QA evidence recorded after the review.
-- [ ] Every blocking defect fixed.
+- [x] QA subagent verdict: `APPROVED` (HEAD `bb4d954`).
+- [x] QA evidence: qa-review-agent returned APPROVED with the WP-13B T03/WP-24 T07 deferrals; 21 API tests, all gates green.
+- [x] Every blocking defect fixed and re-reviewed.
 
 ## 9. Deferred items and residual risks
 

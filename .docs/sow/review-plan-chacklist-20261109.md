@@ -146,4 +146,4 @@ scripts/run-web.sh npm run format:check
 | 2026-11-09 | P07 | `review/p07-wp19-qa` | `ad4c65c` | QA APPROVED; WP-19 done. |
 | 2026-11-09 | P08 | `review/p08-wp20-metrics` | `b0b90e1` | Metrics, redacted logs. |
 | 2026-11-09 | P09 | `review/p09-wp20-tracing` | `d6af2b3` | Trace propagation, SLOs, dashboard, alerts. |
-| 2026-11-09 | P10 | `review/p10-wp20-dr` | merge pending | Runbooks, provisioning, metrics/readiness fixes. |
+| 2026-11-09 | P10 | `review/p10-wp20-dr` | merge pending | QA APPROVED; WP-20 done. |
