@@ -18,9 +18,7 @@ export const routes: Routes = [
     path: 'lab/:labId',
     title: 'AI-Lab · Office',
     canActivate: [paramGuard],
-    loadComponent: () =>
-      import('./features/placeholder/placeholder').then((module) => module.Placeholder),
-    data: { title: 'Office', body: 'Virtual office host (WP-18).' },
+    loadComponent: () => import('./features/office/office').then((module) => module.Office),
   },
   {
     path: 'projects/:projectId/board',

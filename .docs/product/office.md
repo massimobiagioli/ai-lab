@@ -6,20 +6,35 @@
 | Version | 1.0.0 |
 | Status | Accepted |
 | Owner | Dev |
-| Related | `.docs/product/frontend.md`, `web/src/app/office/` |
+| Related | `.docs/product/frontend.md`, `web/src/lib/office/`, `web/src/app/features/office/` |
 
 The office is the emotional core of AI-Lab. It is a 16-bit pixel office driven exclusively by backend state: agents never show activity that is not happening.
 
 ## 1. Rendering model
 
-- Internal resolution 384×216, integer scaling, nearest-neighbour.
+- Internal resolution 384×216 (24×13 tiles of 16 px, 4 px top offset), integer scaling, nearest-neighbour.
 - Canvas 2D (optional WebGL2 backend later).
 - Target ≥ 58 FPS desktop, ≥ 30 FPS low-end.
 - Office engine decoupled from Angular (ADR-0021).
 
-## 2. Pathfinding
+## 2. Engine and host
 
-`findPath` implements deterministic 4-directional A* with a stable tie-break. It returns the path including start and goal, or `null` when the goal is blocked or unreachable. Tests cover straight paths, wall detours, unreachable goals and identical endpoints.
+The framework-agnostic engine lives in `web/src/lib/office/` (ADR-0021):
+
+- `layout.ts`: deterministic 24×13 grid, walls and five desks.
+- `pathfinding.ts`: deterministic 8-directional octile A* (10/14, no corner cutting, binary heap) with a stable tie-break.
+- `agent-state.ts`: truthful domain-state → animation mapping.
+- `engine.ts`: agents, A* movement, per-frame interpolation and reduced-motion snapping.
+- `sprites.ts`: generated 8×8 sprite atlas and CC0 manifest (no third-party assets).
+- `web/scripts/lint-assets.mjs`: build-failing asset linter (licence, 8×8 frames, palette).
+
+Interactions cover agents and seven objects (whiteboard, rack, bookshelf, cabinet, coffee, plant, door); the
+objects open a drawer with a route. `?agent=<id>` and `?panel=<id>` restore the selection/panel. The
+simulation uses a fixed 1/60 s step and exposes a stable frame hash for determinism.
+
+The Angular host is `web/src/app/features/office/office.ts`: a 384×216 pixelated canvas, y-sorted
+sprite agents, an accessible agent list, click-to-select/click-to-walk, a path overlay, an FPS
+counter, `?agent=<id>` deep link and a detail panel. The route is `/lab/:labId` with a slug guard.
 
 ## 3. Truthful state mapping
 
@@ -40,16 +55,15 @@ Walking frames are deterministic (`floor(elapsed / 200) % 4`). The UI never inve
 
 ## 5. Tests
 
-`npm --prefix web test` covers A* paths/blocked/unreachable and the state/animation mapping.
+`npm --prefix web test` covers octile A* (shortest, corner cutting, unreachable), the state/animation mapping, occupancy/determinism, sprites, the WS state bridge, deep links and object selection.
 
-## 6. Deferred to the WP-18 follow-up
+## 6. Deferred to WP-19/WP-21
 
-- Sprite atlas, animation pipeline and canvas render loop.
-- Clickable objects, inspector, deep links and office events.
-- FPS telemetry and the canvas performance suite (WP-21).
+- Speech bubbles: WP-19.
+- Ambient life, sound controls, high-contrast theme, visual/FPS/a11y suites and the 60 FPS benchmark: WP-21.
 
 ## 7. References
 
 - `.docs/technical-specification/AI-LAB-TECHNICAL-SPECIFICATION.md` §11
 - `.docs/adr/adr-0007.md`, `.docs/adr/adr-0021.md`
-- `web/src/app/office/`
+- `web/src/lib/office/`
