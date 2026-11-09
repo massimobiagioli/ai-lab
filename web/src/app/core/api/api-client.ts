@@ -1,7 +1,31 @@
 import { inject, Injectable } from '@angular/core';
 import { RUNTIME_CONFIG } from '../config/runtime-config';
 import { sessionToken } from '../auth/session';
-import type { EventEnvelope, Page, Problem, RunView, StepView } from '../../domain/models';
+import type {
+  Agent,
+  Card,
+  EventEnvelope,
+  LabSettings,
+  MemoryNote,
+  Page,
+  Problem,
+  Project,
+  Provider,
+  RunView,
+  Sow,
+  StepView,
+} from '../../domain/models';
+import {
+  DEMO_AGENTS,
+  DEMO_CARDS,
+  DEMO_PROJECTS,
+  DEMO_PROVIDERS,
+  DEMO_SETTINGS,
+  DEMO_SOW,
+  DEMO_MEMORY,
+  isDemoFallback,
+} from '../demo/demo-data';
+import { signal } from '@angular/core';
 import { ApiProblem, toProblem } from './problem';
 
 interface RequestOptions {
@@ -19,6 +43,22 @@ const TIMEOUT_MS = 10_000;
 @Injectable({ providedIn: 'root' })
 export class ApiClient {
   private readonly config = inject(RUNTIME_CONFIG);
+  /** True while the last read used the explicit demo read model. */
+  readonly usingDemo = signal(false);
+
+  private async withDemo<T>(path: string, demo: T): Promise<T> {
+    try {
+      const value = await this.send<T>(path);
+      this.usingDemo.set(false);
+      return value;
+    } catch (error) {
+      if (isDemoFallback(error)) {
+        this.usingDemo.set(true);
+        return demo;
+      }
+      throw error;
+    }
+  }
 
   private url(path: string): string {
     return `${this.config.apiBaseUrl.replace(/\/$/, '')}${path}`;
@@ -88,6 +128,47 @@ export class ApiClient {
       }
     }
     throw new ApiProblem(toProblem(lastError));
+  }
+
+  getBoard(projectId: string): Promise<readonly Card[]> {
+    return this.withDemo(`/projects/${encodeURIComponent(projectId)}/board`, DEMO_CARDS);
+  }
+
+  listAgents(): Promise<readonly Agent[]> {
+    return this.withDemo('/agents', DEMO_AGENTS);
+  }
+
+  listProjects(): Promise<readonly Project[]> {
+    return this.withDemo('/projects', DEMO_PROJECTS);
+  }
+
+  listProviders(): Promise<readonly Provider[]> {
+    return this.withDemo('/providers', DEMO_PROVIDERS);
+  }
+
+  getSow(projectId: string): Promise<Sow> {
+    return this.withDemo(`/sows?project_id=${encodeURIComponent(projectId)}`, DEMO_SOW);
+  }
+
+  searchMemory(query: string): Promise<readonly MemoryNote[]> {
+    return this.withDemo(
+      `/memory/search?q=${encodeURIComponent(query)}`,
+      DEMO_MEMORY.filter(
+        (note) => note.title.toLowerCase().includes(query.toLowerCase()) || query === '',
+      ),
+    );
+  }
+
+  getSettings(labId: string): Promise<LabSettings> {
+    return this.withDemo(`/settings?lab_id=${encodeURIComponent(labId)}`, DEMO_SETTINGS);
+  }
+
+  transitionCard(cardId: string, to: string): Promise<Card> {
+    return this.send<Card>(`/cards/${encodeURIComponent(cardId)}/transition`, {
+      method: 'POST',
+      body: { to },
+      retry: false,
+    });
   }
 
   listRuns(labId: string, cursor?: string): Promise<Page<RunView>> {
