@@ -1,6 +1,7 @@
 import { Component, computed, effect, inject, OnInit, signal } from '@angular/core';
 import { input } from '@angular/core';
 import { PageHeader } from '../../shared/ui/page-header/page-header';
+import { Degraded } from '../../shared/ui/degraded/degraded';
 import { Button } from '../../shared/ui/button/button';
 import { Card as UiCard } from '../../shared/ui/card/card';
 import { Drawer } from '../../shared/ui/drawer/drawer';
@@ -23,8 +24,9 @@ const COLUMNS = [
 
 @Component({
   selector: 'app-board',
-  imports: [PageHeader, Button, UiCard, Drawer, EmptyState, Spinner, StatusBadge, Select],
+  imports: [PageHeader, Degraded, Button, UiCard, Drawer, EmptyState, Spinner, StatusBadge, Select],
   template: `
+    <app-degraded [active]="store.demo()" />
     <app-page-header title="Kanban board" subtitle="Six columns, keyboard moves and violations">
       @if (store.demo()) {
         <app-status-badge label="Demo data" tone="warning" />

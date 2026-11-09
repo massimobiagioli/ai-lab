@@ -1,6 +1,7 @@
 import { Component, computed, effect, inject, OnInit, signal } from '@angular/core';
 import { input } from '@angular/core';
 import { PageHeader } from '../../shared/ui/page-header/page-header';
+import { Degraded } from '../../shared/ui/degraded/degraded';
 import { Button } from '../../shared/ui/button/button';
 import { Card as UiCard } from '../../shared/ui/card/card';
 import { Dialog } from '../../shared/ui/dialog/dialog';
@@ -12,8 +13,9 @@ import { SowStore } from './store/sow.store';
 
 @Component({
   selector: 'app-sow',
-  imports: [PageHeader, Button, UiCard, Dialog, EmptyState, Spinner, StatusBadge, Input],
+  imports: [PageHeader, Degraded, Button, UiCard, Dialog, EmptyState, Spinner, StatusBadge, Input],
   template: `
+    <app-degraded [active]="store.demo()" />
     <app-page-header title="SOW workspace" subtitle="Sections, delivery graph and materialize">
       @if (store.demo()) {
         <app-status-badge label="Demo data" tone="warning" />
@@ -37,11 +39,18 @@ import { SowStore } from './store/sow.store';
             <app-card title="Versions">
               <p>
                 Version <strong>v{{ sow.version }}</strong> ·
-                <app-status-badge [label]="sow.status" [tone]="tone(sow.status)" />
+                <app-status-badge [label]="status()" [tone]="tone(status())" />
               </p>
-              <app-button variant="primary" (pressed)="confirmOpen.set(true)"
-                >Materialize</app-button
-              >
+              <div class="actions">
+                <app-button variant="primary" (pressed)="approveOpen.set(true)">Approve</app-button>
+                <app-button variant="danger" (pressed)="rejectOpen.set(true)">Reject</app-button>
+                <app-button (pressed)="traceOpen.set(true)">Traceability</app-button>
+                <app-button (pressed)="dryRunOpen.set(true)">Dry run</app-button>
+                <app-button (pressed)="confirmOpen.set(true)">Materialize</app-button>
+              </div>
+              @for (entry of history(); track $index) {
+                <p class="sow__done">{{ entry }}</p>
+              }
               @if (materialized()) {
                 <p class="sow__done" role="status">
                   Materialized in demo mode (real API in WP-13B T07).

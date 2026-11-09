@@ -92,8 +92,8 @@
 ## 9. Deferred items and residual risks
 
 - [ ] Real edge data for board/inventory/SOW/memory/settings — owner: Dev, card: `WP-13B` T07, due 2026-12-31.
-- [ ] E2E/visual/a11y — owner: QA, card: `WP-21`, due 2026-12-31.
-- [ ] Activity feed/idea composer live wiring — P06.
+- [ ] E2E/visual/a11y, activity/idea, health/handoff drawers and SOW diff/export — owner: Dev/QA, card: `WP-24`, due 2026-12-31.
+- [ ] Activity feed/idea composer/live KPIs — owner: Dev, card: `WP-24` T01, due 2026-12-31.
 
 ## 10. Decisions
 

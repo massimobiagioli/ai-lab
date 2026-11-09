@@ -71,14 +71,14 @@ scripts/run-web.sh npm run format:check
 - [ ] **P10 — WP-20 backup/DR/runbooks and QA.**
   Branch `review/p10-wp20-dr`; restore drill, DR and incident runbooks, QA `APPROVED`, WP-20 `done`. Depends P09.
 
-- [ ] **P11 — WP-21 E2E and accessibility tooling.**
-  Branch `review/p11-wp21-e2e`; CR-0017, review plan, Playwright + axe, journeys J1–J5, a11y per route. Depends P07, P10.
+- [ ] **P11 — WP-24 E2E and accessibility tooling.**
+  Branch `review/p11-wp24-e2e`; Playwright + axe, journeys J1–J5, a11y per route; WP-21 is `done`, so these suites are owned by WP-24. Depends P07, P10.
 
-- [ ] **P12 — WP-21 load, chaos, security, fuzz.**
-  Branch `review/p12-wp21-hardening`; k6 load, chaos (worker/runner kill), security and fuzz suites. Depends P11.
+- [ ] **P12 — WP-24 load, chaos, security, fuzz.**
+  Branch `review/p12-wp24-hardening`; k6 load, chaos (worker/runner kill), security and fuzz suites; WP-24 evidence. Depends P11.
 
-- [ ] **P13 — WP-21 coverage and CI wiring.**
-  Branch `review/p13-wp21-coverage`; coverage thresholds (backend 80/domain 90/frontend 80/new 80), CI wiring, QA `APPROVED`, WP-21 `done`. Depends P12.
+- [ ] **P13 — WP-24 coverage and CI wiring.**
+  Branch `review/p13-wp24-coverage`; coverage thresholds (backend 80/domain 90/frontend 80/new 80), CI wiring, QA `APPROVED`, WP-24 `done`. Depends P12.
 
 - [ ] **P14 — Reopen WP-22 and deliver docs/demo/acceptance.**
   Branch `review/p14-wp22-docs`; CR-0018, review plan, docs manifest, acceptance report, demo script, handover. Depends P13.

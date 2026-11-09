@@ -24,6 +24,7 @@ This directory holds product documentation. Program control (technical specifica
 | [design-system.md](./design-system.md) | Pixel design tokens, UI primitives and accessibility rules |
 | [office.md](./office.md) | Canvas office, A* pathfinding, state mapping and accessibility |
 | [product-ui.md](./product-ui.md) | Dashboard, surfaces, UX states and accessibility |
+| [ui.md](./ui.md) | Product routes, states and interaction rules |
 | [observability.md](./observability.md) | Logs, metrics, traces, SLOs, alerts and backup |
 | [testing.md](./testing.md) | Test layers, commands, fixtures, coverage and flaky policy |
 | [demo-script.md](./demo-script.md) | Golden demo with timings and expected output |

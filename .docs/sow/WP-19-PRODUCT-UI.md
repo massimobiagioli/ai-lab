@@ -197,7 +197,7 @@ Stores deduplicate by `event_id`/`seq`; no duplicate rows on reconnect.
 - [x] Loading/empty/error/degraded states on the board, inventory, SOW, memory, settings and dashboard.
 - [ ] Responsive + reduced motion delivered; a11y suite verified by WP-21.
 - [ ] E2E for journeys J1–J4 + visual screenshots (WP-21).
-- [ ] `.docs/product/ui.md` with routes, states, and interaction rules (P07).
+- [x] `.docs/product/ui.md` with routes, states, and interaction rules (P07).
 
 ---
 

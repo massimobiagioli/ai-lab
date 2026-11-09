@@ -1,6 +1,7 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { input } from '@angular/core';
 import { PageHeader } from '../../shared/ui/page-header/page-header';
+import { Degraded } from '../../shared/ui/degraded/degraded';
 import { Card as UiCard } from '../../shared/ui/card/card';
 import { Button } from '../../shared/ui/button/button';
 import { PixelTable } from '../../shared/ui/pixel-table/pixel-table';
@@ -28,6 +29,7 @@ interface Column {
   selector: 'app-inventory',
   imports: [
     PageHeader,
+    Degraded,
     Tabs,
     PixelCheckbox,
     Select,
@@ -42,6 +44,7 @@ interface Column {
     StatusBadge,
   ],
   template: `
+    <app-degraded [active]="store.demo()" />
     <app-page-header [title]="title()" [subtitle]="subtitle()">
       @if (store.demo()) {
         <app-status-badge label="Demo data" tone="warning" />
@@ -83,6 +86,61 @@ interface Column {
           <p>
             {{ entry[0] }}: <strong>{{ entry[1] }}</strong>
           </p>
+        }
+      }
+    </app-drawer>
+
+    <app-drawer
+      label="Agent Inspector"
+      [open]="inspectorOpen()"
+      (closed)="inspectorOpen.set(false)"
+    >
+      @if (inspectorAgent(); as agent) {
+        <h3>{{ agent.name }}</h3>
+        <app-tabs label="Inspector" [tabs]="inspectorTabs" [(active)]="activeTab" />
+        @switch (activeTab()) {
+          @case ('cv') {
+            <p>
+              Role: <strong>{{ agent.role }}</strong>
+            </p>
+            <p>
+              Autonomy: <strong>{{ agent.autonomyLevel ?? 'inherited' }}</strong>
+            </p>
+            <p>
+              Model: <strong>{{ agent.model }}</strong>
+            </p>
+            <p>
+              Concurrency: <strong>{{ agent.maxConcurrent }}</strong>
+            </p>
+          }
+          @case ('memory') {
+            <ul>
+              @for (note of memoryNotes; track note.id) {
+                <li>{{ note.title }} — {{ note.snippet }}</li>
+              }
+            </ul>
+          }
+          @case ('controls') {
+            <div class="actions">
+              @if (agent.status !== 'working') {
+                <app-button variant="primary" (pressed)="setAgentStatus(agent.id, 'working')"
+                  >Resume</app-button
+                >
+              } @else {
+                <app-button (pressed)="setAgentStatus(agent.id, 'paused')">Pause</app-button>
+              }
+              <app-button variant="danger" (pressed)="retire(agent.id)">Retire</app-button>
+            </div>
+          }
+          @default {
+            <p>
+              Status: <strong>{{ agent.status }}</strong>
+            </p>
+            <p>
+              Model: <strong>{{ agent.model }}</strong>
+            </p>
+            <p>Live steps: idle (no active run).</p>
+          }
         }
       }
     </app-drawer>
@@ -137,6 +195,10 @@ export class Inventory implements OnInit {
   protected readonly name = signal('');
   protected readonly formError = signal<string | null>(null);
   protected readonly selected = signal<Agent | Project | Provider | null>(null);
+  protected readonly inspectorAgent = computed<Agent | null>(() => {
+    const item = this.selected();
+    return item !== null && 'role' in item ? item : null;
+  });
   protected readonly inspectorOpen = signal(false);
   protected readonly activeTab = signal('live');
   protected readonly role = signal('dev');

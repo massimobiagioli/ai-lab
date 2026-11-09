@@ -14,6 +14,10 @@ export class MemoryStore {
   readonly demo = this.api.usingDemo;
   readonly pinned = signal<ReadonlySet<string>>(new Set());
 
+  addNote(note: MemoryNote): void {
+    this.results.update((notes) => [note, ...notes]);
+  }
+
   remove(id: string): void {
     this.results.update((notes) => notes.filter((note) => note.id !== id));
   }

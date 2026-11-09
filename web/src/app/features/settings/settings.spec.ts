@@ -30,8 +30,9 @@ describe('Settings', () => {
   it('validates the budget and saves', async () => {
     const fixture = await setup();
     const element = fixture.nativeElement as HTMLElement;
-    const inputs = element.querySelectorAll<HTMLInputElement>('input');
-    const budget = inputs[0];
+    const budget = [...element.querySelectorAll('label')]
+      .find((label) => label.textContent?.includes('Monthly budget'))
+      ?.querySelector<HTMLInputElement>('input');
     if (budget) {
       budget.value = '-1';
       budget.dispatchEvent(new Event('input'));

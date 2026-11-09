@@ -1,5 +1,6 @@
 import { Component, effect, inject, OnInit, signal } from '@angular/core';
 import { PageHeader } from '../../shared/ui/page-header/page-header';
+import { Degraded } from '../../shared/ui/degraded/degraded';
 import { Button } from '../../shared/ui/button/button';
 import { Card as UiCard } from '../../shared/ui/card/card';
 import { Dialog } from '../../shared/ui/dialog/dialog';
@@ -11,8 +12,9 @@ import { SettingsStore } from './store/settings.store';
 
 @Component({
   selector: 'app-settings',
-  imports: [PageHeader, Button, UiCard, Dialog, Input, Select, Spinner, StatusBadge],
+  imports: [PageHeader, Degraded, Button, UiCard, Dialog, Input, Select, Spinner, StatusBadge],
   template: `
+    <app-degraded [active]="store.demo()" />
     <app-page-header title="Settings" subtitle="Lab, autonomy, budgets and office">
       @if (store.demo()) {
         <app-status-badge label="Demo data" tone="warning" />
@@ -32,6 +34,8 @@ import { SettingsStore } from './store/settings.store';
       @case ('ready') {
         <div class="grid">
           <app-card title="Lab">
+            <app-input label="Lab name" [(value)]="labName" />
+            <app-input label="Description" [(value)]="description" />
             <app-select label="Autonomy" [options]="autonomyOptions" [(value)]="autonomy" />
             <app-input
               label="Monthly budget (micro-USD)"
@@ -39,9 +43,18 @@ import { SettingsStore } from './store/settings.store';
               [error]="budgetError()"
             />
             <app-input label="Scheduler tick (ms)" [(value)]="tick" [error]="tickError()" />
+            <app-input label="WIP limit" [(value)]="wip" />
+            <app-input label="Scheduler cron" [(value)]="cron" />
             <app-select label="Office theme" [options]="themeOptions" [(value)]="theme" />
+            <app-select label="Sound" [options]="soundOptions" [(value)]="sound" />
+            <app-select
+              label="Reduced motion"
+              [options]="motionOptions"
+              [(value)]="reducedMotion"
+            />
             <div class="actions">
               <app-button variant="primary" (pressed)="save()">Save</app-button>
+              <app-button (pressed)="exportSettings()">Export</app-button>
               @if (saved()) {
                 <span class="saved" role="status"
                   >Saved in demo mode (audited in the real API).</span

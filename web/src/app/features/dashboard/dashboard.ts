@@ -1,6 +1,7 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PageHeader } from '../../shared/ui/page-header/page-header';
+import { Degraded } from '../../shared/ui/degraded/degraded';
 import { Spinner } from '../../shared/ui/spinner/spinner';
 import { Card } from '../../shared/ui/card/card';
 import { Button } from '../../shared/ui/button/button';
@@ -8,8 +9,9 @@ import { RunsStore } from '../runs/runs.store';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [PageHeader, Card, Button, RouterLink, Spinner],
+  imports: [PageHeader, Degraded, Card, Button, RouterLink, Spinner],
   template: `
+    <app-degraded [active]="false" />
     <app-page-header title="Dashboard" subtitle="Flow and run health for the default lab">
       <app-button variant="primary" (pressed)="refresh()">Refresh</app-button>
     </app-page-header>
@@ -49,13 +51,16 @@ import { RunsStore } from '../runs/runs.store';
     @if (!onboardingDismissed()) {
       <app-card title="Getting started">
         <ol class="onboarding">
-          <li>
-            <a routerLink="/inventory/providers">Connect a provider</a> ·
-            <span class="done">done</span>
-          </li>
-          <li><a routerLink="/settings">Configure the lab</a></li>
-          <li><a routerLink="/inventory/agents">Add an agent</a></li>
-          <li><a routerLink="/inventory/projects">Create a project</a></li>
+          @for (step of onboarding; track step.id) {
+            <li>
+              @if (doneSteps().has(step.id)) {
+                <span class="done">✓ {{ step.label }}</span>
+              } @else {
+                <a [routerLink]="step.path">{{ step.label }}</a>
+                <app-button (pressed)="markDone(step.id)">Mark done</app-button>
+              }
+            </li>
+          }
         </ol>
         <app-button (pressed)="onboardingDismissed.set(true)">Dismiss</app-button>
       </app-card>
