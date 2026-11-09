@@ -11,8 +11,12 @@ import { Component, input, model } from '@angular/core';
         [value]="value()"
         [placeholder]="placeholder()"
         [attr.autocomplete]="autocomplete()"
+        [attr.aria-invalid]="error() !== null"
         (input)="onInput($event)"
       />
+      @if (error() !== null) {
+        <span class="ui-input__error" role="alert">{{ error() }}</span>
+      }
     </label>
   `,
   styles: `
@@ -41,6 +45,10 @@ import { Component, input, model } from '@angular/core';
       outline: 2px solid var(--ailab-color-accent);
       outline-offset: 2px;
     }
+    .ui-input__error {
+      color: var(--ailab-color-danger);
+      font-size: var(--ailab-font-size-sm);
+    }
   `,
 })
 export class Input {
@@ -49,6 +57,7 @@ export class Input {
   readonly type = input<'text' | 'search' | 'email'>('text');
   readonly placeholder = input('');
   readonly autocomplete = input<string | null>(null);
+  readonly error = input<string | null>(null);
 
   protected onInput(event: Event): void {
     const target = event.target;

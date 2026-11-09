@@ -18,15 +18,15 @@
 ## 2. Specification conformance
 
 - [x] Zoneless Angular 22, standalone components, signals, strict TypeScript — evidence: `web/src/app/app.config.ts`, `web/tsconfig.json`, `npm run build`.
-- [x] Lazy routes and 404 — evidence: `web/src/app/app.routes.ts`, `app.spec.ts`.
+- [x] All routes lazy-load via dynamic `import()`; 404 handled — evidence: `web/src/app/app.routes.ts`, build chunk output.
 - [x] Route guards for lab/project slugs — evidence: `web/src/app/core/guards/param.guard.ts`.
 - [x] Deep-link query inputs (`agent`, `panel`, `card`) — evidence: `features/placeholder/placeholder.ts`.
 - [x] Typed API client with `Problem`, retries, correlation, timeout and cancel — evidence: `core/api/api-client.ts`, `api-client.spec.ts`.
-- [x] WebSocket service with topics, resume, dedupe, heartbeat and reconnect — evidence: `core/ws/ws.service.ts`.
-- [x] Signal stores with explicit `idle|loading|ready|error` — evidence: `features/runs/runs.store.ts`, `runs.store.spec.ts`.
-- [x] Pixel tokens and 22 primitives — evidence: `styles/_tokens.scss`, `shared/ui/`, `/design` gallery.
+- [x] WebSocket service with topics, `?since` resume, resync backfill (`/events?after&limit`), dedupe, heartbeat and reconnect — evidence: `core/ws/ws.service.ts`, `ws.service.spec.ts`.
+- [x] Signal stores with explicit `idle|loading|ready|error`, base utilities and an optimistic helper with rollback — evidence: `core/state/store-utils.ts`, `runs.store.ts`, `store-utils.spec.ts`.
+- [x] Pixel tokens and the 27 primitives, including the mandated PixelPanel/PixelTable/PixelIconButton/PixelTextarea/PixelCheckbox — evidence: `shared/ui/`, `/design` gallery.
 - [x] Pixel bitmap font (in-repo 3×5 glyph renderer) — evidence: `shared/ui/pixel-text/`, `pixel-text.spec.ts`.
-- [x] Accessibility: skip link, landmarks, focus-visible, focus trap, keyboard reorder, reduced motion, `aria-live` toast, error boundary with trace id — evidence: `layout/shell/`, `shared/directives/`.
+- [x] Accessibility: skip link, landmarks, focus-visible, focus trap, Escape-close dialogs/drawers, keyboard reorder, reduced motion, `aria-live` toast, error boundary — evidence: `layout/shell/`, `shared/directives/`, `dialog.spec.ts`.
 - [x] Telemetry and global error handler — evidence: `core/telemetry/`, `core/errors/`.
 - [x] CSP meta and no inline scripts — evidence: `web/src/index.html`.
 - [ ] Playwright, axe, visual snapshots and Lighthouse evidence — deferred to WP-21 (owned, see §9).
@@ -38,9 +38,9 @@
 - [x] App shell: sidebar, topbar, drawer host, toast host, error boundary.
 - [x] Routing with lazy loading, guards, 404 and deep-link inputs.
 - [ ] Generated API client: the typed client is hand-written; OpenAPI generation is deferred to WP-13B T07/T09.
-- [x] WebSocket service.
-- [x] Signal store pattern.
-- [x] Tokens, 22 primitives, 11-icon set and the in-repo pixel bitmap font.
+- [x] WebSocket service with resync backfill.
+- [x] Signal store pattern with base utilities and the optimistic helper.
+- [x] Tokens, 27 primitives (including the mandated set), 11-icon set and the in-repo pixel bitmap font.
 - [x] Accessibility utilities (focus trap, keyboard DnD, reduced motion) plus the shell a11y baseline.
 - [x] Telemetry and error reporting.
 - [ ] Playwright/visual/a11y scaffolding — deferred to WP-21.
@@ -50,10 +50,10 @@
 
 1. [x] Builds with zero strict TypeScript errors; budgets pass — evidence: `npm run build`.
 2. [x] No NgModule in new code; zoneless active; no `zone.js` — evidence: `provideZonelessChangeDetection`, `package.json`.
-3. [x] Routes lazy-load and 404 is handled; deep-link inputs exist. Full deep-link UI restoration follows WP-19.
+3. [x] All routes lazy-load and 404 is handled; deep-link inputs exist. Full deep-link UI restoration follows WP-19.
 4. [ ] API client generated from OpenAPI — deferred to WP-13B T07/T09; the hand-written client maps errors to `Problem`.
-5. [x] WS resumes with `?since`, dedupes by `event_id`/`seq` and reconnects — evidence: `ws.service.ts`.
-6. [x] Every primitive has default/hover/focus/disabled/loading/error coverage where applicable — evidence: `/design` gallery and component styles.
+5. [x] WS resumes with `?since`, backfills on `resync`, dedupes by `event_id`/`seq` and reconnects — evidence: `ws.service.ts`, `ws.service.spec.ts`.
+6. [x] Primitives expose disabled/loading/error where applicable and dialogs/drawers close on Escape — evidence: `/design` gallery, `dialog.spec.ts`, component styles.
 7. [ ] axe zero critical/serious — deferred to WP-21.
 8. [x] Reduced motion disables non-essential animation — evidence: `styles.scss`, spinner/skeleton CSS.
 9. [ ] Lighthouse ≥ 90 — deferred to WP-21.
@@ -66,7 +66,8 @@
 - [x] API client — tests: `api-client.spec.ts`.
 - [x] Runs store — tests: `runs.store.spec.ts`.
 - [x] Pixel text and keyboard DnD — tests: `pixel-text.spec.ts`, `keyboard-dnd.spec.ts`.
-- [x] No real external API in tests (fetch is stubbed).
+- [x] No real external API in tests (fetch/WebSocket are stubbed).
+- [x] WS resync, optimistic rollback, Escape-close and pixel font — tests: `ws.service.spec.ts`, `store-utils.spec.ts`, `dialog.spec.ts`, `pixel-text.spec.ts`.
 - [ ] Coverage thresholds — reported with the WP-21 coverage run.
 
 ## 6. Security and quality gates

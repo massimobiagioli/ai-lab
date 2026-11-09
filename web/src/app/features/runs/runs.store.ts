@@ -1,9 +1,10 @@
-import { computed, inject, Injectable, signal } from '@angular/core';
+import { computed, inject, Injectable, signal, type WritableSignal } from '@angular/core';
 import { ApiClient } from '../../core/api/api-client';
 import { toProblem } from '../../core/api/problem';
+import { withOptimistic, type LoadState } from '../../core/state/store-utils';
 import type { Problem, RunView } from '../../domain/models';
 
-export type StoreState = 'idle' | 'loading' | 'ready' | 'error';
+export type StoreState = LoadState;
 
 /** Signal store for the runs list. */
 @Injectable({ providedIn: 'root' })
@@ -38,9 +39,21 @@ export class RunsStore {
   }
 
   async cancel(runId: string): Promise<void> {
+    const snapshot = this.runs();
+    const optimistic = snapshot.map((run) =>
+      run.id === runId ? { ...run, state: 'cancelled' as const } : run,
+    );
+    const target: WritableSignal<readonly RunView[]> = this.runs;
     try {
-      const updated = await this.api.cancelRun(runId);
-      this.runs.update((runs) => runs.map((run) => (run.id === updated.id ? updated : run)));
+      await withOptimistic(
+        target,
+        optimistic,
+        async () => {
+          const updated = await this.api.cancelRun(runId);
+          this.runs.update((runs) => runs.map((run) => (run.id === updated.id ? updated : run)));
+        },
+        snapshot,
+      );
     } catch (error) {
       this.error.set(toProblem(error));
     }

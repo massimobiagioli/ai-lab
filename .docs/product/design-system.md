@@ -48,6 +48,11 @@ The design system is a pixel-art, accessible set of tokens and primitives. It is
 | Divider | `app-divider` | — |
 | Kbd | `app-kbd` | key hint |
 | Tooltip | `[appTooltip]` | native title fallback |
+| Pixel panel | `app-pixel-panel` | titled/raised |
+| Pixel table | `app-pixel-table` | caption, columns, rows |
+| Pixel icon button | `app-pixel-icon-button` | icon + aria-label |
+| Pixel textarea | `app-pixel-textarea` | error state, `aria-invalid` |
+| Pixel checkbox | `app-pixel-checkbox` | checked model |
 
 ## 3. Accessibility rules
 

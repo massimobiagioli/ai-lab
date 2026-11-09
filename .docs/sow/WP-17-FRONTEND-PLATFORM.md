@@ -195,8 +195,8 @@ web/e2e/                  # Playwright
 - [x] Routing with lazy loading, guards, 404, deep-link query inputs and a design gallery.
 - [ ] Hand-written typed API client delivered; OpenAPI code generation pending.
 - [x] WebSocket service (topics, reconnect, resume, dedupe, backpressure).
-- [x] Signal store pattern + base utilities; optimistic update helper.
-- [x] Design tokens, 22 UI primitives, the 11-icon pixel set and the in-repo PixelText bitmap font.
+- [x] Signal store pattern + base utilities; optimistic update helper with rollback.
+- [x] Design tokens, 27 UI primitives (including the mandated set), the 11-icon pixel set and the in-repo PixelText bitmap font.
 - [x] Focus trap, keyboard DnD, reduced-motion CSS and the shell a11y baseline delivered.
 - [x] Telemetry + error reporting.
 - [ ] Unit/component tests delivered (19); Playwright/visual/a11y scaffolding deferred to WP-21.
@@ -274,3 +274,4 @@ web/e2e/                  # Playwright
 2026-11-07 | build | web/src/app/{shared/ui,layout,core}, .docs/product/design-system.md | drawer host, route guards, input/select/tabs, CSP, design-system doc; 15 tests | deep links, 22-kit, e2e/a11y/visual, lighthouse pending | in progress
 2026-11-07 | build | web/src/app/{shared/ui,features/design} | 22 UI primitives, icon set, design gallery, deep-link inputs | pixel font, keyboard DnD, e2e/a11y/visual, lighthouse pending | in progress
 2026-11-07 | review | .docs/sow/WP-17-FRONTEND-PLATFORM-review-plan.md, web/src/app/shared/{ui/pixel-text,directives} | review plan; pixel bitmap font; keyboard DnD; 19 web tests | Playwright/axe/lighthouse/offline/generated client deferred to WP-21/WP-20/WP-13B/WP-19 | in review
+2026-11-07 | fix | web/src/app/{app.routes.ts,core/ws,core/state,shared/ui} | lazy placeholder/404 chunks; WS resync backfill; optimistic helper; mandated PixelPanel/Table/IconButton/Textarea/Checkbox; Escape-close; 23 web tests | Playwright/axe/lighthouse/offline/generated client deferred | QA re-review

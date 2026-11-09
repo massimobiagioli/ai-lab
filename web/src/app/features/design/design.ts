@@ -20,6 +20,11 @@ import { Menu } from '../../shared/ui/menu/menu';
 import { Divider } from '../../shared/ui/divider/divider';
 import { Kbd } from '../../shared/ui/kbd/kbd';
 import { PixelText } from '../../shared/ui/pixel-text/pixel-text';
+import { PixelPanel } from '../../shared/ui/pixel-panel/pixel-panel';
+import { PixelTable } from '../../shared/ui/pixel-table/pixel-table';
+import { PixelIconButton } from '../../shared/ui/pixel-icon-button/pixel-icon-button';
+import { PixelTextarea } from '../../shared/ui/pixel-textarea/pixel-textarea';
+import { PixelCheckbox } from '../../shared/ui/pixel-checkbox/pixel-checkbox';
 
 @Component({
   selector: 'app-design-gallery',
@@ -45,6 +50,11 @@ import { PixelText } from '../../shared/ui/pixel-text/pixel-text';
     Divider,
     Kbd,
     PixelText,
+    PixelPanel,
+    PixelTable,
+    PixelIconButton,
+    PixelTextarea,
+    PixelCheckbox,
   ],
   template: `
     <app-page-header title="Design system" subtitle="Pixel primitives and their states" />
@@ -79,6 +89,15 @@ import { PixelText } from '../../shared/ui/pixel-text/pixel-text';
         <app-tabs label="Sections" [tabs]="tabs" [(active)]="tab" />
         <p>Active: {{ tab() }}</p>
       </app-card>
+
+      <app-pixel-panel title="Mandated primitives" [raised]="true">
+        <p class="row">
+          <app-pixel-icon-button icon="settings" label="Settings" />
+          <app-pixel-checkbox label="Done" [(checked)]="done" />
+        </p>
+        <app-pixel-textarea label="Notes" [(value)]="notes" />
+        <app-pixel-table caption="Sample table" [columns]="tableColumns" [rows]="tableRows" />
+      </app-pixel-panel>
 
       <app-card title="Data">
         <app-progress [value]="60" label="Run progress" />
@@ -139,6 +158,16 @@ import { PixelText } from '../../shared/ui/pixel-text/pixel-text';
 })
 export class DesignGallery {
   protected readonly query = signal('');
+  protected readonly notes = signal('');
+  protected readonly done = signal(true);
+  protected readonly tableColumns = [
+    { key: 'key', label: 'Key' },
+    { key: 'state', label: 'State' },
+  ] as const;
+  protected readonly tableRows = [
+    { key: 'AIL-1', state: 'DONE' },
+    { key: 'AIL-2', state: 'DOING' },
+  ] as const;
   protected readonly scope = signal('all');
   protected readonly tab = signal('overview');
   protected readonly dialogOpen = signal(false);

@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { RUNTIME_CONFIG } from '../config/runtime-config';
 import { sessionToken } from '../auth/session';
-import type { Page, Problem, RunView, StepView } from '../../domain/models';
+import type { EventEnvelope, Page, Problem, RunView, StepView } from '../../domain/models';
 import { ApiProblem, toProblem } from './problem';
 
 interface RequestOptions {
@@ -93,6 +93,12 @@ export class ApiClient {
   listRuns(labId: string, cursor?: string): Promise<Page<RunView>> {
     const query = cursor === undefined ? '' : `?cursor=${encodeURIComponent(cursor)}`;
     return this.send<Page<RunView>>(`/labs/${encodeURIComponent(labId)}/runs${query}`);
+  }
+
+  listEvents(labId: string, after: number, limit = 1_000): Promise<Page<EventEnvelope>> {
+    return this.send<Page<EventEnvelope>>(
+      `/events?lab_id=${encodeURIComponent(labId)}&after=${after}&limit=${limit}`,
+    );
   }
 
   getRun(runId: string): Promise<RunView> {

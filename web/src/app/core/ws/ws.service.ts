@@ -1,5 +1,6 @@
 import { inject, Injectable, OnDestroy, signal } from '@angular/core';
 import { RUNTIME_CONFIG } from '../config/runtime-config';
+import { ApiClient } from '../api/api-client';
 import type { EventEnvelope } from '../../domain/models';
 
 /** Connection state exposed to the health pill. */
@@ -22,6 +23,7 @@ const SPEECH_COALESCE_MS = 2_000;
 @Injectable({ providedIn: 'root' })
 export class WsService implements OnDestroy {
   private readonly config = inject(RUNTIME_CONFIG);
+  private readonly api = inject(ApiClient);
   private socket: WebSocket | null = null;
   private readonly topics = new Map<string, number>();
   private readonly seen = new Set<string>();
@@ -121,13 +123,17 @@ export class WsService implements OnDestroy {
       return;
     }
     if (message.type === 'resync') {
-      this.lastSeq = message.after;
+      this.lastSeq = Math.max(this.lastSeq, message.after);
+      void this.backfill();
       return;
     }
     if (message.type !== 'event') {
       return;
     }
-    const event = message as EventEnvelope;
+    this.apply(message as EventEnvelope);
+  }
+
+  private apply(event: EventEnvelope): void {
     if (event.seq <= this.lastSeq || this.seen.has(event.event_id)) {
       return;
     }
@@ -146,6 +152,17 @@ export class WsService implements OnDestroy {
       this.seen.clear();
     }
     this.lastEvent.set(event);
+  }
+
+  private async backfill(): Promise<void> {
+    try {
+      const page = await this.api.listEvents(this.labId, this.lastSeq, 1_000);
+      for (const event of page.data) {
+        this.apply(event);
+      }
+    } catch {
+      this.scheduleReconnect();
+    }
   }
 
   /** Subscribe to a topic; returns the reference-counted unsubscribe. */

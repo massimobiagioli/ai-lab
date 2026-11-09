@@ -8,9 +8,13 @@ export type ButtonVariant = 'primary' | 'ghost' | 'danger';
     <button
       [class]="'ui-button ui-button--' + variant()"
       [type]="type()"
-      [disabled]="disabled()"
+      [disabled]="disabled() || loading()"
+      [attr.aria-busy]="loading()"
       (click)="pressed.emit($event)"
     >
+      @if (loading()) {
+        <span aria-hidden="true">…</span>
+      }
       <ng-content />
     </button>
   `,
@@ -53,11 +57,15 @@ export type ButtonVariant = 'primary' | 'ghost' | 'danger';
       border-color: var(--ailab-color-danger);
       color: var(--ailab-color-danger);
     }
+    .ui-button[aria-busy='true'] {
+      cursor: progress;
+    }
   `,
 })
 export class Button {
   readonly variant = input<ButtonVariant>('ghost');
   readonly type = input<'button' | 'submit'>('button');
   readonly disabled = input(false);
+  readonly loading = input(false);
   readonly pressed = output<MouseEvent>();
 }

@@ -4,6 +4,7 @@ import { FocusTrap } from '../../directives/focus-trap';
 
 @Component({
   selector: 'app-drawer',
+  host: { '(document:keydown.escape)': 'onEscape()' },
   imports: [Button, FocusTrap],
   template: `
     @if (open()) {
@@ -59,4 +60,10 @@ export class Drawer {
   readonly label = input.required<string>();
   readonly open = input.required<boolean>();
   readonly closed = output<void>();
+
+  protected onEscape(): void {
+    if (this.open()) {
+      this.closed.emit();
+    }
+  }
 }
