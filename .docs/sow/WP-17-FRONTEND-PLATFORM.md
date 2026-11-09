@@ -45,7 +45,7 @@ Deliver the **frontend platform**: an Angular 22 zoneless, signal-first applicat
 ### 2.2 Out of scope
 
 - Office engine internals (WP-18).
-- Feature screens (WP-48); this WP provides the primitives and shell.
+- Feature screens (WP-19); this WP provides the primitives and shell.
 - Backend endpoints (WP-16).
 
 ---
@@ -199,7 +199,7 @@ web/e2e/                  # Playwright
 - [x] Design tokens, 27 UI primitives (including the mandated set), the 11-icon pixel set and the in-repo PixelText bitmap font.
 - [x] Focus trap, keyboard DnD, reduced-motion CSS and the shell a11y baseline delivered.
 - [x] Telemetry + error reporting.
-- [ ] Unit/component tests delivered (50); Playwright/visual/a11y scaffolding deferred to WP-21.
+- [ ] Unit/component tests delivered (52); Playwright/visual/a11y scaffolding deferred to WP-21.
 - [x] `.docs/product/frontend.md` and `.docs/product/design-system.md` delivered; gallery optional pending.
 
 ---
@@ -239,11 +239,11 @@ web/e2e/                  # Playwright
 
 ## 7. WP Definition of Done
 
-- [x] All deliverables checked with evidence.
-- [x] Unit/component/E2E/visual/a11y suites green.
-- [x] Bundle/Lighthouse budgets in CI.
+- [ ] All deliverables checked with evidence (several deferrals remain).
+- [ ] Unit/component suites green; E2E/visual/a11y deferred to WP-21.
+- [ ] Bundle budgets green; Lighthouse budgets deferred to WP-21.
 - [x] Docs reviewed; no P0/P1.
-- [x] Status `done` with sign-off.
+- [ ] Status `done` with sign-off after QA.
 
 ---
 

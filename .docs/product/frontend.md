@@ -39,7 +39,7 @@ Feature stores are signal-based with explicit `idle|loading|ready|error` states.
 
 ## 6. Testing
 
-Vitest + Angular TestBed: 48 tests covering the API client, WS resync, runs store, optimistic helper, shell, UI-kit primitives, status badge, pixel font, keyboard DnD and the office engine.
+Vitest + Angular TestBed: 52 tests covering the API client, WS resync, runs store, optimistic helper, shell, UI-kit primitives, status badge, pixel font, keyboard DnD and the office engine.
 
 ## 7. Accessibility
 

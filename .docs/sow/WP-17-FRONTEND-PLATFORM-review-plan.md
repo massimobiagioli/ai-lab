@@ -37,7 +37,7 @@
 - [x] Angular workspace (zoneless, strict, ESLint/Prettier).
 - [x] App shell: sidebar, topbar, drawer host, toast host, error boundary.
 - [x] Routing with lazy loading, guards, 404 and deep-link inputs.
-- [ ] Generated API client: the typed client is hand-written; OpenAPI generation is deferred to WP-13B T07/T09.
+- [ ] Generated API client: the typed client is hand-written; OpenAPI generation is deferred to WP-13B T09.
 - [x] WebSocket service with resync backfill.
 - [x] Signal store pattern with base utilities and the optimistic helper.
 - [x] Tokens, 27 primitives (including the mandated set), 11-icon set and the in-repo pixel bitmap font.
@@ -51,7 +51,7 @@
 1. [x] Builds with zero strict TypeScript errors; budgets pass — evidence: `npm run build`.
 2. [x] No NgModule in new code; zoneless active; no `zone.js` — evidence: `provideZonelessChangeDetection`, `package.json`.
 3. [x] All routes lazy-load and 404 is handled; deep-link inputs exist. Full deep-link UI restoration follows WP-19.
-4. [ ] API client generated from OpenAPI — deferred to WP-13B T07/T09; the hand-written client maps errors to `Problem`.
+4. [ ] API client generated from OpenAPI — deferred to WP-13B T09; the hand-written client maps errors to `Problem`.
 5. [x] WS resumes with `?since`, backfills on `resync`, dedupes by `event_id`/`seq` and reconnects — evidence: `ws.service.ts`, `ws.service.spec.ts`.
 6. [x] Primitives expose disabled/loading/error where applicable, dialogs/drawers close on Escape, tabs/menu implement WAI-ARIA keyboard navigation and error text is linked via `aria-describedby` — evidence: `ui-kit.spec.ts`, `dialog.spec.ts`, component templates.
 7. [ ] axe zero critical/serious — deferred to WP-21.

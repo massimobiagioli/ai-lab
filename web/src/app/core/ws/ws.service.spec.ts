@@ -69,4 +69,36 @@ describe('WsService', () => {
     expect(service.lastEvent()?.event).toBe('kanban.card.moved');
     vi.unstubAllGlobals();
   });
+
+  it('ignores stale and duplicate events', async () => {
+    FakeSocket.instances = [];
+    vi.stubGlobal('WebSocket', FakeSocket as unknown as typeof WebSocket);
+    const api = { listEvents: vi.fn() };
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: RUNTIME_CONFIG, useValue: config },
+        { provide: ApiClient, useValue: api },
+      ],
+    });
+    const service = TestBed.inject(WsService);
+    service.connect('lab-1');
+    const socket = FakeSocket.instances[0];
+    socket?.emit('open');
+    const event = {
+      event_id: 'evt-1',
+      event: 'kanban.card.moved',
+      seq: 5,
+      lab_id: 'lab-1',
+      occurred_at: '2026-11-09T00:00:00Z',
+      payload: {},
+    };
+    socket?.emit('message', { data: JSON.stringify({ type: 'event', ...event }) });
+    socket?.emit('message', { data: JSON.stringify({ type: 'event', ...event, seq: 4 }) });
+    socket?.emit('message', { data: JSON.stringify({ type: 'event', ...event }) });
+    expect(service.lastEvent()?.seq).toBe(5);
+    socket?.emit('close');
+    expect(service.state()).toBe('reconnecting');
+    vi.unstubAllGlobals();
+  });
 });
