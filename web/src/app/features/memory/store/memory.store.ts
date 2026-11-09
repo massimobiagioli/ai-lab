@@ -12,6 +12,23 @@ export class MemoryStore {
   readonly results = signal<readonly MemoryNote[]>([]);
   readonly error = signal<Problem | null>(null);
   readonly demo = this.api.usingDemo;
+  readonly pinned = signal<ReadonlySet<string>>(new Set());
+
+  remove(id: string): void {
+    this.results.update((notes) => notes.filter((note) => note.id !== id));
+  }
+
+  togglePin(id: string): void {
+    this.pinned.update((current) => {
+      const next = new Set(current);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
 
   async search(query: string): Promise<void> {
     this.state.set('loading');
