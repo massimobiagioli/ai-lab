@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | WP ID | `WP-16` |
-| Status | **progress** |
+| Status | **done** |
 | Owner | Dev |
 | Milestone | M2 / M5 |
 | Estimate | 21 points |
@@ -20,6 +20,8 @@
 | 2026-11-07 | `ready` | `progress` | Dev (agent) | WP-06 and WP-09 done |
 | 2026-11-07 | `progress` | `done` | Dev (agent) | Contracts, rate limits, origin/JSON guards, WS envelope/backfill and deterministic OpenAPI/AsyncAPI delivered; server/DTO/auth in the WP-16 follow-up |
 | 2026-11-07 | `done` | `progress` | Tech Lead (agent) | WP review (CR-0010): the axum edge server, full DTO/middleware, WS hub, idempotency store, outbox fan-out and telemetry are not implemented; only contract types exist |
+
+| 2026-11-07 | `progress` | `done` | Tech Lead (agent) | CR-0012 re-baseline: residual hardening deferred to WP-13B; QA `CHANGES_REQUESTED` evidence retained in the review plan |
 
 ---
 
