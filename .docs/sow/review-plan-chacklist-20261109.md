@@ -142,4 +142,4 @@ scripts/run-web.sh npm run format:check
 | 2026-11-09 | P03 | `review/p03-wp19-inventory` | `6f2e24e` | Inventory lists, detail drawers, create dialog, last4 keys. |
 | 2026-11-09 | P04 | `review/p04-wp19-sow` | `9cd6624` | SOW sections, delivery graph, materialize. |
 | 2026-11-09 | P05 | `review/p05-wp19-memory` | `bd6d940` | Memory search, notes, citations, pin/delete. |
-| 2026-11-09 | P06 | `review/p06-wp19-settings` | merge pending | Settings, onboarding, danger zone. |
+| 2026-11-09 | P06 | `review/p06-wp19-settings` | `dc27438` | Settings, onboarding, danger zone. |
