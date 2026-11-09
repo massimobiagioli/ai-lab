@@ -22,7 +22,7 @@ The office is the emotional core of AI-Lab. It is a 16-bit pixel office driven e
 The framework-agnostic engine lives in `web/src/lib/office/` (ADR-0021):
 
 - `layout.ts`: deterministic 24×13 grid, walls and five desks.
-- `pathfinding.ts`: deterministic 4-directional A* with a stable tie-break.
+- `pathfinding.ts`: deterministic 8-directional octile A* (10/14, no corner cutting, binary heap) with a stable tie-break.
 - `agent-state.ts`: truthful domain-state → animation mapping.
 - `engine.ts`: agents, A* movement, per-frame interpolation and reduced-motion snapping.
 - `sprites.ts`: generated 8×8 sprite atlas and CC0 manifest (no third-party assets).
@@ -55,13 +55,12 @@ Walking frames are deterministic (`floor(elapsed / 200) % 4`). The UI never inve
 
 ## 5. Tests
 
-`npm --prefix web test` covers A* paths/blocked/unreachable and the state/animation mapping.
+`npm --prefix web test` covers octile A* (shortest, corner cutting, unreachable), the state/animation mapping, occupancy/determinism, sprites, the WS state bridge, deep links and object selection.
 
-## 6. Deferred to the WP-18 follow-up
+## 6. Deferred to WP-19/WP-21
 
-- Sprite atlas, animation pipeline and canvas render loop.
-- Clickable objects, inspector, deep links and office events.
-- FPS telemetry and the canvas performance suite (WP-21).
+- Speech bubbles: WP-19.
+- Ambient life, sound controls, high-contrast theme, visual/FPS/a11y suites and the 60 FPS benchmark: WP-21.
 
 ## 7. References
 
