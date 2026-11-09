@@ -17,7 +17,35 @@ The frontend is Angular 22 zoneless with signals, strict TypeScript 6.0 (ADR-002
 ## 2. Components
 
 - `StatusBadge` (`web/src/app/shared/status-badge/`): signal inputs `label` and `tone`, `role="status"`, uppercase pixel styling, no color-only meaning.
-- The shell is `App` with the router outlet; feature surfaces consume signal stores (WP-19).
+- UI primitives (`web/src/app/shared/ui/`): `Button`, `Card`, `EmptyState`, `Spinner`, `PageHeader`.
+- `FocusTrap` (`web/src/app/shared/directives/focus-trap.ts`): traps Tab focus and restores it on destroy.
+
+## 3. Shell and routing
+
+`Shell` (`web/src/app/layout/shell/`) composes the sidebar, topbar, error boundary, toast host and
+router outlet, with a skip link and a `main` landmark. Routes are lazy-loaded and the wildcard route
+renders the 404 page. The dashboard and runs page are store-backed; the office/board/SOW/inventory/
+memory/settings routes are placeholders for WP-18/WP-19.
+
+## 4. Core services
+
+- `ApiClient`: typed `fetch` wrapper with base URL, bearer token, `X-Request-Id`, timeout, GET
+  retries (max 2, jitter), cancellation and `Problem` normalization (`core/api/`).
+- `WsService`: single socket, reference-counted topics, `?since=` resume, `event_id`/`seq` dedupe,
+  heartbeat, exponential reconnect and speech coalescing; exposes a connection signal.
+- `Telemetry`: fire-and-forget frontend telemetry.
+- `ErrorState` + `AppErrorHandler`: global boundary that records telemetry and shows a retry with
+  the trace id.
+
+## 5. State
+
+Feature stores are signal-based with explicit `idle|loading|ready|error` states. `RunsStore` is the
+reference implementation (load, cancel, counters).
+
+## 6. Testing
+
+Vitest + Angular TestBed. `npm test` covers the API client, the runs store, the shell, the status
+badge and the office pathfinding/state engines.
 
 ## 3. Accessibility
 

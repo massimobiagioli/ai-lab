@@ -1,5 +1,11 @@
 @use './styles/tokens';
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 html,
 body {
   margin: 0;
@@ -8,4 +14,34 @@ body {
   color: var(--ailab-color-text);
   font-family: var(--ailab-font-mono);
   line-height: var(--ailab-line-height);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  min-height: 100dvh;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ailab-color-accent);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--ailab-color-accent);
+  color: var(--ailab-color-bg);
+}
+
+code {
+  font-family: var(--ailab-font-mono);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

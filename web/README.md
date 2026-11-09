@@ -1,59 +1,57 @@
-# Web
+# AI-Lab Web
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.2.6.
+Angular 22 zoneless, signal-first frontend for AI-Lab. The shell, core services and pixel UI
+primitives live here; the virtual office (WP-18) and product screens (WP-19) build on top.
 
-## Development server
+## Commands
 
-To start a local development server, run:
-
-```bash
-ng serve
-```
-
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+Run npm through the repository wrapper so the pinned Node toolchain is used:
 
 ```bash
-ng generate component component-name
+scripts/run-web.sh npm install
+scripts/run-web.sh npm start        # dev server
+scripts/run-web.sh npm run build    # production build + budgets
+scripts/run-web.sh npm run lint
+scripts/run-web.sh npm test
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Structure
 
-```bash
-ng generate --help
+```
+src/app/
+├── core/
+│   ├── api/          # typed edge client (Problem, retries, request id)
+│   ├── auth/         # session-scoped token
+│   ├── config/       # runtime configuration
+│   ├── errors/       # global error boundary state
+│   ├── telemetry/    # frontend telemetry
+│   └── ws/           # single WebSocket, topics, resume, dedupe
+├── domain/           # shared view models
+├── features/         # dashboard, runs, placeholders for WP-18/19
+├── layout/           # shell, sidebar, topbar
+├── shared/
+│   ├── directives/   # focus trap
+│   ├── status-badge/
+│   └── ui/           # button, card, empty-state, spinner, page-header
+├── app.config.ts
+├── app.routes.ts
+└── app.ts
 ```
 
-## Building
+## Routes
 
-To build the project run:
+`/` dashboard · `/runs` run list · `/lab/:labId` office host · `/projects/:projectId/board` ·
+`/projects/:projectId/sow` · `/inventory/{agents,projects,providers}` · `/memory` · `/settings` ·
+`**` 404. All routes are lazy-loaded; the 404 page links home.
 
-```bash
-ng build
-```
+## Runtime configuration
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+`window.__AILAB_CONFIG__` may override `apiBaseUrl`, `wsBaseUrl` and `token`
+(`src/app/core/config/runtime-config.ts`). The token is also read from `sessionStorage`
+(`ailab.token`) and never from `localStorage`.
 
-## Running unit tests
+## Accessibility
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Skip link, landmarks, focus-visible outlines, `aria-live` toast host, focus trap directive and a
+global `prefers-reduced-motion` rule. The error boundary announces failures with the trace id and a
+retry action.
