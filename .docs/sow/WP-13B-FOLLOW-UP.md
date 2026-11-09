@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | WP ID | `WP-13B` |
-| Status | **ready** |
+| Status | **progress** |
 | Owner | Dev |
 | Milestone | M8+ |
 | Estimate | 34 points |
@@ -154,3 +154,7 @@ The remaining Appendix B operations are implemented with typed DTOs. `openapi.js
 - `.docs/product/api/openapi.json`, `.docs/product/api/asyncapi.json`
 - ADR-0004, ADR-0009, ADR-0011, ADR-0014, ADR-0023, ADR-0025
 - `.docs/product/change-requests/CR-0012.md`
+
+## Progress log
+
+2026-11-09 | P17 | .docs/sow/WP-13B-FOLLOW-UP-review-plan.md | T01 audit: mapping + recover probe present; resume tail and head-SHA guard missing | T01 open | T01 tail

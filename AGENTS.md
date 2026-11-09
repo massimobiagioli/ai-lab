@@ -127,6 +127,7 @@ Every document under `.docs` is listed here. When a document is created, renamed
 | WP-13 Orchestration | Scheduler, leases, run pipeline, recovery. | [`.docs/sow/WP-13-ORCHESTRATION.md`](./.docs/sow/WP-13-ORCHESTRATION.md) |
 | WP-13 review plan | Orchestration review checklist and evidence. | [`.docs/sow/WP-13-ORCHESTRATION-review-plan.md`](./.docs/sow/WP-13-ORCHESTRATION-review-plan.md) |
 | WP-13B Backend hardening follow-up | WP-13/WP-16 residual hardening (resume, context, OTel, DoD, adapters, Redis, REST/WS, OpenAPI). | [`.docs/sow/WP-13B-FOLLOW-UP.md`](./.docs/sow/WP-13B-FOLLOW-UP.md) |
+| WP-13B review plan | Backend hardening review checklist and evidence. | [`.docs/sow/WP-13B-FOLLOW-UP-review-plan.md`](./.docs/sow/WP-13B-FOLLOW-UP-review-plan.md) |
 | WP-24 Frontend & QA hardening | WP-19/WP-21 residual UI, drawers and suites. | [`.docs/sow/WP-24-FRONTEND-HARDENING.md`](./.docs/sow/WP-24-FRONTEND-HARDENING.md) |
 | WP-24 review plan | Frontend/QA hardening review checklist and evidence. | [`.docs/sow/WP-24-FRONTEND-HARDENING-review-plan.md`](./.docs/sow/WP-24-FRONTEND-HARDENING-review-plan.md) |
 | WP-14 Sandbox runner | Sandbox isolation and tool policy. | [`.docs/sow/WP-14-SANDBOX-RUNNER.md`](./.docs/sow/WP-14-SANDBOX-RUNNER.md) |

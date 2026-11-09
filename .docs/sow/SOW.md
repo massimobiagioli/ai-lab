@@ -212,7 +212,7 @@ All WPs start as **ready**. Estimates are relative story points (Fibonacci). `M`
 | [WP-21](./WP-21-TESTING.md) | Testing & Quality Engineering | **done** | QA | M7 | 21 | WP-04..WP-20 | Test strategy, fixtures, E2E, visual, load, chaos, security, fuzz, gates |
 | [WP-22](./WP-22-DOCS-RELEASE.md) | Documentation, Release & Handover | **progress** | Analyst | M8 | 13 | WP-00..WP-21 | Docs manifest, ADRs, API docs, demo, SBOM, signed images, release 1.0 |
 | [WP-23](./WP-23-MAINTENANCE.md) | Maintenance & Continuous Evolution | **progress** | Dev | M8+ | 13 | WP-22 | Dependency updates, CV reflection, memory hygiene, stale cards, health jobs |
-| [WP-13B](./WP-13B-FOLLOW-UP.md) | Backend Hardening Follow-up (WP-13/WP-16 residuals) | **ready** | Dev | M8+ | 34 | WP-13, WP-16, WP-20 | Resume, real context, OTel, DoD, adapters, Redis, full REST/WS, generated OpenAPI |
+| [WP-13B](./WP-13B-FOLLOW-UP.md) | Backend Hardening Follow-up (WP-13/WP-16 residuals) | **progress** | Dev | M8+ | 34 | WP-13, WP-16, WP-20 | Resume, real context, OTel, DoD, adapters, Redis, full REST/WS, generated OpenAPI |
 | [WP-24](./WP-24-FRONTEND-HARDENING.md) | Frontend & QA Hardening Follow-up (WP-19/WP-21 residuals) | **progress** | Dev | M8+ | 21 | WP-19, WP-21, WP-18 | Activity/idea/KPIs, drawers, SOW diff/export, WBS DAG/timeline, board filters/card back, E2E/axe/visual/Lighthouse |
 
 **Program totals:** 24 WPs · 448 story points · 9 milestones. `M0` is the foundation gate; no feature WP may enter `progress` until `M0` is `done`.
