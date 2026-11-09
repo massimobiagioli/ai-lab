@@ -1,18 +1,55 @@
-# AI-Lab SLO definitions (WP-20).
+# AI-Lab SLO definitions and error-budget policy (WP-20 §3.4).
 slos:
   - name: edge-availability
-    description: Successful edge requests over the rolling window.
     target: 99.9
     window: 30d
-    indicator: 1 - (rate(ailab_http_errors_total[5m]) / rate(ailab_http_requests_total[5m]))
-  - name: edge-latency
-    description: p95 edge latency under the reference load.
+    indicator: 1 - (sum(rate(ailab_http_requests_total{status=~"5.."}[5m])) / sum(rate(ailab_http_requests_total[5m])))
+  - name: edge-latency-read
     target: 95
-    threshold_ms: 300
-    window: 30d
-    indicator: histogram_quantile(0.95, rate(ailab_http_request_duration_ms_bucket[5m]))
-  - name: run-success
-    description: Runs that succeed after a lease.
-    target: 99
+    threshold_ms: 120
     window: 7d
-    indicator: delivery.run.completed / (delivery.run.completed + delivery.run.failed)
+    indicator: histogram_quantile(0.95, sum(rate(ailab_http_request_duration_seconds_bucket[5m])) by (le))
+    note: read/write route split lands with WP-13B T03
+  - name: edge-latency-write
+    target: 95
+    threshold_ms: 250
+    window: 7d
+    indicator: histogram_quantile(0.95, sum(rate(ailab_http_request_duration_seconds_bucket[5m])) by (le))
+    note: read/write route split lands with WP-13B T03
+  - name: run-success
+    target: 95
+    window: 7d
+    indicator: sum(rate(ailab_runs_succeeded_total[5m])) / (sum(rate(ailab_runs_succeeded_total[5m])) + sum(rate(ailab_runs_failed_total[5m])))
+    note: run counters land with WP-13B T03
+  - name: outbox-lag
+    target: 95
+    threshold_ms: 2000
+    window: 1d
+    indicator: histogram_quantile(0.95, sum(rate(ailab_outbox_lag_seconds_bucket[5m])) by (le))
+    note: outbox histogram lands with WP-13B T03
+  - name: ws-event-latency
+    target: 95
+    threshold_ms: 250
+    window: 1d
+    indicator: histogram_quantile(0.95, sum(rate(ailab_ws_delivery_seconds_bucket[5m])) by (le))
+    note: WS histogram lands with WP-13B T03
+  - name: memory-retrieval
+    target: 95
+    threshold_ms: 80
+    window: 1d
+    indicator: histogram_quantile(0.95, sum(rate(ailab_memory_retrieval_seconds_bucket[5m])) by (le))
+    note: memory histogram lands with WP-13B T03
+  - name: cost-per-day
+    target: 100
+    window: 1d
+    indicator: sum(increase(ailab_cost_microusd_total[1d]))
+    note: cost counter lands with WP-13B T03
+  - name: backup-age
+    target: 24
+    window: 1d
+    indicator: time() - max(ailab_backup_timestamp_seconds)
+    note: backup timestamp exported by the backup job
+error_budget:
+  window: 30d
+  policy: Freeze releases when the remaining error budget is zero; 2% burn in 1h pages, 6% burn in 6h pages.
+  burn_rate_alerts: [2, 6]

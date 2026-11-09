@@ -9,16 +9,28 @@ COMPOSE_FILE="$ROOT/infra/compose/docker-compose.yml"
 DB_USER="${POSTGRES_USER:-ailab}"
 DB_NAME="${POSTGRES_DB:-ailab}"
 
+mkdir -p "$ROOT/artifacts/metrics"
+REPORT="$ROOT/artifacts/integrity-report.json"
 docker compose -f "$COMPOSE_FILE" exec -T postgres \
   psql -U "$DB_USER" -d "$DB_NAME" -tA -v ON_ERROR_STOP=1 \
-  < "$ROOT/scripts/data-integrity.sql" > /tmp/ailab-integrity.json
+  < "$ROOT/scripts/data-integrity.sql" > "$REPORT"
 
-python3 - /tmp/ailab-integrity.json <<'PY'
+# Expose the result to the /metrics textfile collector even when the check fails.
+MISMATCHES="$(python3 - "$REPORT" <<'PY'
 import json
 import sys
 
-path = sys.argv[1]
-data = json.load(open(path))
+data = json.load(open(sys.argv[1]))
+print(sum(1 for value in data.values() if value))
+PY
+)"
+printf 'ailab_integrity_mismatches %s\n' "$MISMATCHES" > "$ROOT/artifacts/metrics/integrity.prom"
+
+python3 - "$REPORT" <<'PY'
+import json
+import sys
+
+data = json.load(open(sys.argv[1]))
 print(json.dumps(data, sort_keys=True))
 bad = {key: value for key, value in data.items() if value}
 if bad:

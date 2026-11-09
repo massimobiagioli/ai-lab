@@ -87,6 +87,17 @@ if [ "$KEEP" != "--keep" ]; then
     -c "DROP DATABASE IF EXISTS $SCRATCH" >/dev/null
 fi
 
+REPORT="${BACKUP%.dump}-restore-drill.json"
+cat > "$REPORT" <<EOF
+{
+  "dump": "$(basename "$BACKUP")",
+  "rto_s": $RTO,
+  "status": "$([ "$FAILED" -eq 0 ] && echo ok || echo failed)",
+  "tables": "$TABLES"
+}
+EOF
+echo "restore-drill: report $REPORT"
+
 if [ "$FAILED" -ne 0 ]; then
   exit 1
 fi

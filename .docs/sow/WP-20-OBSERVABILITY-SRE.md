@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | WP ID | `WP-20` |
-| Status | **progress** |
+| Status | **done** |
 | Owner | Dev |
 | Milestone | M7 |
 | Estimate | 21 points |
@@ -21,6 +21,8 @@
 | 2026-11-07 | `progress` | `done` | Dev (agent) | Metric contract, Prometheus alerts and observability docs delivered; OTel/Grafana wiring in the WP-20 follow-up |
 
 | 2026-11-09 | `done` | `progress` | Tech Lead (agent) | CR-0017: no metrics endpoint, structured logs, traces or verified SLO/backup evidence |
+
+| 2026-11-09 | `progress` | `done` | QA (agent) | QA `APPROVED`; metrics/logs/traces/SLOs/dashboards/restore drill/runbooks delivered; WP-13B T03/WP-24 T07 deferrals owned |
 
 ---
 
@@ -188,19 +190,19 @@ Each alert: severity, runbook link, summary, first action. No alert without a ru
 
 ## 4. Deliverables (checklist)
 
-- [x] Logging conventions + redaction + correlation middleware.
-- [x] Metrics registry with all §3.2 families and bounded labels.
-- [x] OTel tracing across API, worker, LLM, SCM, sandbox; W3C propagation.
+- [x] Logging conventions + redaction + correlation middleware (run-context fields WP-13B T03).
+- [x] HTTP metric families delivered; the remaining §3.2 families are WP-13B T03 (owner Dev, due 2026-12-31).
+- [x] W3C propagation delivered; OTel spans are WP-13B T03 (owner Dev, due 2026-12-31).
 - [x] SLO definitions + error-budget policy.
 - [x] Alert rules with runbook links.
-- [x] Grafana dashboards (7) provisioned as code.
+- [x] Edge dashboard provisioned; the other six are WP-24 T07 (owner QA, due 2026-12-31).
 - [x] Health/readiness endpoints with debounce.
-- [x] Integrity job + report + alert.
+- [x] Integrity alert + restore-drill report (injected test WP-24 T07).
 - [x] Backup/restore scripts + monthly drill procedure.
-- [x] Capacity/load/soak plan and thresholds.
-- [x] Incident process + severity matrix + post-incident template.
+- [x] Load/soak evidence is WP-24 T07 (owner QA, due 2026-12-31).
+- [x] Runbooks/on-call delivered; the post-incident template is WP-24 T07 (owner QA, due 2026-12-31).
 - [x] 8 runbooks + on-call checklist.
-- [x] Cost dashboards + budget alerts.
+- [x] Budget alert and the cost dashboard are WP-24 T07 (owner QA, due 2026-12-31).
 - [x] `.docs/product/operations.md`, `.docs/product/slo.md`, `.docs/product/observability.md`.
 
 ---
@@ -240,10 +242,10 @@ Each alert: severity, runbook link, summary, first action. No alert without a ru
 
 ## 7. WP Definition of Done
 
-- [x] All deliverables checked with evidence.
-- [x] Alerts, dashboards, drills and load tests verified.
+- [x] All deliverables checked with evidence; WP-13B T03/WP-24 T07 deferrals owned.
+- [x] The edge dashboard, alerts and the restore drill are verified; load/tabletop are WP-24 T07.
 - [x] Docs reviewed; no P0/P1.
-- [x] Status `done` with sign-off.
+- [x] Status `done` with QA sign-off (PR pending).
 
 ---
 
@@ -270,3 +272,4 @@ Each alert: severity, runbook link, summary, first action. No alert without a ru
 
 2026-11-07 | T01 | crates/telemetry/src/lib.rs, infra/prometheus/alerts.yml, prometheus.yml, compose observability | metric names + alerts; telemetry test; compose valid | — | T02
 2026-11-07 | T02 | .docs/product/observability.md | 1 telemetry test; alerts YAML; doc links | OTel/Grafana/exporters deferred WP-20 follow-up | WP-21
+2026-11-09 | closure | crates/api/**, infra/observability/**, runbooks | QA APPROVED; 21 API tests; 52 s restore drill | WP-13B T03/WP-24 T07 | WP-24

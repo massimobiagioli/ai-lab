@@ -330,6 +330,10 @@ pub struct AppState {
     hub: broadcast::Sender<EventEnvelope>,
     /// Process metrics.
     pub metrics: Arc<crate::metrics::Metrics>,
+    /// Consecutive readiness failures for debouncing.
+    readiness_failures: Arc<std::sync::atomic::AtomicU8>,
+    /// Directory of Prometheus textfile metrics appended to `/metrics`.
+    textfile_dir: std::path::PathBuf,
 }
 
 impl Default for AppState {
@@ -377,12 +381,23 @@ impl AppState {
             idempotency: Arc::new(IdempotencyStore::default()),
             hub,
             metrics: crate::metrics::Metrics::new(),
+            readiness_failures: Arc::new(std::sync::atomic::AtomicU8::new(0)),
+            textfile_dir: std::env::var("AILAB_METRICS_TEXTFILE_DIR")
+                .unwrap_or_else(|_| "artifacts/metrics".to_owned())
+                .into(),
         }
     }
 
     /// Publish an event to live WebSocket subscribers.
     pub fn publish(&self, event: EventEnvelope) -> usize {
         self.hub.send(event).unwrap_or(0)
+    }
+
+    /// Use a custom textfile metrics directory (tests/operators).
+    #[must_use]
+    pub fn with_textfile_dir(mut self, dir: impl Into<std::path::PathBuf>) -> Self {
+        self.textfile_dir = dir.into();
+        self
     }
 
     /// Subscribe to live events.
@@ -504,10 +519,11 @@ pub fn router(state: AppState) -> Router {
         .route("/metrics", get(metrics_endpoint))
         .fallback(not_found)
         .layer(axum::extract::DefaultBodyLimit::max(2_097_152))
-        .layer(middleware::from_fn(request_id))
         .layer(middleware::from_fn(origin_guard))
         .layer(middleware::from_fn(problem_status_layer))
         .layer(middleware::from_fn_with_state(state.clone(), metrics_layer))
+        .layer(middleware::from_fn(request_id))
+        .layer(middleware::from_fn(crate::trace::trace_layer))
         .with_state(state)
 }
 
@@ -550,10 +566,21 @@ async fn metrics_layer(State(state): State<AppState>, request: Request, next: Ne
     state.metrics.start();
     let method = request.method().clone();
     let path = request.uri().path().to_owned();
+    let request_id_value = request
+        .extensions()
+        .get::<RequestId>()
+        .map(|id| id.0.clone())
+        .or_else(|| {
+            request
+                .headers()
+                .get("x-request-id")
+                .and_then(|value| value.to_str().ok())
+                .map(ToOwned::to_owned)
+        });
     let response = next.run(request).await;
     let status = response.status().as_u16();
     let elapsed = u64::try_from(start.elapsed().as_millis()).unwrap_or(u64::MAX);
-    state.metrics.finish(status, elapsed);
+    state.metrics.finish(method.as_str(), status, elapsed);
     let line = serde_json::json!({
         "level": "info",
         "event": "http_request",
@@ -561,19 +588,39 @@ async fn metrics_layer(State(state): State<AppState>, request: Request, next: Ne
         "path": crate::metrics::redact(&path),
         "status": status,
         "duration_ms": elapsed,
+        "timestamp": chrono::Utc::now().to_rfc3339(),
+        "service": "ailab-api",
+        "version": env!("CARGO_PKG_VERSION"),
+        "request_id": request_id_value.as_deref(),
+        "span_id": crate::trace::current(),
         "trace_id": crate::trace::current(),
+        "code": status,
+        "message": format!("{method} {path}"),
     });
     println!("{line}");
     response
 }
 
 async fn metrics_endpoint(State(state): State<AppState>) -> Response {
+    let mut body = state.metrics.render();
+    if let Ok(entries) = std::fs::read_dir(&state.textfile_dir) {
+        for entry in entries.flatten() {
+            if entry.path().extension().and_then(|value| value.to_str()) == Some("prom")
+                && let Ok(text) = std::fs::read_to_string(entry.path())
+            {
+                body.push_str(&text);
+                if !text.ends_with('\n') {
+                    body.push('\n');
+                }
+            }
+        }
+    }
     (
         [(
             axum::http::header::CONTENT_TYPE,
             "text/plain; version=0.0.4",
         )],
-        state.metrics.render(),
+        body,
     )
         .into_response()
 }
@@ -991,8 +1038,18 @@ async fn health_scm() -> Response {
 
 async fn health_ready(State(state): State<AppState>) -> Response {
     if state.store.ready().await {
+        state
+            .readiness_failures
+            .store(0, std::sync::atomic::Ordering::Relaxed);
         StatusCode::OK.into_response()
     } else {
+        let failures = state
+            .readiness_failures
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+            .saturating_add(1);
+        if failures < 3 {
+            return StatusCode::OK.into_response();
+        }
         let mut details = ProblemDetails::from(DomainError::policy(
             "NOT_READY",
             "a required dependency is unavailable",
@@ -1595,6 +1652,60 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn metrics_appends_the_textfile_collector() {
+        let dir = std::env::temp_dir().join(format!("ailab-metrics-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("dir");
+        std::fs::write(dir.join("integrity.prom"), "ailab_integrity_mismatches 0\n")
+            .expect("write");
+        let app =
+            router(AppState::with_store(Arc::new(InMemoryRunStore::new())).with_textfile_dir(&dir));
+        let response = app
+            .oneshot(request("GET", "/metrics"))
+            .await
+            .expect("response");
+        let body = response
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let text = String::from_utf8_lossy(&body);
+        assert!(text.contains("ailab_integrity_mismatches 0"));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[tokio::test]
+    async fn traceparent_is_echoed_and_attached_to_problems() {
+        let app = router(seeded());
+        let trace = "4bf92f3577b34da6a3ce929d0e0e4736";
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/api/v1/runs/does-not-exist")
+                    .header("traceparent", format!("00-{trace}-00f067aa0ba902b7-01"))
+                    .body(Body::empty())
+                    .expect("request"),
+            )
+            .await
+            .expect("response");
+        assert_eq!(
+            response
+                .headers()
+                .get("x-trace-id")
+                .and_then(|value| value.to_str().ok()),
+            Some(trace)
+        );
+        let body = response
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let value: serde_json::Value = serde_json::from_slice(&body).expect("json");
+        assert_eq!(value["trace_id"], trace);
+    }
+
+    #[tokio::test]
     async fn metrics_endpoint_renders_prometheus() {
         let app = router(seeded());
         let response = app
@@ -1610,7 +1721,7 @@ mod tests {
             .to_bytes();
         let text = String::from_utf8_lossy(&body);
         assert!(text.contains("ailab_http_requests_total"));
-        assert!(text.contains("ailab_http_request_duration_ms_bucket"));
+        assert!(text.contains("ailab_http_request_duration_seconds_bucket"));
     }
 
     #[tokio::test]
