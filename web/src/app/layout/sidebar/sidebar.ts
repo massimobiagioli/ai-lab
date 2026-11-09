@@ -18,6 +18,7 @@ const NAV: readonly NavItem[] = [
   { label: 'SOW', path: '/projects/demo/sow', icon: '✎' },
   { label: 'Memory', path: '/memory', icon: '◍' },
   { label: 'Settings', path: '/settings', icon: '⚒' },
+  { label: 'Design', path: '/design', icon: '✦' },
 ];
 
 @Component({

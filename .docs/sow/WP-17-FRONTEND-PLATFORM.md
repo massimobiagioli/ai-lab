@@ -192,14 +192,14 @@ web/e2e/                  # Playwright
 
 - [x] Angular workspace configured (zoneless, strict, budgets, ESLint/Prettier).
 - [x] App shell: sidebar, topbar, drawer host, toast host and error boundary.
-- [ ] Routing with lazy loading, guards and 404 delivered; deep-link UI state pending.
+- [x] Routing with lazy loading, guards, 404, deep-link query inputs and a design gallery.
 - [ ] Hand-written typed API client delivered; OpenAPI code generation pending.
 - [x] WebSocket service (topics, reconnect, resume, dedupe, backpressure).
 - [x] Signal store pattern + base utilities; optimistic update helper.
-- [ ] Design tokens + 5 UI primitives delivered; full 22-component kit, icon set and pixel font pending.
+- [ ] Design tokens, 22 UI primitives and the 11-icon pixel set delivered; pixel bitmap font pending.
 - [ ] Focus trap and reduced-motion CSS delivered; keyboard DnD and full a11y audit pending.
 - [x] Telemetry + error reporting.
-- [ ] Unit/component tests delivered (15); Playwright/visual/a11y scaffolding pending.
+- [ ] Unit/component tests delivered; Playwright/visual/a11y scaffolding pending.
 - [x] `.docs/product/frontend.md` and `.docs/product/design-system.md` delivered; gallery optional pending.
 
 ---
@@ -272,3 +272,4 @@ web/e2e/                  # Playwright
 2026-11-07 | T02 | .docs/product/frontend.md | component test + a11y role | full kit/routes deferred WP-17 follow-up; office/pages WP-18/WP-19 | WP-18
 2026-11-07 | build | web/src/app/**, web/README.md, .docs/product/frontend.md | shell, routes, api client, ws service, runs store, 5 UI primitives, error boundary, focus trap, 15 tests | drawer/deep links/22-kit/e2e/visual/a11y/design-system pending | in progress
 2026-11-07 | build | web/src/app/{shared/ui,layout,core}, .docs/product/design-system.md | drawer host, route guards, input/select/tabs, CSP, design-system doc; 15 tests | deep links, 22-kit, e2e/a11y/visual, lighthouse pending | in progress
+2026-11-07 | build | web/src/app/{shared/ui,features/design} | 22 UI primitives, icon set, design gallery, deep-link inputs | pixel font, keyboard DnD, e2e/a11y/visual, lighthouse pending | in progress

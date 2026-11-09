@@ -68,6 +68,11 @@ export const routes: Routes = [
     data: { title: 'Settings', body: 'Lab and autonomy settings (WP-19).' },
   },
   {
+    path: 'design',
+    title: 'AI-Lab · Design',
+    loadComponent: () => import('./features/design/design').then((module) => module.DesignGallery),
+  },
+  {
     path: '**',
     title: 'AI-Lab · Not found',
     loadComponent: () => Promise.resolve(NotFound),

@@ -36,6 +36,18 @@ The design system is a pixel-art, accessible set of tokens and primitives. It is
 | Input | `app-input` | text/search/email, label |
 | Select | `app-select` | options, label |
 | Tabs | `app-tabs` | `role="tablist"`, active tab |
+| Dialog | `app-dialog` | modal, focus trap, confirm/cancel |
+| Toast | `app-toast` | neutral/success/warning/danger |
+| Breadcrumbs | `app-breadcrumbs` | linked trail, `aria-current` |
+| Pagination | `app-pagination` | previous/next disabled states |
+| Skeleton | `app-skeleton` | reduced-motion aware |
+| Progress | `app-progress` | `role="progressbar"` |
+| Avatar | `app-avatar` | initials |
+| Icon | `app-icon` | 16x16 pixel SVG set |
+| Menu | `app-menu` | `role="menu"` |
+| Divider | `app-divider` | — |
+| Kbd | `app-kbd` | key hint |
+| Tooltip | `[appTooltip]` | native title fallback |
 
 ## 3. Accessibility rules
 
