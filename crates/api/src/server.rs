@@ -328,6 +328,8 @@ pub struct AppState {
     auth: Option<Secret<String>>,
     idempotency: Arc<IdempotencyStore>,
     hub: broadcast::Sender<EventEnvelope>,
+    /// Process metrics.
+    pub metrics: Arc<crate::metrics::Metrics>,
 }
 
 impl Default for AppState {
@@ -374,6 +376,7 @@ impl AppState {
             auth: token.map(Secret::new),
             idempotency: Arc::new(IdempotencyStore::default()),
             hub,
+            metrics: crate::metrics::Metrics::new(),
         }
     }
 
@@ -498,11 +501,13 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/health/live", get(health_live))
         .route("/api/v1/health/ready", get(health_ready))
         .merge(protected)
+        .route("/metrics", get(metrics_endpoint))
         .fallback(not_found)
         .layer(axum::extract::DefaultBodyLimit::max(2_097_152))
         .layer(middleware::from_fn(request_id))
         .layer(middleware::from_fn(origin_guard))
         .layer(middleware::from_fn(problem_status_layer))
+        .layer(middleware::from_fn_with_state(state.clone(), metrics_layer))
         .with_state(state)
 }
 
@@ -538,6 +543,38 @@ where
             .map(|Query(value)| Self(value))
             .map_err(|rejection| bad_request(rejection.body_text()))
     }
+}
+
+async fn metrics_layer(State(state): State<AppState>, request: Request, next: Next) -> Response {
+    let start = std::time::Instant::now();
+    state.metrics.start();
+    let method = request.method().clone();
+    let path = request.uri().path().to_owned();
+    let response = next.run(request).await;
+    let status = response.status().as_u16();
+    let elapsed = u64::try_from(start.elapsed().as_millis()).unwrap_or(u64::MAX);
+    state.metrics.finish(status, elapsed);
+    let line = serde_json::json!({
+        "level": "info",
+        "event": "http_request",
+        "method": method.as_str(),
+        "path": crate::metrics::redact(&path),
+        "status": status,
+        "duration_ms": elapsed,
+    });
+    println!("{line}");
+    response
+}
+
+async fn metrics_endpoint(State(state): State<AppState>) -> Response {
+    (
+        [(
+            axum::http::header::CONTENT_TYPE,
+            "text/plain; version=0.0.4",
+        )],
+        state.metrics.render(),
+    )
+        .into_response()
 }
 
 async fn request_id(mut request: Request, next: Next) -> Response {
@@ -1542,6 +1579,25 @@ mod tests {
         let body = runs.into_body().collect().await.expect("body").to_bytes();
         let value: serde_json::Value = serde_json::from_slice(&body).expect("json");
         assert!(value["data"].is_array());
+    }
+
+    #[tokio::test]
+    async fn metrics_endpoint_renders_prometheus() {
+        let app = router(seeded());
+        let response = app
+            .oneshot(request("GET", "/metrics"))
+            .await
+            .expect("response");
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let text = String::from_utf8_lossy(&body);
+        assert!(text.contains("ailab_http_requests_total"));
+        assert!(text.contains("ailab_http_request_duration_ms_bucket"));
     }
 
     #[tokio::test]

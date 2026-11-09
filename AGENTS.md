@@ -141,6 +141,7 @@ Every document under `.docs` is listed here. When a document is created, renamed
 | WP-19 Product UI | Dashboard, inventory, Kanban, SOW, memory, settings. | [`.docs/sow/WP-19-PRODUCT-UI.md`](./.docs/sow/WP-19-PRODUCT-UI.md) |
 | WP-19 review plan | Product UI review checklist and evidence. | [`.docs/sow/WP-19-PRODUCT-UI-review-plan.md`](./.docs/sow/WP-19-PRODUCT-UI-review-plan.md) |
 | WP-20 Observability and SRE | Logs, metrics, traces, SLOs, backup, runbooks. | [`.docs/sow/WP-20-OBSERVABILITY-SRE.md`](./.docs/sow/WP-20-OBSERVABILITY-SRE.md) |
+| WP-20 review plan | Observability and SRE review checklist and evidence. | [`.docs/sow/WP-20-OBSERVABILITY-SRE-review-plan.md`](./.docs/sow/WP-20-OBSERVABILITY-SRE-review-plan.md) |
 | WP-21 Testing | Test strategy, suites, fixtures, gates. | [`.docs/sow/WP-21-TESTING.md`](./.docs/sow/WP-21-TESTING.md) |
 | WP-22 Docs and release | Documentation, release, acceptance, handover. | [`.docs/sow/WP-22-DOCS-RELEASE.md`](./.docs/sow/WP-22-DOCS-RELEASE.md) |
 | WP-23 Maintenance | Maintenance jobs, dependency updates, memory hygiene. | [`.docs/sow/WP-23-MAINTENANCE.md`](./.docs/sow/WP-23-MAINTENANCE.md) |

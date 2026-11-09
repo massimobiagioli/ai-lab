@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | WP ID | `WP-20` |
-| Status | **done** |
+| Status | **progress** |
 | Owner | Dev |
 | Milestone | M7 |
 | Estimate | 21 points |
@@ -19,6 +19,8 @@
 | 2026-11-07 | — | `ready` | Tech Lead | Initial SOW baseline |
 | 2026-11-07 | `ready` | `progress` | Dev (agent) | WP-03/04/05/16 done |
 | 2026-11-07 | `progress` | `done` | Dev (agent) | Metric contract, Prometheus alerts and observability docs delivered; OTel/Grafana wiring in the WP-20 follow-up |
+
+| 2026-11-09 | `done` | `progress` | Tech Lead (agent) | CR-0017: no metrics endpoint, structured logs, traces or verified SLO/backup evidence |
 
 ---
 
