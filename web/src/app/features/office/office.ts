@@ -3,20 +3,31 @@ import {
   Component,
   computed,
   ElementRef,
+  inject,
   OnDestroy,
   signal,
   viewChild,
 } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { PageHeader } from '../../shared/ui/page-header/page-header';
 import { Card } from '../../shared/ui/card/card';
 import { Button } from '../../shared/ui/button/button';
 import { StatusBadge, StatusTone } from '../../shared/status-badge/status-badge';
-import { OFFICE_HEIGHT, OFFICE_WIDTH, DESKS, isBlocked } from '../../../lib/office/layout';
+import {
+  CANVAS_HEIGHT,
+  CANVAS_WIDTH,
+  DESKS,
+  OFFICE_HEIGHT,
+  OFFICE_WIDTH,
+  OFFSET_Y,
+  TILE,
+  isBlocked,
+} from '../../../lib/office/layout';
 import { OfficeEngine, type OfficeAgent } from '../../../lib/office/engine';
+import { SPRITES } from '../../../lib/office/sprites';
 import type { Point } from '../../../lib/office/pathfinding';
 import type { AgentDomainState } from '../../../lib/office/agent-state';
 
-const TILE = 32;
 const AGENTS: ReadonlyArray<{
   id: string;
   name: string;
@@ -51,6 +62,7 @@ const AGENTS: ReadonlyArray<{
         ></canvas>
         <p class="office__hint">
           Select an agent, then click the floor to walk there. A* routes around the walls.
+          <span class="office__fps">{{ fps() }} FPS</span>
         </p>
       </app-card>
 
@@ -101,7 +113,7 @@ const AGENTS: ReadonlyArray<{
     .office__canvas {
       display: block;
       width: 100%;
-      max-width: 640px;
+      max-width: 768px;
       height: auto;
       image-rendering: pixelated;
       border: 2px solid var(--ailab-color-muted);
@@ -112,6 +124,10 @@ const AGENTS: ReadonlyArray<{
       color: var(--ailab-color-muted);
       font-size: var(--ailab-font-size-sm);
       margin: var(--ailab-space-2) 0 0;
+    }
+    .office__fps {
+      color: var(--ailab-color-accent);
+      margin-left: var(--ailab-space-2);
     }
     .office__agents {
       list-style: none;
@@ -158,9 +174,10 @@ const AGENTS: ReadonlyArray<{
   `,
 })
 export class Office implements AfterViewInit, OnDestroy {
+  private readonly route = inject(ActivatedRoute);
   protected readonly canvas = viewChild.required<ElementRef<HTMLCanvasElement>>('canvas');
-  protected readonly width = OFFICE_WIDTH * TILE;
-  protected readonly height = OFFICE_HEIGHT * TILE;
+  protected readonly width = CANVAS_WIDTH;
+  protected readonly height = CANVAS_HEIGHT;
   protected readonly desks = DESKS;
   protected readonly engine = new OfficeEngine(
     AGENTS.map((agent) => {
@@ -181,6 +198,7 @@ export class Office implements AfterViewInit, OnDestroy {
     }),
   );
   protected readonly selectedId = signal<string | null>(null);
+  protected readonly fps = signal(0);
   private readonly revision = signal(0);
   protected readonly selectedAgent = computed(() => {
     this.revision();
@@ -194,12 +212,17 @@ export class Office implements AfterViewInit, OnDestroy {
   private context: CanvasRenderingContext2D | null = null;
   private frame = 0;
   private last = 0;
+  private smoothedFrameMs = 16;
   private reducedMotion = false;
 
   ngAfterViewInit(): void {
     this.context = this.canvas().nativeElement.getContext('2d');
     this.reducedMotion =
       typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const linked = this.route.snapshot.queryParamMap.get('agent');
+    if (linked !== null && this.engine.get(linked)) {
+      this.selectedId.set(linked);
+    }
     this.last = performance.now();
     this.loop(this.last);
   }
@@ -234,7 +257,9 @@ export class Office implements AfterViewInit, OnDestroy {
     const canvas = this.canvas().nativeElement;
     const rect = canvas.getBoundingClientRect();
     const x = Math.floor(((event.clientX - rect.left) / rect.width) * OFFICE_WIDTH);
-    const y = Math.floor(((event.clientY - rect.top) / rect.height) * OFFICE_HEIGHT);
+    const y = Math.floor(
+      (((event.clientY - rect.top) / rect.height) * CANVAS_HEIGHT - OFFSET_Y) / TILE,
+    );
     const agent = this.engine.agentAt({ x, y });
     if (agent) {
       this.select(agent.id);
@@ -263,8 +288,10 @@ export class Office implements AfterViewInit, OnDestroy {
   private loop = (now: number): void => {
     const delta = Math.min(100, now - this.last);
     this.last = now;
+    this.smoothedFrameMs = this.smoothedFrameMs * 0.9 + delta * 0.1;
     this.engine.tick(delta, this.reducedMotion);
     this.draw();
+    this.fps.set(Math.round(1000 / Math.max(1, this.smoothedFrameMs)));
     this.frame = requestAnimationFrame(this.loop);
   };
 
@@ -277,61 +304,68 @@ export class Office implements AfterViewInit, OnDestroy {
     for (let y = 0; y < OFFICE_HEIGHT; y += 1) {
       for (let x = 0; x < OFFICE_WIDTH; x += 1) {
         context.fillStyle = (x + y) % 2 === 0 ? '#1e293b' : '#182234';
-        context.fillRect(x * TILE, y * TILE, TILE, TILE);
+        context.fillRect(x * TILE, OFFSET_Y + y * TILE, TILE, TILE);
         if (isBlocked({ x, y })) {
           context.fillStyle = '#273449';
-          context.fillRect(x * TILE, y * TILE, TILE, TILE);
+          context.fillRect(x * TILE, OFFSET_Y + y * TILE, TILE, TILE);
           context.fillStyle = '#94a3b8';
-          context.fillRect(x * TILE, y * TILE, TILE, 3);
+          context.fillRect(x * TILE, OFFSET_Y + y * TILE, TILE, 2);
         }
       }
     }
     for (const desk of DESKS) {
       context.strokeStyle = '#f2b84b';
-      context.lineWidth = 2;
-      context.strokeRect(desk.seat.x * TILE + 4, desk.seat.y * TILE + 4, TILE - 8, TILE - 8);
+      context.lineWidth = 1;
+      context.strokeRect(
+        desk.seat.x * TILE + 3,
+        OFFSET_Y + desk.seat.y * TILE + 3,
+        TILE - 6,
+        TILE - 6,
+      );
       context.fillStyle = '#94a3b8';
-      context.font = '9px monospace';
-      context.fillText(desk.name, desk.seat.x * TILE + 2, desk.seat.y * TILE - 2);
+      context.font = '6px monospace';
+      context.fillText(desk.name, desk.seat.x * TILE + 1, OFFSET_Y + desk.seat.y * TILE - 1);
     }
     const selected = this.selectedId();
     if (selected !== null) {
       const agent = this.engine.get(selected);
       if (agent) {
-        context.fillStyle = 'rgba(242,184,75,0.4)';
+        context.fillStyle = 'rgba(242,184,75,0.5)';
         for (const step of agent.path) {
-          context.fillRect(step.x * TILE + TILE / 2 - 2, step.y * TILE + TILE / 2 - 2, 4, 4);
+          context.fillRect(
+            step.x * TILE + TILE / 2 - 1,
+            OFFSET_Y + step.y * TILE + TILE / 2 - 1,
+            2,
+            2,
+          );
         }
       }
     }
-    for (const agent of this.engine.list) {
+    const ordered = [...this.engine.list].sort(
+      (a, b) => this.engine.renderPosition(a).y - this.engine.renderPosition(b).y,
+    );
+    for (const agent of ordered) {
       const rendered = this.engine.renderPosition(agent);
-      const bob = rendered.frame % 2 === 0 ? 0 : 2;
-      const cx = rendered.x * TILE + 6;
-      const cy = rendered.y * TILE + 6 + bob;
-      context.fillStyle = this.color(agent.state);
-      context.fillRect(cx, cy, TILE - 12, TILE - 12);
-      context.fillStyle = '#0f172a';
-      context.font = '10px monospace';
-      context.fillText(agent.name.slice(0, 2).toUpperCase(), cx + 3, cy + 15);
+      const sprite = SPRITES[rendered.animation];
+      const bob = rendered.frame % 2 === 0 ? 0 : 1;
+      const originX = Math.round(rendered.x * TILE) + 2;
+      const originY = OFFSET_Y + Math.round(rendered.y * TILE) + 2 + bob;
+      for (let row = 0; row < sprite.pattern.length; row += 1) {
+        const line = sprite.pattern[row] ?? '';
+        for (let column = 0; column < line.length; column += 1) {
+          const color = sprite.palette[line[column] ?? ''];
+          if (color === undefined) {
+            continue;
+          }
+          context.fillStyle = color;
+          context.fillRect(originX + column, originY + row, 1, 1);
+        }
+      }
       if (agent.id === selected) {
         context.strokeStyle = '#ffffff';
-        context.lineWidth = 2;
-        context.strokeRect(cx - 2, cy - 2, TILE - 8, TILE - 8);
+        context.lineWidth = 1;
+        context.strokeRect(originX - 1, originY - 1, 9, 9);
       }
-    }
-  }
-
-  private color(state: AgentDomainState): string {
-    switch (state) {
-      case 'working':
-        return '#57c785';
-      case 'blocked':
-        return '#e07a5f';
-      case 'idle':
-        return '#f2b84b';
-      default:
-        return '#7dd3fc';
     }
   }
 }

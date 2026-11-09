@@ -1,9 +1,13 @@
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { Office } from './office';
 
 describe('Office', () => {
   beforeEach(async () => {
-    await TestBed.configureTestingModule({ imports: [Office] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [Office],
+      providers: [provideRouter([])],
+    }).compileComponents();
   });
 
   it('lists the agents and starts unselected', () => {
