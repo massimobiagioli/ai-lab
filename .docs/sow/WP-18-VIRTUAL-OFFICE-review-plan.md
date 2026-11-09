@@ -7,7 +7,7 @@
 | Review branch | `feat/wp-18-virtual-office` (PR #5, based on WP-17) |
 | Reviewer | Chief Software Engineer (agent) |
 | QA reviewer | qa-review-agent (independent subagent) |
-| Status | `in_review` |
+| Status | `approved` |
 
 ## 1. Contract completeness
 
@@ -82,9 +82,9 @@
 
 ## 8. QA review
 
-- [ ] QA subagent verdict: `APPROVED`.
-- [ ] QA evidence recorded after the review.
-- [ ] Every blocking defect fixed and re-reviewed.
+- [x] QA subagent verdict: `APPROVED` (HEAD `a0f91db`).
+- [x] QA evidence: qa-review-agent returned APPROVED with all AC/deliverables verified or owned deferrals; 66 tests, gates green.
+- [x] Every blocking defect fixed and re-reviewed (three passes).
 
 ## 9. Deferred items and residual risks
 
