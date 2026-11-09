@@ -59,6 +59,16 @@ describe('UI kit', () => {
     ).toContain('Required');
   });
 
+  it('Input supports disabled', async () => {
+    const fixture = await render(Input, { label: 'Name', disabled: true });
+    expect((fixture.nativeElement as HTMLElement).querySelector('input')?.disabled).toBe(true);
+  });
+
+  it('PixelTextarea supports disabled', async () => {
+    const fixture = await render(PixelTextarea, { label: 'Notes', disabled: true });
+    expect((fixture.nativeElement as HTMLElement).querySelector('textarea')?.disabled).toBe(true);
+  });
+
   it('Select supports disabled and error', async () => {
     const fixture = await render(Select, {
       label: 'Scope',

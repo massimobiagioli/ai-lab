@@ -11,6 +11,7 @@ import { Component, input, model } from '@angular/core';
         [value]="value()"
         [placeholder]="placeholder()"
         [attr.autocomplete]="autocomplete()"
+        [disabled]="disabled()"
         [attr.aria-invalid]="error() !== null"
         [attr.aria-describedby]="error() !== null ? errorId : null"
         (input)="onInput($event)"
@@ -50,6 +51,9 @@ import { Component, input, model } from '@angular/core';
       color: var(--ailab-color-danger);
       font-size: var(--ailab-font-size-sm);
     }
+    .ui-input__control:disabled {
+      opacity: 0.5;
+    }
   `,
 })
 export class Input {
@@ -59,6 +63,7 @@ export class Input {
   readonly placeholder = input('');
   readonly autocomplete = input<string | null>(null);
   readonly error = input<string | null>(null);
+  readonly disabled = input(false);
   protected readonly errorId = `input-error-${crypto.randomUUID()}`;
 
   protected onInput(event: Event): void {
