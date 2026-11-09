@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 
 export interface TableColumn {
   readonly key: string;
@@ -23,7 +23,11 @@ export interface TableColumn {
       </thead>
       <tbody>
         @for (row of rows(); track $index) {
-          <tr>
+          <tr
+            tabindex="0"
+            (click)="rowSelected.emit($index)"
+            (keydown.enter)="rowSelected.emit($index)"
+          >
             @for (column of columns(); track column.key) {
               <td>{{ row[column.key] ?? '' }}</td>
             }
@@ -49,10 +53,19 @@ export interface TableColumn {
       padding: var(--ailab-space-2);
       border-bottom: 1px solid var(--ailab-color-surface-raised);
     }
+    .pixel-table tbody tr {
+      cursor: pointer;
+    }
+    .pixel-table tbody tr:hover,
+    .pixel-table tbody tr:focus-visible {
+      background: var(--ailab-color-surface-raised);
+      outline: none;
+    }
   `,
 })
 export class PixelTable {
   readonly caption = input.required<string>();
   readonly columns = input.required<readonly TableColumn[]>();
   readonly rows = input.required<readonly Readonly<Record<string, string>>[]>();
+  readonly rowSelected = output<number>();
 }

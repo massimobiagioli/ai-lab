@@ -38,22 +38,22 @@ export const routes: Routes = [
     path: 'inventory/agents',
     title: 'AI-Lab · Agents',
     loadComponent: () =>
-      import('./features/placeholder/placeholder').then((module) => module.Placeholder),
-    data: { title: 'Agents', body: 'Agent inventory (WP-19).' },
+      import('./features/inventory/inventory').then((module) => module.Inventory),
+    data: { section: 'agents' },
   },
   {
     path: 'inventory/projects',
     title: 'AI-Lab · Projects',
     loadComponent: () =>
-      import('./features/placeholder/placeholder').then((module) => module.Placeholder),
-    data: { title: 'Projects', body: 'Project inventory (WP-19).' },
+      import('./features/inventory/inventory').then((module) => module.Inventory),
+    data: { section: 'projects' },
   },
   {
     path: 'inventory/providers',
     title: 'AI-Lab · Providers',
     loadComponent: () =>
-      import('./features/placeholder/placeholder').then((module) => module.Placeholder),
-    data: { title: 'Providers', body: 'Provider inventory (WP-19).' },
+      import('./features/inventory/inventory').then((module) => module.Inventory),
+    data: { section: 'providers' },
   },
   {
     path: 'memory',

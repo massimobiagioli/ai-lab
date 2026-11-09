@@ -47,7 +47,7 @@ scripts/run-web.sh npm run format:check
 - [x] **P02 — WP-19 Kanban board.**
   Branch `review/p02-wp19-kanban`; `/projects/:projectId/board`, six columns, card detail, filters, DnD + keyboard move (`M`, arrows, Enter), optimistic rollback, tests. Depends P01.
 
-- [ ] **P03 — WP-19 inventory.**
+- [x] **P03 — WP-19 inventory.**
   Branch `review/p03-wp19-inventory`; `/inventory/{agents,projects,providers}` lists, detail drawers, status/health, empty/loading/error, tests. Depends P01.
 
 - [ ] **P04 — WP-19 SOW and delivery graph.**
@@ -138,4 +138,5 @@ scripts/run-web.sh npm run format:check
 |---|---|---|---|---|
 | 2026-11-09 | P00 | `review/p00-review-checklist` | `1ca3da8` | Checklist created and indexed. |
 | 2026-11-09 | P01 | `review/p01-wp19-data` | `58dd820` | Data layer, demo fallback, stores, board rollback. |
-| 2026-11-09 | P02 | `review/p02-wp19-kanban` | merge pending | Six-column board, DnD, keyboard, filters, drawer, tests. |
+| 2026-11-09 | P02 | `review/p02-wp19-kanban` | `0dcfa90` | Six-column board, DnD, keyboard, filters, drawer, tests. |
+| 2026-11-09 | P03 | `review/p03-wp19-inventory` | merge pending | Inventory lists, detail drawers, create dialog, last4 keys. |

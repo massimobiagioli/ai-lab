@@ -20,12 +20,12 @@
 - [x] Routes `/`, `/runs`, `/projects/:projectId/board`, `/inventory/{agents,projects,providers}`, `/projects/:projectId/sow`, `/memory`, `/settings` exist and lazy-load — evidence: `web/src/app/app.routes.ts`.
 - [x] Kanban six columns, DnD + keyboard moves, filters, card drawer and the blocked reason — P02; real-time/violation animation in P07.
 - [ ] Agent Inspector Live/CV/Memory/Controls with rollback — P03.
-- [ ] Inventory wizards and write-only secrets — P03.
+- [x] Inventory lists, detail drawers and create dialogs; provider keys show last4 only — P03.
 - [ ] SOW versions/diff/approve/reject/export/traceability/streaming — P04.
 - [ ] Plan/WBS tree, DAG, timeline, materialize preview — P04.
 - [ ] Memory scopes/search/reader/notes/pin/delete — P05.
 - [ ] Settings lab/autonomy/budgets/scheduler/office/exposure/danger — P06.
-- [ ] Health, failed runs, retired agents and handoffs drawers — P03/P06.
+- [ ] Health and handoff drawers — P06.
 - [ ] Loading/empty/error/degraded states on every screen — P02–P06.
 - [ ] Responsive, a11y and reduced motion — P02–P06, verified by WP-21.
 - [ ] E2E J1–J4 and visual screenshots — WP-21 (owned, due 2026-12-31).
@@ -39,7 +39,7 @@
 - [x] Optimistic card move with rollback on 409/422 — `features/board/store/board.store.ts`.
 - [ ] Dashboard KPIs/activity/idea composer/onboarding — P06.
 - [x] Kanban board — P02 (`features/board`).
-- [ ] Inventory tables/wizards — P03.
+- [x] Inventory tables and create dialogs — P03 (`features/inventory`).
 - [ ] SOW/Plan — P04.
 - [ ] Memory explorer — P05.
 - [ ] Settings/danger zone — P06.
@@ -67,7 +67,7 @@
 - [x] Board store load/optimistic/rollback — tests: `features/board/store/board.store.spec.ts`.
 - [x] Board render/keyboard/detail — tests: `features/board/board.spec.ts`.
 - [x] Demo model determinism — test: `core/demo/demo-data.spec.ts`.
-- [ ] Inventory/SOW/memory/settings store tests — P03–P06.
+- [x] Inventory component/store tests — `features/inventory/inventory.spec.ts`; SOW/memory/settings tests in P04–P06.
 - [ ] No real external API in tests (fetch/WebSocket mocked).
 - [ ] Coverage thresholds — WP-21.
 
@@ -100,3 +100,4 @@
 - [x] CR-0015 — reopen WP-19; alternatives and consequences recorded.
 - [x] Demo read model is explicit (`AILAB_DEMO_DATA`) and never presented as live data.
 2026-11-09 | P02 | web/src/app/features/board/**, app.routes.ts | board columns, DnD, keyboard, filters, drawer, tests (73 web) | real-time/violations P07 | P03
+2026-11-09 | P03 | web/src/app/features/inventory/**, shared/ui/pixel-table | inventory lists/detail/create; tests | health/handoffs P06 | P04
