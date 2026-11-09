@@ -1,8 +1,10 @@
 name: Nightly
 
+# Temporarily suspended for the mega-review (re-enable at the end).
+# on:
+#   schedule:
+#     - cron: '0 2 * * *'
 on:
-  schedule:
-    - cron: '0 2 * * *'
   workflow_dispatch:
 
 permissions:

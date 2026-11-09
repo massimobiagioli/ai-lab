@@ -1,8 +1,11 @@
 name: Release
 
+# Temporarily suspended for the mega-review (re-enable at the end).
+# on:
+#   push:
+#     tags: ['v*']
 on:
-  push:
-    tags: ['v*']
+  workflow_dispatch:
 
 permissions:
   contents: write
