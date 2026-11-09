@@ -133,6 +133,7 @@ Every document under `.docs` is listed here. When a document is created, renamed
 | WP-16 API and realtime | REST, WebSocket, contracts, rate limits. | [`.docs/sow/WP-16-API-REALTIME.md`](./.docs/sow/WP-16-API-REALTIME.md) |
 | WP-16 review plan | API and realtime review checklist and evidence. | [`.docs/sow/WP-16-API-REALTIME-review-plan.md`](./.docs/sow/WP-16-API-REALTIME-review-plan.md) |
 | WP-17 Frontend platform | Angular platform, design system, accessibility. | [`.docs/sow/WP-17-FRONTEND-PLATFORM.md`](./.docs/sow/WP-17-FRONTEND-PLATFORM.md) |
+| WP-17 review plan | Frontend platform review checklist and evidence. | [`.docs/sow/WP-17-FRONTEND-PLATFORM-review-plan.md`](./.docs/sow/WP-17-FRONTEND-PLATFORM-review-plan.md) |
 | WP-18 Virtual office | Canvas engine, sprites, pathfinding, interactions. | [`.docs/sow/WP-18-VIRTUAL-OFFICE.md`](./.docs/sow/WP-18-VIRTUAL-OFFICE.md) |
 | WP-19 Product UI | Dashboard, inventory, Kanban, SOW, memory, settings. | [`.docs/sow/WP-19-PRODUCT-UI.md`](./.docs/sow/WP-19-PRODUCT-UI.md) |
 | WP-20 Observability and SRE | Logs, metrics, traces, SLOs, backup, runbooks. | [`.docs/sow/WP-20-OBSERVABILITY-SRE.md`](./.docs/sow/WP-20-OBSERVABILITY-SRE.md) |

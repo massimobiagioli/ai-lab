@@ -19,6 +19,7 @@ import { Icon } from '../../shared/ui/icon/icon';
 import { Menu } from '../../shared/ui/menu/menu';
 import { Divider } from '../../shared/ui/divider/divider';
 import { Kbd } from '../../shared/ui/kbd/kbd';
+import { PixelText } from '../../shared/ui/pixel-text/pixel-text';
 
 @Component({
   selector: 'app-design-gallery',
@@ -43,6 +44,7 @@ import { Kbd } from '../../shared/ui/kbd/kbd';
     Menu,
     Divider,
     Kbd,
+    PixelText,
   ],
   template: `
     <app-page-header title="Design system" subtitle="Pixel primitives and their states" />
@@ -88,6 +90,7 @@ import { Kbd } from '../../shared/ui/kbd/kbd';
       </app-card>
 
       <app-card title="Identity & icons">
+        <p class="row"><app-pixel-text text="AI LAB" /></p>
         <div class="row">
           <app-avatar name="Ada Lovelace" />
           <app-icon name="dashboard" />

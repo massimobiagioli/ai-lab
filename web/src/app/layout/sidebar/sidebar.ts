@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { PixelText } from '../../shared/ui/pixel-text/pixel-text';
 
 interface NavItem {
   readonly label: string;
@@ -23,10 +24,12 @@ const NAV: readonly NavItem[] = [
 
 @Component({
   selector: 'app-sidebar',
-  imports: [RouterLink, RouterLinkActive],
+  imports: [RouterLink, RouterLinkActive, PixelText],
   template: `
     <nav class="sidebar" aria-label="Primary">
-      <a class="sidebar__brand" routerLink="/" aria-label="AI-Lab home">AI·LAB</a>
+      <a class="sidebar__brand" routerLink="/" aria-label="AI-Lab home"
+        ><app-pixel-text text="AI LAB"
+      /></a>
       <ul class="sidebar__list">
         @for (item of nav; track item.path) {
           <li>

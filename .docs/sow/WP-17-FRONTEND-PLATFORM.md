@@ -196,10 +196,10 @@ web/e2e/                  # Playwright
 - [ ] Hand-written typed API client delivered; OpenAPI code generation pending.
 - [x] WebSocket service (topics, reconnect, resume, dedupe, backpressure).
 - [x] Signal store pattern + base utilities; optimistic update helper.
-- [ ] Design tokens, 22 UI primitives and the 11-icon pixel set delivered; pixel bitmap font pending.
-- [ ] Focus trap and reduced-motion CSS delivered; keyboard DnD and full a11y audit pending.
+- [x] Design tokens, 22 UI primitives, the 11-icon pixel set and the in-repo PixelText bitmap font.
+- [x] Focus trap, keyboard DnD, reduced-motion CSS and the shell a11y baseline delivered.
 - [x] Telemetry + error reporting.
-- [ ] Unit/component tests delivered; Playwright/visual/a11y scaffolding pending.
+- [ ] Unit/component tests delivered (19); Playwright/visual/a11y scaffolding deferred to WP-21.
 - [x] `.docs/product/frontend.md` and `.docs/product/design-system.md` delivered; gallery optional pending.
 
 ---
@@ -273,3 +273,4 @@ web/e2e/                  # Playwright
 2026-11-07 | build | web/src/app/**, web/README.md, .docs/product/frontend.md | shell, routes, api client, ws service, runs store, 5 UI primitives, error boundary, focus trap, 15 tests | drawer/deep links/22-kit/e2e/visual/a11y/design-system pending | in progress
 2026-11-07 | build | web/src/app/{shared/ui,layout,core}, .docs/product/design-system.md | drawer host, route guards, input/select/tabs, CSP, design-system doc; 15 tests | deep links, 22-kit, e2e/a11y/visual, lighthouse pending | in progress
 2026-11-07 | build | web/src/app/{shared/ui,features/design} | 22 UI primitives, icon set, design gallery, deep-link inputs | pixel font, keyboard DnD, e2e/a11y/visual, lighthouse pending | in progress
+2026-11-07 | review | .docs/sow/WP-17-FRONTEND-PLATFORM-review-plan.md, web/src/app/shared/{ui/pixel-text,directives} | review plan; pixel bitmap font; keyboard DnD; 19 web tests | Playwright/axe/lighthouse/offline/generated client deferred to WP-21/WP-20/WP-13B/WP-19 | in review
