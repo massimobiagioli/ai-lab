@@ -1,0 +1,9 @@
+e2e-bdd/features
+e2e-bdd/.features-gen
+e2e-bdd/reports
+e2e-bdd/visual-baselines
+e2e-bdd/steps/generated.steps.ts
+dist
+.angular
+coverage
+node_modules

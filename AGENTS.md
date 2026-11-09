@@ -73,6 +73,12 @@ Load the exact skill with the `skill` tool by its ID. Skills are project-specifi
 | `docker-operations` | Dockerfiles, Compose, networks, healthchecks, runner, sandbox, proxies. | [`.opencode/skills/docker-operations/SKILL.md`](./.opencode/skills/docker-operations/SKILL.md) |
 | `observability-sre` | Metrics, traces, logs, SLOs, alerts, dashboards, backup, runbooks. | [`.opencode/skills/observability-sre/SKILL.md`](./.opencode/skills/observability-sre/SKILL.md) |
 | `quality-gates` | Before declaring done; CI, tests, coverage, load, chaos, fuzz. | [`.opencode/skills/quality-gates/SKILL.md`](./.opencode/skills/quality-gates/SKILL.md) |
+| `bdd-e2e` | Gherkin BDD E2E suite, feature generation, steps, preflight gate and `make bdd`. | [`.opencode/skills/bdd-e2e/SKILL.md`](./.opencode/skills/bdd-e2e/SKILL.md) |
+| `bdd-scenario-design` | Writing, refining and reviewing Gherkin scenarios, requirement mapping and gap closure. | [`.opencode/skills/bdd-scenario-design/SKILL.md`](./.opencode/skills/bdd-scenario-design/SKILL.md) |
+| `bdd-step-engineering` | Step definitions, fixtures, selectors, API client, determinism and redaction. | [`.opencode/skills/bdd-step-engineering/SKILL.md`](./.opencode/skills/bdd-step-engineering/SKILL.md) |
+| `bdd-preflight-gate` | Manual prerequisites checklist, make-only guard, preflight parser and fail-fast messages. | [`.opencode/skills/bdd-preflight-gate/SKILL.md`](./.opencode/skills/bdd-preflight-gate/SKILL.md) |
+| `bdd-coverage-traceability` | 480-id coverage, feature generation, drift gates, manual/live mapping and evidence. | [`.opencode/skills/bdd-coverage-traceability/SKILL.md`](./.opencode/skills/bdd-coverage-traceability/SKILL.md) |
+| `bdd-execution-triage` | Running `make bdd`, interpreting results, failure triage, flaky quarantine and evidence. | [`.opencode/skills/bdd-execution-triage/SKILL.md`](./.opencode/skills/bdd-execution-triage/SKILL.md) |
 | `release-management` | Versioning, changelog, release candidate, SBOM, signing, rollback. | [`.opencode/skills/release-management/SKILL.md`](./.opencode/skills/release-management/SKILL.md) |
 | `docs-sync` | Docs, skills, commands, ADRs, diagrams, screenshots and index updates. | [`.opencode/skills/docs-sync/SKILL.md`](./.opencode/skills/docs-sync/SKILL.md) |
 
@@ -96,6 +102,8 @@ Every document under `.docs` is listed here. When a document is created, renamed
 | API and event contracts | OpenAPI, AsyncAPI, JSON Schemas and error codes. | [`.docs/technical-specification/APPENDIX-B-CONTRACTS.md`](./.docs/technical-specification/APPENDIX-B-CONTRACTS.md) |
 | Agents and Kanban | Roles, characters, prompts, transition matrix, assets. | [`.docs/technical-specification/APPENDIX-C-AGENTS-KANBAN.md`](./.docs/technical-specification/APPENDIX-C-AGENTS-KANBAN.md) |
 | Delivery appendix | WBS, acceptance tests, ADRs, environment variables, docs manifest. | [`.docs/technical-specification/APPENDIX-D-DELIVERY.md`](./.docs/technical-specification/APPENDIX-D-DELIVERY.md) |
+| E2E BDD checklist | 480 Gherkin end-to-end scenarios, including 120 Amiga-style UI and 120 Inventory/Lab management certification scenarios, with execution checkboxes. | [`.docs/e2e/BDD.md`](./.docs/e2e/BDD.md) |
+| E2E manual pre-test requirements | Manual-only pre-test checklist for credentials, external services, policy approvals, environment and sign-off. | [`.docs/e2e/req.md`](./.docs/e2e/req.md) |
 | SOW index | Delivery index, status model, dependency graph, milestones. | [`.docs/sow/SOW.md`](./.docs/sow/SOW.md) |
 | Review plan checklist | Ordered execution plan to finish the full WP review (2026-11-09). | [`.docs/sow/review-plan-chacklist-20261109.md`](./.docs/sow/review-plan-chacklist-20261109.md) |
 | WP-00 Governance | Program governance, Lean/Agile delivery, quality system. | [`.docs/sow/WP-00-GOVERNANCE.md`](./.docs/sow/WP-00-GOVERNANCE.md) |
@@ -227,6 +235,15 @@ Use the `quality-gates` skill for the exact commands and evidence rules.
 | `check-openapi-drift` | [`.tools/check-openapi-drift.py`](./.tools/check-openapi-drift.py) | Fail when an OpenAPI path is not served by the edge router. | `.tools/check-openapi-drift.py [--root DIR]` |
 | `check-observability` | [`.tools/check-observability.sh`](./.tools/check-observability.sh) | Validate the SLO, alert and Grafana dashboard artifacts. | `.tools/check-observability.sh` |
 | `run-e2e` | [`.tools/run-e2e.sh`](./.tools/run-e2e.sh) | Run Playwright in the official image (browser deps included). | `.tools/run-e2e.sh [args]` |
+| `bdd-preflight` | [`scripts/bdd-preflight.mjs`](./scripts/bdd-preflight.mjs) | Parse `.docs/e2e/req.md` and block the BDD suite when a manual item is missing. | `node scripts/bdd-preflight.mjs [--json] [--file PATH]` |
+| `bdd-preflight-test` | [`scripts/bdd-preflight.test.mjs`](./scripts/bdd-preflight.test.mjs) | Unit tests for the manual preflight parser. | `node scripts/bdd-preflight.test.mjs` |
+| `bdd-set-api-key` | [`scripts/bdd-set-api-key.sh`](./scripts/bdd-set-api-key.sh) | Load the live DeepSeek key through a hidden prompt and create or rotate the provider. | `make bdd-set-api-key` |
+| `bdd-set-api-key-test` | [`scripts/bdd-set-api-key.test.sh`](./scripts/bdd-set-api-key.test.sh) | Fake-provider tests for the hidden-prompt key loader. | `bash scripts/bdd-set-api-key.test.sh` |
+| `gen-bdd-features` | [`.tools/gen-bdd-features.mjs`](./.tools/gen-bdd-features.mjs) | Generate deterministic `.feature` files from `.docs/e2e/BDD.md`. | `.tools/gen-bdd-features.mjs --check\|--write` |
+| `gen-bdd-steps` | [`.tools/gen-bdd-steps.mjs`](./.tools/gen-bdd-steps.mjs) | Generate exact-match step definitions for narrative scenarios that lack a curated step. | `.tools/gen-bdd-steps.mjs --check\|--write` |
+| `check-bdd-coverage` | [`.tools/check-bdd-coverage.mjs`](./.tools/check-bdd-coverage.mjs) | Enforce the 480-id coverage, drift and zero-pending-step gate. | `.tools/check-bdd-coverage.mjs [--report-only]` |
+| `bdd-self-test` | [`.tools/bdd-self-test.sh`](./.tools/bdd-self-test.sh) | Fixture-based negative tests for the generator and coverage checker. | `.tools/bdd-self-test.sh` |
+| `run-bdd` | [`scripts/run-bdd.sh`](./scripts/run-bdd.sh) | Guarded make-only BDD runner: preflight, drift, coverage, readiness, bddgen, Playwright, full log. | `make bdd` |
 | `run-load` | [`.tools/run-load.sh`](./.tools/run-load.sh) | Run the k6 edge load scenario against the API namespace. | `.tools/run-load.sh [args]` |
 | `chaos-worker-kill` | [`.tools/chaos-worker-kill.sh`](./.tools/chaos-worker-kill.sh) | Kill/restart the worker and verify recovery. | `.tools/chaos-worker-kill.sh` |
 | `check-coverage` | [`.tools/check-coverage.sh`](./.tools/check-coverage.sh) | Enforce backend 80, domain 90 and web 80 line coverage. | `.tools/check-coverage.sh` |

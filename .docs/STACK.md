@@ -124,6 +124,8 @@ The exact tree and ownership are defined in `.docs/sow/WP-02-REPOSITORY-DEVEX.md
 | `make check` | Fast local gate: format check, lint, typecheck, unit tests, SOW lint, docs links |
 | `make test` | Rust and frontend unit/integration suites |
 | `make e2e` | Playwright end-to-end suite |
+| `make bdd` | Gherkin BDD E2E suite, preflight-gated and make-only |
+| `make bdd-set-api-key` | Load the live DeepSeek API key through a hidden prompt |
 | `make load` | k6 load scenarios |
 | `make seed-demo` | Deterministic demo dataset |
 | `make migrate` | Apply sqlx migrations |
