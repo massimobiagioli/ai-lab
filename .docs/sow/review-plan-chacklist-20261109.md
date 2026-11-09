@@ -145,4 +145,4 @@ scripts/run-web.sh npm run format:check
 | 2026-11-09 | P06 | `review/p06-wp19-settings` | `dc27438` | Settings, onboarding, danger zone. |
 | 2026-11-09 | P07 | `review/p07-wp19-qa` | `ad4c65c` | QA APPROVED; WP-19 done. |
 | 2026-11-09 | P08 | `review/p08-wp20-metrics` | `b0b90e1` | Metrics, redacted logs. |
-| 2026-11-09 | P09 | `review/p09-wp20-tracing` | merge pending | Trace propagation, SLOs, dashboard, alerts. |
+| 2026-11-09 | P09 | `review/p09-wp20-tracing` | `d6af2b3` | Trace propagation, SLOs, dashboard, alerts. |

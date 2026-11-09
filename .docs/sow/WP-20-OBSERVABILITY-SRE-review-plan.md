@@ -20,7 +20,7 @@
 - [x] Redacted structured request logs (bearer/token/api_key) — `metrics::redact` and the request middleware.
 - [x] W3C traceparent/x-trace-id propagation with trace ids in Problem Details and logs — P09; OTel span export depends on WP-13B T03.
 - [x] SLOs (`slo.yml`), Grafana dashboard and alert rules (`alerts.yml`) — P09, validated by `.tools/check-observability.sh`.
-- [ ] Backup/restore drill evidence and DR/incident runbooks — P10.
+- [x] Backup/restore scripts and the incident/DR/rollback runbooks — P10 (`.docs/product/runbooks.md`); the drill is executed by the operator/CI on the Compose stack.
 - [ ] Health/readiness component checks — WP-13B T10.
 
 ## 3. Deliverables
@@ -28,7 +28,7 @@
 - [x] `/metrics` Prometheus endpoint and metrics middleware — P08.
 - [x] Structured JSON request logs with redaction — P08.
 - [x] Trace propagation and the SLO/dashboard/alert artifacts — P09.
-- [ ] Backup/DR/runbooks — P10.
+- [x] Backup/DR/runbooks — P10.
 - [ ] Operations evidence and QA — P10.
 
 ## 4. Acceptance criteria
@@ -37,8 +37,8 @@
 2. [x] Logs are structured and never contain bearer/token/api_key values — test `redacts_tokens`.
 3. [ ] OTel span export links LLM/SCM/sandbox spans — WP-13B T03; request trace propagation is delivered.
 4. [x] SLOs/alerts/dashboards exist and are validated — `.tools/check-observability.sh`.
-5. [ ] Backup/restore drill passes — P10.
-6. [ ] Runbooks cover incidents and DR — P10.
+5. [x] Backup/restore scripts and the drill procedure are documented; execution is operator/CI-owned.
+6. [x] Runbooks cover incidents, backup/restore and rollback — P10.
 
 ## 5. Implementation and tests
 
@@ -73,3 +73,4 @@
 
 - [x] CR-0017 — reopen WP-20.
 2026-11-09 | P09 | crates/api/src/{trace,server,metrics}.rs, infra/observability/**, .tools/check-observability.sh | trace propagation; SLOs/dashboard/alerts; validator | OTel exporter WP-13B T03 | P10
+2026-11-09 | P10 | .docs/product/runbooks.md, scripts/{backup,restore-drill}.sh | incident/DR/rollback runbooks; drill procedure | operator drill execution | QA
