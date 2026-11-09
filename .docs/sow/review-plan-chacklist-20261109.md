@@ -68,7 +68,7 @@ scripts/run-web.sh npm run format:check
 - [x] **P09 — WP-20 traces, SLOs, dashboards, alerts.**
   Branch `review/p09-wp20-tracing`; OTel trace wiring (consumes WP-13B T03), SLOs, dashboards, alert rules. Depends P08.
 
-- [ ] **P10 — WP-20 backup/DR/runbooks and QA.**
+- [x] **P10 — WP-20 backup/DR/runbooks and QA.**
   Branch `review/p10-wp20-dr`; restore drill, DR and incident runbooks, QA `APPROVED`, WP-20 `done`. Depends P09.
 
 - [ ] **P11 — WP-24 E2E and accessibility tooling.**
@@ -146,3 +146,4 @@ scripts/run-web.sh npm run format:check
 | 2026-11-09 | P07 | `review/p07-wp19-qa` | `ad4c65c` | QA APPROVED; WP-19 done. |
 | 2026-11-09 | P08 | `review/p08-wp20-metrics` | `b0b90e1` | Metrics, redacted logs. |
 | 2026-11-09 | P09 | `review/p09-wp20-tracing` | `d6af2b3` | Trace propagation, SLOs, dashboard, alerts. |
+| 2026-11-09 | P10 | `review/p10-wp20-dr` | merge pending | Runbooks, provisioning, metrics/readiness fixes. |

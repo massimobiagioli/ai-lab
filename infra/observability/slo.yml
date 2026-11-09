@@ -1,18 +1,54 @@
-# AI-Lab SLO definitions (WP-20).
+# AI-Lab SLO definitions and error-budget policy (WP-20).
 slos:
   - name: edge-availability
-    description: Successful edge requests over the rolling window.
     target: 99.9
     window: 30d
-    indicator: 1 - (rate(ailab_http_errors_total[5m]) / rate(ailab_http_requests_total[5m]))
-  - name: edge-latency
-    description: p95 edge latency under the reference load.
+    indicator: 1 - (sum(rate(ailab_http_requests_total{status=~"5.."}[5m])) / sum(rate(ailab_http_requests_total[5m])))
+  - name: edge-latency-read
     target: 95
-    threshold_ms: 300
+    threshold_ms: 120
     window: 30d
-    indicator: histogram_quantile(0.95, rate(ailab_http_request_duration_ms_bucket[5m]))
+    indicator: histogram_quantile(0.95, sum(rate(ailab_http_request_duration_seconds_bucket[5m])) by (le))
+    note: read/write split needs the route label (WP-13B T03)
+  - name: edge-latency-write
+    target: 95
+    threshold_ms: 250
+    window: 30d
+    indicator: histogram_quantile(0.95, sum(rate(ailab_http_request_duration_seconds_bucket[5m])) by (le))
+    note: read/write split needs the route label (WP-13B T03)
   - name: run-success
-    description: Runs that succeed after a lease.
     target: 99
     window: 7d
-    indicator: delivery.run.completed / (delivery.run.completed + delivery.run.failed)
+    indicator: sum(rate(ailab_runs_succeeded_total[5m])) / (sum(rate(ailab_runs_succeeded_total[5m])) + sum(rate(ailab_runs_failed_total[5m])))
+    note: run counters are exported with WP-13B T03
+  - name: queue-latency
+    target: 95
+    threshold_ms: 60000
+    window: 7d
+    indicator: histogram_quantile(0.95, sum(rate(ailab_queue_wait_seconds_bucket[5m])) by (le))
+    note: queue histogram is exported with WP-13B T03
+  - name: llm-error-rate
+    target: 99
+    window: 30d
+    indicator: 1 - (sum(rate(ailab_llm_errors_total[5m])) / sum(rate(ailab_llm_requests_total[5m])))
+    note: LLM counters are exported with WP-13B T03
+  - name: scm-error-rate
+    target: 99
+    window: 30d
+    indicator: 1 - (sum(rate(ailab_scm_errors_total[5m])) / sum(rate(ailab_scm_requests_total[5m])))
+    note: SCM counters are exported with WP-13B T03
+  - name: sandbox-failure
+    target: 99
+    window: 30d
+    indicator: 1 - (sum(rate(ailab_sandbox_failures_total[5m])) / sum(rate(ailab_sandbox_starts_total[5m])))
+    note: sandbox counters are exported with WP-13B T03
+  - name: memory-retrieval
+    target: 95
+    threshold_ms: 500
+    window: 7d
+    indicator: histogram_quantile(0.95, sum(rate(ailab_memory_retrieval_seconds_bucket[5m])) by (le))
+    note: memory histogram is exported with WP-13B T03
+error_budget:
+  window: 30d
+  policy: Freeze releases when the remaining error budget is zero; 2% burn in 1h pages, 6% burn in 6h pages.
+  burn_rate_alerts: [2, 6]

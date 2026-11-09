@@ -330,6 +330,8 @@ pub struct AppState {
     hub: broadcast::Sender<EventEnvelope>,
     /// Process metrics.
     pub metrics: Arc<crate::metrics::Metrics>,
+    /// Consecutive readiness failures for debouncing.
+    readiness_failures: Arc<std::sync::atomic::AtomicU8>,
 }
 
 impl Default for AppState {
@@ -377,6 +379,7 @@ impl AppState {
             idempotency: Arc::new(IdempotencyStore::default()),
             hub,
             metrics: crate::metrics::Metrics::new(),
+            readiness_failures: Arc::new(std::sync::atomic::AtomicU8::new(0)),
         }
     }
 
@@ -1000,8 +1003,18 @@ async fn health_scm() -> Response {
 
 async fn health_ready(State(state): State<AppState>) -> Response {
     if state.store.ready().await {
+        state
+            .readiness_failures
+            .store(0, std::sync::atomic::Ordering::Relaxed);
         StatusCode::OK.into_response()
     } else {
+        let failures = state
+            .readiness_failures
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+            .saturating_add(1);
+        if failures < 3 {
+            return StatusCode::OK.into_response();
+        }
         let mut details = ProblemDetails::from(DomainError::policy(
             "NOT_READY",
             "a required dependency is unavailable",

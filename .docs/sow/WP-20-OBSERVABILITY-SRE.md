@@ -188,19 +188,19 @@ Each alert: severity, runbook link, summary, first action. No alert without a ru
 
 ## 4. Deliverables (checklist)
 
-- [x] Logging conventions + redaction + correlation middleware.
-- [x] Metrics registry with all §3.2 families and bounded labels.
-- [x] OTel tracing across API, worker, LLM, SCM, sandbox; W3C propagation.
+- [x] Logging conventions + redaction + correlation middleware (run-context fields WP-13B T03).
+- [ ] HTTP metric families delivered; the remaining §3.2 families are WP-13B T03.
+- [ ] W3C propagation delivered; OTel spans are WP-13B T03.
 - [x] SLO definitions + error-budget policy.
 - [x] Alert rules with runbook links.
-- [x] Grafana dashboards (7) provisioned as code.
+- [ ] Edge dashboard provisioned; the other six are WP-24 T07.
 - [x] Health/readiness endpoints with debounce.
-- [x] Integrity job + report + alert.
+- [x] Integrity alert + restore-drill report (injected test WP-24 T07).
 - [x] Backup/restore scripts + monthly drill procedure.
-- [x] Capacity/load/soak plan and thresholds.
-- [x] Incident process + severity matrix + post-incident template.
+- [ ] Load/soak evidence is WP-24 T07.
+- [ ] Runbooks/on-call delivered; the post-incident template is WP-24 T07.
 - [x] 8 runbooks + on-call checklist.
-- [x] Cost dashboards + budget alerts.
+- [ ] Budget alert delivered; the cost dashboard is WP-24 T07.
 - [x] `.docs/product/operations.md`, `.docs/product/slo.md`, `.docs/product/observability.md`.
 
 ---
@@ -240,10 +240,10 @@ Each alert: severity, runbook link, summary, first action. No alert without a ru
 
 ## 7. WP Definition of Done
 
-- [x] All deliverables checked with evidence.
-- [x] Alerts, dashboards, drills and load tests verified.
+- [ ] All deliverables checked with evidence.
+- [ ] Alerts and the edge dashboard verified; drills/load are owned follow-ups.
 - [x] Docs reviewed; no P0/P1.
-- [x] Status `done` with sign-off.
+- [ ] Status `done` with QA sign-off.
 
 ---
 
