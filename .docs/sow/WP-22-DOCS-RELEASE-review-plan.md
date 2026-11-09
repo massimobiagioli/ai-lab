@@ -22,7 +22,7 @@
 - [x] Acceptance report maps AC-001..015 to evidence and states the gaps (`.docs/product/acceptance-report.md`).
 - [x] Golden demo script within five minutes (`.docs/product/demo-script.md`).
 - [x] Handover checklist, ownership, limitations and support boundaries (`.docs/product/handover.md`).
-- [ ] SBOM, signing, release 1.0, rollback — P15.
+- [ ] SBOM, signing, release 1.0, rollback — P15 **suspended**: production release/deploy is suspended by operator decision; no local substitute is claimed.
 
 ## 3. Deliverables
 
@@ -52,3 +52,9 @@ Documentation and handover are delivered; the acceptance report is honest about 
 ## Progress log
 
 2026-11-09 | P14 | .docs/sow/WP-22-DOCS-RELEASE-review-plan.md, .docs/product/{docs-manifest,acceptance-report,handover,testing}.md | review plan and package; docs link check | release/SBOM deferred P15 | P15
+
+## 8. Blockers
+
+P15 is **suspended**: production release/deploy (SBOM publication, keyless signing, registry) is suspended by operator decision on 2026-11-09 and is not pursued locally. The release gate also requires AC-001/003/005/006/007/008/009/010/011/012/015, which depend on WP-24 T07 and WP-13B T07. Owner: WP-22/release; next: resume after CI and the AC evidence.
+
+2026-11-09 | P15 | — | production release/SBOM/signing suspended by operator | local development continues | P16
