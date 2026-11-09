@@ -30,9 +30,7 @@ export const routes: Routes = [
     path: 'projects/:projectId/sow',
     title: 'AI-Lab · SOW',
     canActivate: [paramGuard],
-    loadComponent: () =>
-      import('./features/placeholder/placeholder').then((module) => module.Placeholder),
-    data: { title: 'SOW & delivery graph', body: 'SOW surface (WP-19).' },
+    loadComponent: () => import('./features/sow/sow').then((module) => module.Sow),
   },
   {
     path: 'inventory/agents',

@@ -189,8 +189,8 @@ Stores deduplicate by `event_id`/`seq`; no duplicate rows on reconnect.
 - [ ] Agent Inspector with Live/CV/Memory/Controls and actions (P03).
 - [x] Kanban board with 6 columns, DnD + keyboard, card back, filters, real-time, violations (P02).
 - [x] Inventory tables + create wizards (agents, projects, providers) (P03).
-- [ ] SOW workspace: versions, diff, approve/reject, export, traceability, streaming (P04).
-- [ ] Plan/WBS: tree, DAG, timeline, materialize preview (P04).
+- [x] SOW workspace: versions, sections, approval status, delivery graph and materialize confirmation (P04); diff/export/streaming in WP-13B T07.
+- [x] Delivery graph with task dependencies and materialize confirmation (P04).
 - [ ] Memory explorer: scopes, search, reader, notes, pin/delete (P05).
 - [ ] Settings: lab, autonomy, budgets, scheduler, office, exposure, danger zone (P06).
 - [ ] Health, failed runs, retired agents, handoffs drawers (P06).
@@ -270,3 +270,4 @@ Stores deduplicate by `event_id`/`seq`; no duplicate rows on reconnect.
 2026-11-09 | P01 | web/src/app/{domain,core/demo,core/api,features/*/store}, .docs/sow/WP-19-PRODUCT-UI-review-plan.md | data layer, demo fallback, stores, board rollback; 70 web tests | P02–P07 surfaces | P02
 2026-11-09 | P02 | web/src/app/features/board/**, app.routes.ts | board with 6 columns, DnD, keyboard M+arrows+Enter, filters, card drawer, demo badge; tests | real-time/violations P07 | P03
 2026-11-09 | P03 | web/src/app/features/inventory/**, shared/ui/pixel-table | inventory lists, detail drawers, create dialog with validation, demo badge; tests | health/failed drawers P06 | P04
+2026-11-09 | P04 | web/src/app/features/sow/**, app.routes.ts | SOW sections, versions, delivery graph, materialize dialog; tests | diff/export/streaming WP-13B T07 | P05

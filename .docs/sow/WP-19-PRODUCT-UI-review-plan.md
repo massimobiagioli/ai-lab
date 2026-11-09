@@ -21,8 +21,8 @@
 - [x] Kanban six columns, DnD + keyboard moves, filters, card drawer and the blocked reason — P02; real-time/violation animation in P07.
 - [ ] Agent Inspector Live/CV/Memory/Controls with rollback — P03.
 - [x] Inventory lists, detail drawers and create dialogs; provider keys show last4 only — P03.
-- [ ] SOW versions/diff/approve/reject/export/traceability/streaming — P04.
-- [ ] Plan/WBS tree, DAG, timeline, materialize preview — P04.
+- [x] SOW versions, sections, status and delivery graph — P04; diff/approve/reject/export/traceability/streaming in WP-13B T07.
+- [x] Delivery graph (task dependencies) and materialize confirmation — P04.
 - [ ] Memory scopes/search/reader/notes/pin/delete — P05.
 - [ ] Settings lab/autonomy/budgets/scheduler/office/exposure/danger — P06.
 - [ ] Health and handoff drawers — P06.
@@ -40,7 +40,7 @@
 - [ ] Dashboard KPIs/activity/idea composer/onboarding — P06.
 - [x] Kanban board — P02 (`features/board`).
 - [x] Inventory tables and create dialogs — P03 (`features/inventory`).
-- [ ] SOW/Plan — P04.
+- [x] SOW/Plan — P04 (`features/sow`).
 - [ ] Memory explorer — P05.
 - [ ] Settings/danger zone — P06.
 - [ ] Health/failed-runs/retired/handoff drawers — P03/P06.
@@ -67,7 +67,7 @@
 - [x] Board store load/optimistic/rollback — tests: `features/board/store/board.store.spec.ts`.
 - [x] Board render/keyboard/detail — tests: `features/board/board.spec.ts`.
 - [x] Demo model determinism — test: `core/demo/demo-data.spec.ts`.
-- [x] Inventory component/store tests — `features/inventory/inventory.spec.ts`; SOW/memory/settings tests in P04–P06.
+- [x] Inventory component/store tests — `features/inventory/inventory.spec.ts`; SOW test in `features/sow/sow.spec.ts`; memory/settings in P05–P06.
 - [ ] No real external API in tests (fetch/WebSocket mocked).
 - [ ] Coverage thresholds — WP-21.
 
@@ -101,3 +101,4 @@
 - [x] Demo read model is explicit (`AILAB_DEMO_DATA`) and never presented as live data.
 2026-11-09 | P02 | web/src/app/features/board/**, app.routes.ts | board columns, DnD, keyboard, filters, drawer, tests (73 web) | real-time/violations P07 | P03
 2026-11-09 | P03 | web/src/app/features/inventory/**, shared/ui/pixel-table | inventory lists/detail/create; tests | health/handoffs P06 | P04
+2026-11-09 | P04 | web/src/app/features/sow/**, app.routes.ts | SOW sections/graph/materialize; tests | diff/export/streaming WP-13B T07 | P05
