@@ -68,3 +68,15 @@ OTLP HTTP/gRPC from api, worker and runner to the collector. Sampling: 100% erro
 - `.docs/technical-specification/AI-LAB-TECHNICAL-SPECIFICATION.md` §17, §18, §20
 - `.docs/sow/WP-20-OBSERVABILITY-SRE.md`
 - `.docs/product/metrics.md`, `.docs/product/failure-modes.md`
+
+## Edge metrics and structured logs
+
+`GET /metrics` exposes the Prometheus text exposition with
+`ailab_http_requests_total`, `ailab_http_errors_total`, `ailab_http_in_flight` and the
+`ailab_http_request_duration_ms` histogram (10/25/50/100/250/500/1000 ms buckets). The edge middleware
+increments them for every request.
+
+Every request is logged as a single JSON line (`level`, `event`, `method`, `path`, `status`,
+`duration_ms`). Bearer tokens, `token=` and `api_key=` values are redacted before logging; no request
+headers, bodies or secrets are logged. OTel spans, SLOs, dashboards and alerts are delivered in the
+WP-20 follow-up increments and depend on the WP-13B T03 exporter.

@@ -62,7 +62,7 @@ scripts/run-web.sh npm run format:check
 - [x] **P07 — WP-19 QA and closure.**
   Branch `review/p07-wp19-qa`; complete the review plan, QA `APPROVED`, fix findings, WP-19 `done`, deferrals to WP-13B T07 (real data) and WP-21 (visual/a11y). Depends P02–P06.
 
-- [ ] **P08 — Reopen WP-20 and deliver metrics/logs.**
+- [x] **P08 — Reopen WP-20 and deliver metrics/logs.**
   Branch `review/p08-wp20-metrics`; CR-0016, review plan, structured logs, `/metrics`, redaction tests. Depends P07.
 
 - [ ] **P09 — WP-20 traces, SLOs, dashboards, alerts.**
@@ -143,4 +143,5 @@ scripts/run-web.sh npm run format:check
 | 2026-11-09 | P04 | `review/p04-wp19-sow` | `9cd6624` | SOW sections, delivery graph, materialize. |
 | 2026-11-09 | P05 | `review/p05-wp19-memory` | `bd6d940` | Memory search, notes, citations, pin/delete. |
 | 2026-11-09 | P06 | `review/p06-wp19-settings` | `dc27438` | Settings, onboarding, danger zone. |
-| 2026-11-09 | P07 | `review/p07-wp19-qa` | merge pending | QA APPROVED; WP-19 done. |
+| 2026-11-09 | P07 | `review/p07-wp19-qa` | `ad4c65c` | QA APPROVED; WP-19 done. |
+| 2026-11-09 | P08 | `review/p08-wp20-metrics` | merge pending | Metrics, redacted logs. |
