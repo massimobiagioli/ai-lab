@@ -65,6 +65,12 @@ export const routes: Routes = [
     loadComponent: () => import('./features/memory/memory').then((module) => module.Memory),
   },
   {
+    path: 'onboarding',
+    title: 'AI-Lab · Setup',
+    loadComponent: () =>
+      import('./features/onboarding/onboarding').then((module) => module.Onboarding),
+  },
+  {
     path: 'settings',
     title: 'AI-Lab · Settings',
     loadComponent: () => import('./features/settings/settings').then((module) => module.Settings),

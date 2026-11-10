@@ -36,6 +36,7 @@ const NAV: readonly NavGroup[] = [
       { label: 'Projects', path: '/inventory/projects', icon: 'projects' },
       { label: 'Providers', path: '/inventory/providers', icon: 'providers' },
       { label: 'Memory', path: '/memory', icon: 'memory' },
+      { label: 'Setup', path: '/onboarding', icon: 'settings' },
       { label: 'Settings', path: '/settings', icon: 'settings' },
     ],
   },

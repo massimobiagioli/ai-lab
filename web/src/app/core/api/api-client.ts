@@ -203,6 +203,63 @@ export class ApiClient {
     return this.withDemo(`/settings?lab_id=${encodeURIComponent(labId)}`, DEMO_SETTINGS);
   }
 
+  async setupRequired(): Promise<boolean> {
+    try {
+      const [labs, providers, projects, agents] = await Promise.all([
+        this.send<{ readonly data: readonly unknown[] }>('/labs'),
+        this.send<{ readonly data: readonly unknown[] }>('/providers'),
+        this.send<{ readonly data: readonly unknown[] }>('/projects'),
+        this.send<{ readonly data: readonly unknown[] }>('/agents'),
+      ]);
+      return (
+        labs.data.length === 0 ||
+        providers.data.length === 0 ||
+        projects.data.length === 0 ||
+        agents.data.length === 0
+      );
+    } catch (error) {
+      return error instanceof ApiProblem && error.status === 401;
+    }
+  }
+
+  createProvider(input: {
+    readonly name: string;
+    readonly kind: 'deepseek';
+    readonly base_url: string;
+    readonly api_key: string;
+  }): Promise<Provider> {
+    return this.send<Provider>('/providers', { method: 'POST', body: input, retry: false });
+  }
+
+  createLab(input: {
+    readonly name: string;
+    readonly slug: string;
+    readonly description?: string;
+    readonly autonomy_level?: number;
+    readonly monthly_budget_microusd?: number;
+    readonly tech_lead: {
+      readonly name: string;
+      readonly role: 'tech_lead';
+      readonly character_id: string;
+      readonly description: string;
+    };
+  }): Promise<{ readonly lab: { readonly id: string; readonly name: string } }> {
+    return this.send('/labs', { method: 'POST', body: input, retry: false });
+  }
+
+  createProject(input: {
+    readonly lab_id: string;
+    readonly name: string;
+    readonly slug: string;
+    readonly key_prefix: string;
+    readonly description?: string;
+    readonly source_kind?: 'github';
+    readonly source_ref: string;
+    readonly default_branch?: string;
+  }): Promise<{ readonly project: { readonly id: string } }> {
+    return this.send('/projects', { method: 'POST', body: input, retry: false });
+  }
+
   transitionCard(cardId: string, to: string): Promise<Card> {
     return this.send<Card>(`/cards/${encodeURIComponent(cardId)}/transition`, {
       method: 'POST',

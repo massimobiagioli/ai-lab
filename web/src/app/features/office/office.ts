@@ -162,19 +162,34 @@ const AGENT_MEMORY: Readonly<Record<string, readonly MemoryEntry[]>> = {
     </app-page-header>
 
     <div class="office">
-      <app-card class="office__stage" title="Floor">
-        <canvas
-          #canvas
-          class="office__canvas"
-          [width]="width"
-          [height]="height"
-          role="img"
-          [attr.aria-label]="canvasLabel()"
-          (click)="onCanvasClick($event)"
-        ></canvas>
+      <app-card class="office__stage">
+        <div class="amiga-window">
+          <div class="amiga-window__bar">
+            <span class="amiga-window__title">AI-LAB · VIRTUAL OFFICE</span>
+            <span class="amiga-window__leds" aria-hidden="true">
+              <i class="led led--green"></i>
+              <i class="led led--amber"></i>
+              <i class="led led--teal"></i>
+            </span>
+            <span class="amiga-window__buttons" aria-hidden="true"> <i>_</i><i>□</i><i>×</i> </span>
+          </div>
+          <canvas
+            #canvas
+            class="office__canvas"
+            [width]="width * renderScale"
+            [height]="height * renderScale"
+            role="img"
+            [attr.aria-label]="canvasLabel()"
+            (click)="onCanvasClick($event)"
+          ></canvas>
+          <div class="amiga-window__status">
+            <span>{{ engine.list.length }} AGENTS</span>
+            <span>{{ fps() }} FPS</span>
+            <span>DESKS · ONLINE</span>
+          </div>
+        </div>
         <p class="office__hint">
           Select an agent, then click the floor to walk there. A* routes around the walls.
-          <span class="office__fps">{{ fps() }} FPS</span>
         </p>
       </app-card>
 
@@ -328,14 +343,84 @@ const AGENT_MEMORY: Readonly<Record<string, readonly MemoryEntry[]>> = {
       display: block;
       padding: 0;
     }
+    .amiga-window {
+      border: 2px solid #0b1026;
+      background: #2e3a6b;
+      box-shadow: 4px 4px 0 #0b1026;
+    }
+    .amiga-window__bar {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 4px 6px;
+      border-bottom: 2px solid #0b1026;
+      background: linear-gradient(#5b6fb0, #2e3a6b);
+      color: #f2e9d8;
+      font-family: var(--ailab-font-mono);
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+    }
+    .amiga-window__title {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .amiga-window__leds {
+      display: flex;
+      gap: 3px;
+    }
+    .led {
+      display: inline-block;
+      width: 0.45rem;
+      height: 0.45rem;
+      border: 1px solid #0b1026;
+      background: #9fb3e6;
+    }
+    .led--green {
+      background: #57c785;
+    }
+    .led--amber {
+      background: #f2b84b;
+    }
+    .led--teal {
+      background: #2a9d8f;
+    }
+    .amiga-window__buttons {
+      display: flex;
+      gap: 3px;
+    }
+    .amiga-window__buttons i {
+      display: grid;
+      place-items: center;
+      width: 1rem;
+      height: 1rem;
+      border: 1px solid #0b1026;
+      background: #9fb3e6;
+      color: #0b1026;
+      font-style: normal;
+      font-size: 0.58rem;
+      line-height: 1;
+    }
+    .amiga-window__status {
+      display: flex;
+      gap: 1rem;
+      padding: 3px 6px;
+      border-top: 2px solid #0b1026;
+      background: #141b3c;
+      color: #9fb3e6;
+      font-family: var(--ailab-font-mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.04em;
+    }
     .office__canvas {
       display: block;
       max-width: 100%;
       height: auto;
       margin: 0 auto;
       image-rendering: pixelated;
-      border: 2px solid var(--ailab-color-muted);
-      background: var(--ailab-color-surface-sunken);
+      background: #0b1026;
       cursor: crosshair;
     }
     .office__side {
@@ -535,6 +620,7 @@ export class Office implements AfterViewInit, OnDestroy {
   protected readonly canvas = viewChild.required<ElementRef<HTMLCanvasElement>>('canvas');
   protected readonly width = CANVAS_WIDTH;
   protected readonly height = CANVAS_HEIGHT;
+  protected readonly renderScale = 2;
   protected readonly desks = DESKS;
   protected readonly engine = new OfficeEngine(
     AGENTS.map((agent) => {
@@ -646,10 +732,12 @@ export class Office implements AfterViewInit, OnDestroy {
 
   private updateScale(): void {
     const canvas = this.canvas().nativeElement;
-    const available = canvas.parentElement?.clientWidth ?? CANVAS_WIDTH;
-    const scale = Math.max(1, Math.min(4, Math.floor(available / CANVAS_WIDTH)));
-    canvas.style.width = `${scale * CANVAS_WIDTH}px`;
-    canvas.style.height = `${scale * CANVAS_HEIGHT}px`;
+    const available = canvas.parentElement?.clientWidth ?? CANVAS_WIDTH * this.renderScale;
+    const width = CANVAS_WIDTH * this.renderScale;
+    const height = CANVAS_HEIGHT * this.renderScale;
+    const scale = Math.max(1, Math.min(2, Math.floor(available / width)));
+    canvas.style.width = `${scale * width}px`;
+    canvas.style.height = `${scale * height}px`;
   }
 
   protected characterId(agent: OfficeAgent): string {
@@ -820,6 +908,7 @@ export class Office implements AfterViewInit, OnDestroy {
     if (!context) {
       return;
     }
+    context.setTransform(this.renderScale, 0, 0, this.renderScale, 0, 0);
     drawOffice(context, this.engine, this.selectedId());
   }
 }

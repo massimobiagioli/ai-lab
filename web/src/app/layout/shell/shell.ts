@@ -5,6 +5,8 @@ import { Sidebar } from '../sidebar/sidebar';
 import { Topbar } from '../topbar/topbar';
 import { Drawer } from '../../shared/ui/drawer/drawer';
 import { WsService } from '../../core/ws/ws.service';
+import { ApiClient } from '../../core/api/api-client';
+import { Router } from '@angular/router';
 import { Telemetry } from '../../core/telemetry/telemetry.service';
 import { ErrorState } from '../../core/errors/error-state';
 import { DEMO_LAB_ID } from '../../core/demo/demo-data';
@@ -131,6 +133,8 @@ import { DEMO_LAB_ID } from '../../core/demo/demo-data';
 export class Shell implements OnInit {
   private readonly ws = inject(WsService);
   private readonly telemetry = inject(Telemetry);
+  private readonly api = inject(ApiClient);
+  private readonly router = inject(Router);
   protected readonly errorState = inject(ErrorState);
   protected readonly labId = signal(DEMO_LAB_ID);
   protected readonly labName = signal('Demo Lab');
@@ -141,6 +145,13 @@ export class Shell implements OnInit {
   ngOnInit(): void {
     this.ws.connect(this.labId());
     this.telemetry.capture('info', 'shell.ready');
+    if (!this.router.url.startsWith('/onboarding')) {
+      void this.api.setupRequired().then((required) => {
+        if (required) {
+          void this.router.navigate(['/onboarding']);
+        }
+      });
+    }
   }
 
   protected retry(): void {

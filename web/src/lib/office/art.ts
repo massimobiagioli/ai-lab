@@ -82,12 +82,6 @@ export function drawOffice(
       rendered.frame,
       agent.id === selectedId,
     );
-    drawNameplate(
-      context,
-      Math.round(rendered.x * TILE) + 8,
-      OFFSET_Y + Math.round(rendered.y * TILE) + 18,
-      agent.name.toUpperCase(),
-    );
   }
 
   drawScanlines(context, width, height);
@@ -657,21 +651,6 @@ function drawAccessory(
     context.fillStyle = character.skin;
     context.fillRect(x + 12, y + 14, 3, 1);
   }
-}
-
-function drawNameplate(
-  context: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  label: string,
-): void {
-  if (label === '') {
-    return;
-  }
-  const width = pixelTextWidth(label, 1);
-  context.fillStyle = 'rgba(11,16,38,0.78)';
-  context.fillRect(x - width / 2 - 2, y - 1, width + 4, 9);
-  drawPixelText(context, label, x - width / 2, y, P.cream, 1);
 }
 
 function drawSelectionPath(
