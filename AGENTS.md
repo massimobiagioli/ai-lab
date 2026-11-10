@@ -104,6 +104,8 @@ Every document under `.docs` is listed here. When a document is created, renamed
 | Delivery appendix | WBS, acceptance tests, ADRs, environment variables, docs manifest. | [`.docs/technical-specification/APPENDIX-D-DELIVERY.md`](./.docs/technical-specification/APPENDIX-D-DELIVERY.md) |
 | E2E BDD checklist | 480 Gherkin end-to-end scenarios, including 120 Amiga-style UI and 120 Inventory/Lab management certification scenarios, with execution checkboxes. | [`.docs/e2e/BDD.md`](./.docs/e2e/BDD.md) |
 | E2E manual pre-test requirements | Manual-only pre-test checklist for credentials, external services, policy approvals, environment and sign-off. | [`.docs/e2e/req.md`](./.docs/e2e/req.md) |
+| Final user playbook | Compact PDF guide for the end user: start, screens, everyday actions and blocked work. | [`.docs/playbooks/final-user-playbook.pdf`](./.docs/playbooks/final-user-playbook.pdf) |
+| Operations playbook | Compact PDF guide to run the stack on Docker, operate it and run the test and BDD suites. | [`.docs/playbooks/operation-playbook.pdf`](./.docs/playbooks/operation-playbook.pdf) |
 | SOW index | Delivery index, status model, dependency graph, milestones. | [`.docs/sow/SOW.md`](./.docs/sow/SOW.md) |
 | Review plan checklist | Ordered execution plan to finish the full WP review (2026-11-09). | [`.docs/sow/review-plan-chacklist-20261109.md`](./.docs/sow/review-plan-chacklist-20261109.md) |
 | WP-00 Governance | Program governance, Lean/Agile delivery, quality system. | [`.docs/sow/WP-00-GOVERNANCE.md`](./.docs/sow/WP-00-GOVERNANCE.md) |
