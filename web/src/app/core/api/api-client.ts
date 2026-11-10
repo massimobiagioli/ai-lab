@@ -217,8 +217,8 @@ export class ApiClient {
         projects.data.length === 0 ||
         agents.data.length === 0
       );
-    } catch (error) {
-      return error instanceof ApiProblem && error.status === 401;
+    } catch {
+      return false;
     }
   }
 
