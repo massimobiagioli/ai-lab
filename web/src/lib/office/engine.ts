@@ -7,6 +7,7 @@ export interface OfficeAgent {
   readonly id: string;
   readonly name: string;
   readonly desk: Desk;
+  characterId?: string;
   state: AgentDomainState;
   position: Point;
   path: Point[];
@@ -74,6 +75,13 @@ export class OfficeEngine {
     const agent = this.get(id);
     if (agent) {
       agent.state = state;
+    }
+  }
+
+  setCharacter(id: string, characterId: string): void {
+    const agent = this.get(id);
+    if (agent) {
+      agent.characterId = characterId;
     }
   }
 

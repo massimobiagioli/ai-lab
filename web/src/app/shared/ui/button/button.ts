@@ -22,40 +22,58 @@ export type ButtonVariant = 'primary' | 'ghost' | 'danger';
     .ui-button {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: var(--ailab-space-2);
-      padding: var(--ailab-space-2) var(--ailab-space-3);
-      border: 2px solid var(--ailab-color-muted);
-      border-radius: var(--ailab-radius);
+      min-height: 2.375rem;
+      padding: 0.55rem 0.95rem;
+      border: 1px solid var(--ailab-color-border);
+      border-radius: var(--ailab-radius-md);
       background: var(--ailab-color-surface);
-      color: var(--ailab-color-text);
-      font-family: var(--ailab-font-mono);
+      color: var(--ailab-color-text-soft);
+      font-family: var(--ailab-font-sans);
       font-size: var(--ailab-font-size-md);
+      font-weight: 600;
       cursor: pointer;
       transition:
-        transform 80ms ease,
-        background 160ms ease;
+        background var(--ailab-motion-fast) ease,
+        border-color var(--ailab-motion-fast) ease,
+        box-shadow var(--ailab-motion-fast) ease,
+        transform var(--ailab-motion-fast) ease;
     }
     .ui-button:hover:not(:disabled) {
       background: var(--ailab-color-surface-raised);
+      border-color: var(--ailab-color-border-strong);
     }
     .ui-button:active:not(:disabled) {
       transform: translateY(1px);
     }
     .ui-button:focus-visible {
-      outline: 2px solid var(--ailab-color-accent);
-      outline-offset: 2px;
+      outline: none;
+      box-shadow: 0 0 0 3px var(--ailab-color-accent-soft);
+      border-color: var(--ailab-color-accent);
     }
     .ui-button:disabled {
-      opacity: 0.5;
+      opacity: 0.55;
       cursor: not-allowed;
     }
     .ui-button--primary {
-      border-color: var(--ailab-color-accent);
-      color: var(--ailab-color-accent);
+      border-color: transparent;
+      background: var(--ailab-color-accent);
+      color: #ffffff;
+      box-shadow: 0 8px 18px -12px var(--ailab-color-accent);
+    }
+    .ui-button--primary:hover:not(:disabled) {
+      background: var(--ailab-color-accent-strong);
+      border-color: transparent;
     }
     .ui-button--danger {
-      border-color: var(--ailab-color-danger);
+      border-color: transparent;
+      background: var(--ailab-color-danger-soft);
       color: var(--ailab-color-danger);
+    }
+    .ui-button--danger:hover:not(:disabled) {
+      background: #fecaca;
+      border-color: transparent;
     }
     .ui-button[aria-busy='true'] {
       cursor: progress;

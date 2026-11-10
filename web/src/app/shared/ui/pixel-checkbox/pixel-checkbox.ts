@@ -1,4 +1,5 @@
 import { Component, input, model } from '@angular/core';
+import { createId } from '../../../core/ids';
 
 @Component({
   selector: 'app-pixel-checkbox',
@@ -42,7 +43,7 @@ export class PixelCheckbox {
   readonly checked = model(false);
   readonly disabled = input(false);
   readonly error = input<string | null>(null);
-  protected readonly errorId = `checkbox-error-${crypto.randomUUID()}`;
+  protected readonly errorId = `checkbox-error-${createId()}`;
 
   protected onChange(event: Event): void {
     const target = event.target;

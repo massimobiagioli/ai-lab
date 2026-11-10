@@ -17,14 +17,16 @@ import { Component, input } from '@angular/core';
   styles: `
     .ui-progress {
       height: 8px;
-      border: 2px solid var(--ailab-color-muted);
+      overflow: hidden;
+      border-radius: var(--ailab-radius-pill);
       background: var(--ailab-color-surface-sunken);
     }
     .ui-progress__bar {
       display: block;
       height: 100%;
-      background: var(--ailab-color-accent);
-      transition: width var(--ailab-motion-base) steps(8);
+      border-radius: inherit;
+      background: var(--ailab-gradient-accent);
+      transition: width var(--ailab-motion-base) ease;
     }
   `,
 })

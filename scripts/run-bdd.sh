@@ -36,7 +36,9 @@ run_node() {
   "$ROOT/scripts/run-node.sh" "$@"
 }
 
-run_node scripts/bdd-preflight.mjs
+PREFLIGHT_ARGS=()
+if [ "${AILAB_BDD_LIVE:-0}" = "1" ]; then PREFLIGHT_ARGS+=(--live); fi
+run_node scripts/bdd-preflight.mjs "${PREFLIGHT_ARGS[@]+"${PREFLIGHT_ARGS[@]}"}"
 PREFLIGHT_STATUS=$?
 if [ "$PREFLIGHT_STATUS" -ne 0 ]; then
   exit "$PREFLIGHT_STATUS"

@@ -36,15 +36,19 @@ import { FocusTrap } from '../../directives/focus-trap';
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: min(480px, 92vw);
+      width: min(520px, 92vw);
       background: var(--ailab-color-surface);
-      border: 2px solid var(--ailab-color-accent);
-      padding: var(--ailab-space-4);
+      border: var(--ailab-border);
+      border-radius: var(--ailab-radius-lg);
+      box-shadow: var(--ailab-shadow-raised);
+      padding: var(--ailab-space-6);
       z-index: var(--ailab-z-toast);
     }
     .ui-dialog__title {
-      margin: 0 0 var(--ailab-space-3);
-      font-size: var(--ailab-font-size-lg);
+      margin: 0 0 var(--ailab-space-4);
+      font-size: 1.2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
     }
     .ui-dialog__actions {
       display: flex;

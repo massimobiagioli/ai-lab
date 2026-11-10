@@ -17,6 +17,7 @@ import { PixelCheckbox } from '../../shared/ui/pixel-checkbox/pixel-checkbox';
 import { DEMO_MEMORY } from '../../core/demo/demo-data';
 import { InventoryStore } from './store/inventory.store';
 import type { Agent, Project, Provider } from '../../domain/models';
+import { createId } from '../../core/ids';
 
 export type InventorySection = 'agents' | 'projects' | 'providers';
 
@@ -202,7 +203,7 @@ export class Inventory implements OnInit {
   protected readonly inspectorOpen = signal(false);
   protected readonly activeTab = signal('live');
   protected readonly role = signal('dev');
-  protected readonly character = signal('pixel-ada');
+  protected readonly character = signal('scrappy_dev');
   protected readonly model = signal('deepseek-flash');
   protected readonly autonomy = signal('2');
   protected readonly repo = signal('');
@@ -228,9 +229,16 @@ export class Inventory implements OnInit {
     { value: 'qa', label: 'QA' },
   ] as const;
   protected readonly characterOptions = [
-    { value: 'pixel-ada', label: 'Ada' },
-    { value: 'pixel-alan', label: 'Alan' },
-    { value: 'pixel-grace', label: 'Grace' },
+    { value: 'veteran_lead', label: 'The Veteran Lead' },
+    { value: 'systems_analyst', label: 'The Systems Analyst' },
+    { value: 'scrappy_dev', label: 'The Scrappy Dev' },
+    { value: 'staff_architect', label: 'The Staff Architect' },
+    { value: 'precise_consultant', label: 'The Precise Consultant' },
+    { value: 'confident_muse', label: 'The Confident Muse' },
+    { value: 'steady_operator', label: 'The Steady Operator' },
+    { value: 'eager_intern', label: 'The Eager Intern' },
+    { value: 'pixel_artisan', label: 'The Pixel Artisan' },
+    { value: 'quiet_professor', label: 'The Quiet Professor' },
   ] as const;
   protected readonly modelOptions = [
     { value: 'deepseek-flash', label: 'deepseek-flash' },
@@ -381,7 +389,7 @@ export class Inventory implements OnInit {
       this.formError.set('API key must be at least 8 characters');
       return;
     }
-    const id = `local-${crypto.randomUUID()}`;
+    const id = `local-${createId()}`;
     switch (this.section()) {
       case 'agents':
         this.store.addAgent({

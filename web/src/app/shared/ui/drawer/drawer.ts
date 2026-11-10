@@ -8,7 +8,14 @@ import { FocusTrap } from '../../directives/focus-trap';
   imports: [Button, FocusTrap],
   template: `
     @if (open()) {
-      <div class="drawer" role="dialog" aria-modal="true" [attr.aria-label]="label()" appFocusTrap>
+      <div
+        class="drawer"
+        [class.drawer--right]="side() === 'right'"
+        role="dialog"
+        aria-modal="true"
+        [attr.aria-label]="label()"
+        appFocusTrap
+      >
         <header class="drawer__header">
           <h2 class="drawer__title">{{ label() }}</h2>
           <app-button (pressed)="closed.emit()">Close</app-button>
@@ -27,12 +34,18 @@ import { FocusTrap } from '../../directives/focus-trap';
     .drawer {
       position: fixed;
       inset: 0 auto 0 0;
-      width: min(320px, 90vw);
+      width: min(380px, 92vw);
       background: var(--ailab-color-surface);
-      border-right: 2px solid var(--ailab-color-accent);
-      padding: var(--ailab-space-4);
+      border-right: var(--ailab-border);
+      box-shadow: var(--ailab-shadow-raised);
+      padding: var(--ailab-space-6);
       z-index: var(--ailab-z-drawer);
       overflow-y: auto;
+    }
+    .drawer--right {
+      inset: 0 0 0 auto;
+      border-right: 0;
+      border-left: var(--ailab-border);
     }
     .drawer__header {
       display: flex;
@@ -43,8 +56,9 @@ import { FocusTrap } from '../../directives/focus-trap';
     }
     .drawer__title {
       margin: 0;
-      font-size: var(--ailab-font-size-lg);
-      letter-spacing: 0.04em;
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
     }
     .drawer__scrim {
       position: fixed;
@@ -59,6 +73,7 @@ import { FocusTrap } from '../../directives/focus-trap';
 export class Drawer {
   readonly label = input.required<string>();
   readonly open = input.required<boolean>();
+  readonly side = input<'left' | 'right'>('left');
   readonly closed = output<void>();
 
   protected onEscape(): void {

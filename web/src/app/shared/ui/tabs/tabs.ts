@@ -36,26 +36,27 @@ export interface TabItem {
     .ui-tabs {
       display: flex;
       gap: var(--ailab-space-1);
-      border-bottom: 2px solid var(--ailab-color-muted);
+      border-bottom: 1px solid var(--ailab-color-border);
       margin-bottom: var(--ailab-space-4);
     }
     .ui-tabs__tab {
-      padding: var(--ailab-space-2) var(--ailab-space-3);
-      border: 2px solid transparent;
-      border-bottom: 0;
+      padding: 0.65rem 0.9rem;
+      border: 0;
+      border-bottom: 2px solid transparent;
       background: transparent;
       color: var(--ailab-color-muted);
-      font-family: var(--ailab-font-mono);
+      font-family: var(--ailab-font-sans);
       font-size: var(--ailab-font-size-md);
+      font-weight: 600;
       cursor: pointer;
     }
     .ui-tabs__tab.is-active {
       color: var(--ailab-color-accent);
-      border-color: var(--ailab-color-accent);
+      border-bottom-color: var(--ailab-color-accent);
     }
     .ui-tabs__tab:focus-visible {
-      outline: 2px solid var(--ailab-color-accent);
-      outline-offset: 2px;
+      outline: none;
+      box-shadow: inset 0 0 0 2px var(--ailab-color-accent-soft);
     }
   `,
 })

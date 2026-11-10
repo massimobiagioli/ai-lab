@@ -17,20 +17,22 @@ import { Component, input } from '@angular/core';
     .ui-page-header {
       display: flex;
       flex-wrap: wrap;
-      align-items: flex-end;
+      align-items: center;
       justify-content: space-between;
-      gap: var(--ailab-space-3);
-      margin-bottom: var(--ailab-space-4);
+      gap: var(--ailab-space-4);
+      margin-bottom: var(--ailab-space-6);
     }
     .ui-page-header__title {
       margin: 0;
-      font-size: var(--ailab-font-size-xl);
-      letter-spacing: 0.04em;
+      color: var(--ailab-color-text);
+      font-size: clamp(1.55rem, 3vw, var(--ailab-font-size-xl));
+      font-weight: 720;
+      letter-spacing: -0.035em;
     }
     .ui-page-header__subtitle {
       margin: var(--ailab-space-1) 0 0;
       color: var(--ailab-color-muted);
-      font-size: var(--ailab-font-size-md);
+      font-size: 0.95rem;
     }
     .ui-page-header__actions {
       display: flex;

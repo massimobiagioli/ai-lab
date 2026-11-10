@@ -20,10 +20,9 @@ describe('Office deep links', () => {
     const fixture = TestBed.createComponent(Office);
     fixture.detectChanges();
     await Promise.resolve();
-    const button = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
-      '[data-testid="agent-agent-dev"]',
-    );
-    expect(document.activeElement).toBe(button);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    fixture.detectChanges();
+    expect(document.activeElement?.closest('.drawer')).toBeTruthy();
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('CV:');
   });
 });

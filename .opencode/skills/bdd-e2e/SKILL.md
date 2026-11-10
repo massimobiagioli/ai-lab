@@ -44,7 +44,7 @@ Do not use this skill for the plain Playwright specs in `web/e2e`, for product c
    - Use polling with a bounded timeout, never wall-clock sleeps.
    - Redact secrets and tokens in every failure message, trace and report.
 4. Maintain the preflight gate:
-   - `scripts/bdd-preflight.mjs` reads `.docs/e2e/req.md` and exits `2` when any `- [ ]` item is missing.
+   - `scripts/bdd-preflight.mjs` reads `.docs/e2e/req.md` and exits `2` when any applicable `- [ ]` item is missing; items marked `(live)` are required only with `--live`.
    - `- [x]` is satisfied; `N/A` or `n/a` on the same line is accepted; a missing or unreadable file exits `2`.
    - There are no stop-condition or sign-off sections in the minimal checklist; do not invent them.
    - The error message names the file, the missing item and its section and line, and states that the suite was not started.

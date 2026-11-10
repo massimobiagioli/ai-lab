@@ -230,14 +230,14 @@ The preflight is mandatory and runs before any test generation or execution. Imp
 
 1. Read `.docs/e2e/req.md`. If the file is missing, empty or unreadable, exit `2` with `BDD suite not started: .docs/e2e/req.md is missing or unreadable.`
 2. The file is a minimal manual setup checklist. It currently contains exactly one entry: the DeepSeek API key for live runs. It has no numbered sections, no stop conditions and no sign-off table; do not require or invent them.
-3. Every `- [ ]` line is a missing prerequisite unless the same line contains `N/A` or `n/a`. A `- [x]` line is satisfied.
+3. Every `- [ ]` line is a missing prerequisite unless the same line contains `N/A` or `n/a`, or the line is marked `(live)` and the preflight was not invoked with `--live`. A `- [x]` line is satisfied.
 4. Ignore checkbox-shaped text inside fenced code blocks.
 5. Extra checked items are optional setup notes and never block execution.
 6. Do not add requirements that are not written in `.docs/e2e/req.md`. Anything the tooling can provision automatically is out of scope for this gate.
 
 ### 8.2 Output and exit codes
 
-- `0`: every checkbox in `.docs/e2e/req.md` is `[x]` or `N/A`.
+- `0`: every applicable checkbox in `.docs/e2e/req.md` is `[x]`, `N/A`, or a live-only item outside a live run.
 - `2`: at least one checkbox is `[ ]`. Print to stderr:
 
 ```text

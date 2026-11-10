@@ -3,6 +3,7 @@ import { ApiClient } from '../../core/api/api-client';
 import { toProblem } from '../../core/api/problem';
 import { withOptimistic, type LoadState } from '../../core/state/store-utils';
 import type { Problem, RunView } from '../../domain/models';
+import { DEMO_LAB_ID } from '../../core/demo/demo-data';
 
 export type StoreState = LoadState;
 
@@ -14,6 +15,7 @@ export class RunsStore {
   readonly state = signal<StoreState>('idle');
   readonly runs = signal<readonly RunView[]>([]);
   readonly error = signal<Problem | null>(null);
+  readonly demo = this.api.usingDemo;
   readonly isEmpty = computed(() => this.state() === 'ready' && this.runs().length === 0);
   readonly counters = computed(() => {
     const runs = this.runs();
@@ -25,7 +27,7 @@ export class RunsStore {
     };
   });
 
-  async load(labId = 'default'): Promise<void> {
+  async load(labId = DEMO_LAB_ID): Promise<void> {
     this.state.set('loading');
     this.error.set(null);
     try {

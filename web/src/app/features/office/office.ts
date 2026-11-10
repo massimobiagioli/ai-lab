@@ -9,27 +9,25 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { PageHeader } from '../../shared/ui/page-header/page-header';
 import { Card } from '../../shared/ui/card/card';
 import { Button } from '../../shared/ui/button/button';
 import { StatusBadge, StatusTone } from '../../shared/status-badge/status-badge';
 import { Drawer } from '../../shared/ui/drawer/drawer';
+import { Tabs } from '../../shared/ui/tabs/tabs';
 import { WsService } from '../../core/ws/ws.service';
 import {
   CANVAS_HEIGHT,
   CANVAS_WIDTH,
   DESKS,
-  FURNITURE,
-  type Furniture,
-  OFFICE_HEIGHT,
   OFFICE_WIDTH,
   OFFSET_Y,
   TILE,
-  isBlocked,
 } from '../../../lib/office/layout';
 import { OfficeEngine, type OfficeAgent } from '../../../lib/office/engine';
-import { SPRITES } from '../../../lib/office/sprites';
+import { drawOffice } from '../../../lib/office/art';
+import { CHARACTERS, characterOrDefault, type CharacterId } from '../../../lib/office/characters';
 import type { Point } from '../../../lib/office/pathfinding';
 import type { AgentDomainState } from '../../../lib/office/agent-state';
 
@@ -38,24 +36,133 @@ const AGENTS: ReadonlyArray<{
   name: string;
   state: AgentDomainState;
   deskIndex: number;
+  characterId: CharacterId;
 }> = [
-  { id: 'agent-tech-lead', name: 'Tech Lead', state: 'idle', deskIndex: 0 },
-  { id: 'agent-analyst', name: 'Analyst', state: 'idle', deskIndex: 1 },
-  { id: 'agent-dev', name: 'Dev', state: 'idle', deskIndex: 2 },
-  { id: 'agent-qa', name: 'QA', state: 'idle', deskIndex: 3 },
-  { id: 'agent-lounge', name: 'Lounge', state: 'idle', deskIndex: 4 },
+  {
+    id: 'agent-tech-lead',
+    name: 'Tech Lead',
+    state: 'idle',
+    deskIndex: 0,
+    characterId: 'veteran_lead',
+  },
+  {
+    id: 'agent-analyst',
+    name: 'Analyst',
+    state: 'idle',
+    deskIndex: 1,
+    characterId: 'systems_analyst',
+  },
+  { id: 'agent-dev', name: 'Dev', state: 'idle', deskIndex: 2, characterId: 'scrappy_dev' },
+  { id: 'agent-qa', name: 'QA', state: 'idle', deskIndex: 3, characterId: 'pixel_artisan' },
+  {
+    id: 'agent-lounge',
+    name: 'Lounge',
+    state: 'idle',
+    deskIndex: 4,
+    characterId: 'confident_muse',
+  },
 ];
+
+interface HistoryEntry {
+  readonly time: string;
+  readonly text: string;
+}
+
+interface MemoryEntry {
+  readonly title: string;
+  readonly snippet: string;
+}
+
+const AGENT_CARDS: Readonly<Record<string, string>> = {
+  'agent-tech-lead': 'AIL-4 · Release 1.0',
+  'agent-analyst': 'AIL-2 · Inventory wizards',
+  'agent-dev': 'AIL-1 · Build the Kanban board',
+  'agent-qa': 'AIL-4 · Review release candidate',
+  'agent-lounge': 'No active card',
+};
+
+const AGENT_ACTIVITY: Readonly<Record<string, readonly string[]>> = {
+  'agent-tech-lead': [
+    'Refined AIL-4 into three acceptance criteria.',
+    'Unblocked the Dev on the board filter query.',
+    'Queued the QA review for the release candidate.',
+  ],
+  'agent-analyst': [
+    'Updated the SOW traceability matrix.',
+    'Wrote acceptance criteria for AIL-2.',
+    'Flagged a dependency between AIL-2 and AIL-4.',
+  ],
+  'agent-dev': [
+    'Implemented the keyboard drag and drop flow.',
+    'Ran unit tests and fixed the optimistic update.',
+    'Opened PR #42 for AIL-1.',
+  ],
+  'agent-qa': [
+    'Verified the six board columns at 390 px.',
+    'Rejected one transition with a DoR violation.',
+    'Recorded evidence for AIL-4.',
+  ],
+  'agent-lounge': ['Taking a short break.', 'Coffee machine is ready.'],
+};
+
+const AGENT_HISTORY: Readonly<Record<string, readonly HistoryEntry[]>> = {
+  'agent-tech-lead': [
+    { time: '09:42', text: 'Merged AIL-4 after QA approval.' },
+    { time: '09:18', text: 'Assigned AIL-2 to the Analyst.' },
+    { time: '08:55', text: 'Created the release candidate card.' },
+  ],
+  'agent-analyst': [
+    { time: '09:31', text: 'Moved AIL-2 to READY.' },
+    { time: '09:10', text: 'Added the risk register entry for SCM scopes.' },
+    { time: '08:40', text: 'Approved the SOW version 3.' },
+  ],
+  'agent-dev': [
+    { time: '09:38', text: 'Run step implement advanced.' },
+    { time: '09:20', text: 'Pushed the keyboard DnD commit.' },
+    { time: '08:35', text: 'Picked up AIL-1.' },
+  ],
+  'agent-qa': [
+    { time: '09:35', text: 'Changed state to working.' },
+    { time: '09:12', text: 'Ran the responsive board checks.' },
+    { time: '08:50', text: 'Approved the inventory drawer change.' },
+  ],
+  'agent-lounge': [
+    { time: '09:00', text: 'Went on a coffee break.' },
+    { time: '08:30', text: 'Returned to the lounge desk.' },
+  ],
+};
+
+const AGENT_MEMORY: Readonly<Record<string, readonly MemoryEntry[]>> = {
+  'agent-tech-lead': [
+    { title: 'WIP policy', snippet: 'Keep DOING under two cards per agent.' },
+    { title: 'Merge rule', snippet: 'QA approval and green checks are mandatory.' },
+  ],
+  'agent-analyst': [
+    { title: 'SOW template', snippet: 'Every FR needs an ID and testable criteria.' },
+    { title: 'Traceability', snippet: 'Idea → requirement → plan task → card.' },
+  ],
+  'agent-dev': [
+    { title: 'Board conventions', snippet: 'Columns follow the six-state matrix.' },
+    { title: 'Test rule', snippet: 'No optimistic update without a rollback path.' },
+  ],
+  'agent-qa': [
+    { title: 'QA heuristics', snippet: 'Verify acceptance criteria with independent evidence.' },
+    { title: 'Responsive gate', snippet: 'Check 1280, 768 and 390 widths.' },
+  ],
+  'agent-lounge': [{ title: 'Office', snippet: 'Lounge is for idle breaks, not work.' }],
+};
 
 @Component({
   selector: 'app-office',
-  imports: [PageHeader, Card, Button, StatusBadge, Drawer, RouterLink],
+  host: { class: 'office-theme' },
+  imports: [PageHeader, Card, Button, StatusBadge, Drawer, Tabs],
   template: `
     <app-page-header title="Virtual office" subtitle="Agents, desks and truthful states">
       <app-button (pressed)="moveToLounge()">Move to lounge</app-button>
     </app-page-header>
 
     <div class="office">
-      <app-card title="Floor">
+      <app-card class="office__stage" title="Floor">
         <canvas
           #canvas
           class="office__canvas"
@@ -71,89 +178,171 @@ const AGENTS: ReadonlyArray<{
         </p>
       </app-card>
 
-      <app-card title="Agents" aria-live="polite">
-        <ul class="office__agents">
-          @for (agent of engine.list; track agent.id) {
-            <li>
-              <button
-                class="office__agent"
-                type="button"
-                [attr.data-testid]="'agent-' + agent.id"
-                [class.is-selected]="selectedId() === agent.id"
-                (click)="select(agent.id)"
-              >
-                <span class="office__name">{{ agent.name }}</span>
-                <app-status-badge [label]="agent.state" [tone]="tone(agent.state)" />
-              </button>
-            </li>
-          }
-        </ul>
-        @if (selectedAgent(); as agent) {
-          <div class="office__detail">
-            <h3>{{ agent.name }}</h3>
-            <p>
-              State: <strong>{{ agent.state }}</strong>
-            </p>
-            <p>
-              Animation: <strong>{{ animation(agent) }}</strong>
-            </p>
-            <p>Position: {{ agent.position.x }}, {{ agent.position.y }}</p>
-            @if (cvOpen()) {
-              <p class="office__cv">CV: {{ agent.name }} · {{ agent.state }}</p>
+      <div class="office__side">
+        <app-card title="Agents" aria-live="polite">
+          <p class="office__hint">
+            Select an agent on the floor or in this list to open the inspector.
+          </p>
+          <ul class="office__agents">
+            @for (agent of engine.list; track agent.id) {
+              <li>
+                <button
+                  class="office__agent"
+                  type="button"
+                  [attr.data-testid]="'agent-' + agent.id"
+                  [class.is-selected]="selectedId() === agent.id"
+                  (click)="select(agent.id)"
+                >
+                  <span class="office__identity">
+                    <span class="office__name">{{ agent.name }}</span>
+                    <span class="office__character-name">{{ characterName(agent) }}</span>
+                  </span>
+                  <app-status-badge [label]="agent.state" [tone]="tone(agent.state)" />
+                </button>
+              </li>
             }
-            <div class="office__actions">
-              @for (desk of desks; track desk.id) {
-                <app-button (pressed)="moveTo(desk.seat)">{{ desk.name }}</app-button>
-              }
-            </div>
-          </div>
-        } @else {
-          <p class="office__hint">No agent selected.</p>
-        }
-      </app-card>
-
-      <app-card title="Objects">
-        <ul class="office__agents">
-          @for (object of furniture; track object.id) {
-            <li>
-              <button
-                class="office__agent"
-                type="button"
-                [attr.data-testid]="'object-' + object.id"
-                (click)="openObject(object)"
-              >
-                <span class="office__name">{{ object.name }}</span>
-                <span aria-hidden="true">›</span>
-              </button>
-            </li>
+          </ul>
+          @if (selectedAgent() === null) {
+            <p class="office__hint">No agent selected.</p>
           }
-        </ul>
-      </app-card>
+        </app-card>
+      </div>
     </div>
 
-    <app-drawer label="Office object" [open]="panelOpen()" (closed)="closeObject()">
-      @if (selectedObject(); as object) {
-        <h3>{{ object.name }}</h3>
-        <p>{{ object.panel }}</p>
-        <a [routerLink]="object.path" (click)="closeObject()">Open {{ object.panel }}</a>
+    <app-drawer
+      side="right"
+      label="Agent inspector"
+      [open]="inspectorOpen()"
+      (closed)="inspectorOpen.set(false)"
+    >
+      @if (selectedAgent(); as agent) {
+        <div class="inspector__head">
+          <div>
+            <h3>{{ agent.name }}</h3>
+            <p class="inspector__character">{{ characterName(agent) }} · {{ agent.desk.name }}</p>
+          </div>
+          <app-status-badge [label]="agent.state" [tone]="tone(agent.state)" />
+        </div>
+
+        <app-tabs label="Agent inspector" [tabs]="inspectorTabs" [(active)]="inspectorTab" />
+
+        @switch (inspectorTab()) {
+          @case ('live') {
+            <section class="inspector__section">
+              <h4>Current card</h4>
+              <p>{{ currentCard(agent) }}</p>
+              <h4>Activity</h4>
+              <ul class="inspector__list">
+                @for (activity of activities(agent); track activity) {
+                  <li>{{ activity }}</li>
+                }
+              </ul>
+              <p class="inspector__cv">CV: {{ characterName(agent) }} · {{ agent.state }}</p>
+              <label class="inspector__character-select">
+                <span>Character</span>
+                <select [value]="characterId(agent)" (change)="setCharacter($event)">
+                  @for (profile of characters; track profile.id) {
+                    <option [value]="profile.id" [selected]="profile.id === characterId(agent)">
+                      {{ profile.name }}
+                    </option>
+                  }
+                </select>
+              </label>
+              <p class="inspector__speech">{{ characterSpeech(agent) }}</p>
+            </section>
+          }
+          @case ('history') {
+            <section class="inspector__section">
+              <h4>History</h4>
+              <ul class="inspector__list inspector__list--history">
+                @for (entry of history(agent); track entry.time + entry.text) {
+                  <li>
+                    <time>{{ entry.time }}</time>
+                    <span>{{ entry.text }}</span>
+                  </li>
+                }
+              </ul>
+            </section>
+          }
+          @case ('memory') {
+            <section class="inspector__section">
+              <h4>Memory</h4>
+              <ul class="inspector__list">
+                @for (note of memory(agent); track note.title) {
+                  <li>
+                    <strong>{{ note.title }}</strong>
+                    <span>{{ note.snippet }}</span>
+                  </li>
+                }
+              </ul>
+            </section>
+          }
+          @default {
+            <section class="inspector__section">
+              <h4>Controls</h4>
+              <div class="inspector__actions">
+                @if (agent.state === 'paused') {
+                  <app-button variant="primary" (pressed)="resume(agent)">Resume</app-button>
+                } @else {
+                  <app-button (pressed)="pause(agent)">Pause</app-button>
+                }
+                <app-button (pressed)="moveTo(agent.desk.seat)">Back to desk</app-button>
+              </div>
+              <label class="inspector__ask">
+                <span>Ask something</span>
+                <textarea
+                  rows="3"
+                  [value]="question()"
+                  (input)="onQuestionInput($event)"
+                  placeholder="Ask for a status update, a decision or a blocker."
+                ></textarea>
+              </label>
+              <app-button
+                variant="primary"
+                [disabled]="question().trim().length < 3"
+                (pressed)="ask(agent)"
+              >
+                Send question
+              </app-button>
+              @if (askStatus() !== '') {
+                <p class="inspector__ask-status">{{ askStatus() }}</p>
+              }
+            </section>
+          }
+        }
       }
     </app-drawer>
   `,
   styles: `
+    :host {
+      display: block;
+      min-height: 100%;
+      background: var(--ailab-color-bg);
+    }
     .office {
-      display: grid;
-      grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr);
+      display: flex;
+      flex-direction: column;
       gap: var(--ailab-space-4);
+    }
+    .office__stage {
+      display: block;
+      padding: 0;
     }
     .office__canvas {
       display: block;
-      width: 100%;
-      max-width: 768px;
+      max-width: 100%;
       height: auto;
+      margin: 0 auto;
       image-rendering: pixelated;
       border: 2px solid var(--ailab-color-muted);
       background: var(--ailab-color-surface-sunken);
       cursor: crosshair;
+    }
+    .office__side {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--ailab-space-4);
+      align-items: start;
     }
     .office__hint {
       color: var(--ailab-color-muted);
@@ -163,6 +352,138 @@ const AGENTS: ReadonlyArray<{
     .office__fps {
       color: var(--ailab-color-accent);
       margin-left: var(--ailab-space-2);
+    }
+    .office__identity {
+      display: flex;
+      flex-direction: column;
+      gap: 0.1rem;
+      min-width: 0;
+    }
+    .office__character-name {
+      color: var(--ailab-color-muted);
+      font-size: var(--ailab-font-size-xs);
+      font-weight: 500;
+    }
+    .inspector__head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--ailab-space-3);
+      margin-bottom: var(--ailab-space-4);
+    }
+    .inspector__head h3 {
+      margin: 0;
+      color: var(--ailab-color-text);
+      font-size: 1.2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .inspector__character {
+      margin: 0.2rem 0 0;
+      color: var(--ailab-color-muted);
+      font-size: var(--ailab-font-size-sm);
+    }
+    .inspector__section h4 {
+      margin: var(--ailab-space-4) 0 var(--ailab-space-2);
+      color: var(--ailab-color-muted);
+      font-size: var(--ailab-font-size-xs);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .inspector__section h4:first-child {
+      margin-top: 0;
+    }
+    .inspector__section p {
+      margin: 0;
+      color: var(--ailab-color-text-soft);
+      font-size: var(--ailab-font-size-md);
+    }
+    .inspector__list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: var(--ailab-space-2);
+    }
+    .inspector__list li {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      padding: 0.6rem 0.7rem;
+      border: 1px solid var(--ailab-color-border);
+      border-radius: var(--ailab-radius-md);
+      background: var(--ailab-color-surface-raised);
+      color: var(--ailab-color-text-soft);
+      font-size: var(--ailab-font-size-sm);
+    }
+    .inspector__list--history li {
+      flex-direction: row;
+      align-items: baseline;
+      gap: var(--ailab-space-2);
+    }
+    .inspector__list time {
+      color: var(--ailab-color-muted);
+      font-variant-numeric: tabular-nums;
+      font-size: var(--ailab-font-size-xs);
+      font-weight: 600;
+    }
+    .inspector__list strong {
+      color: var(--ailab-color-text);
+      font-size: var(--ailab-font-size-sm);
+    }
+    .inspector__list span {
+      color: var(--ailab-color-muted);
+    }
+    .inspector__cv {
+      margin-top: var(--ailab-space-4);
+      padding: 0.55rem 0.7rem;
+      border-radius: var(--ailab-radius-md);
+      background: var(--ailab-color-accent-soft);
+      color: var(--ailab-color-accent);
+      font-size: var(--ailab-font-size-sm);
+      font-weight: 600;
+    }
+    .inspector__character-select,
+    .inspector__ask {
+      display: flex;
+      flex-direction: column;
+      gap: var(--ailab-space-1);
+      margin-top: var(--ailab-space-4);
+      color: var(--ailab-color-text-soft);
+      font-size: var(--ailab-font-size-sm);
+      font-weight: 600;
+    }
+    .inspector__character-select select,
+    .inspector__ask textarea {
+      padding: 0.6rem 0.7rem;
+      border: 1px solid var(--ailab-color-border);
+      border-radius: var(--ailab-radius-md);
+      background: var(--ailab-color-surface);
+      color: var(--ailab-color-text);
+      font: inherit;
+      font-weight: 400;
+    }
+    .inspector__ask textarea {
+      resize: vertical;
+      min-height: 5rem;
+    }
+    .inspector__speech {
+      color: var(--ailab-color-muted);
+      font-size: var(--ailab-font-size-sm);
+      margin: var(--ailab-space-2) 0 0;
+    }
+    .inspector__actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--ailab-space-2);
+    }
+    .inspector__ask-status {
+      margin-top: var(--ailab-space-2);
+      color: var(--ailab-color-success);
+      font-size: var(--ailab-font-size-sm);
+      font-weight: 600;
     }
     .office__agents {
       list-style: none;
@@ -202,7 +523,7 @@ const AGENTS: ReadonlyArray<{
       margin-top: var(--ailab-space-2);
     }
     @media (max-width: 900px) {
-      .office {
+      .office__side {
         grid-template-columns: 1fr;
       }
     }
@@ -226,6 +547,7 @@ export class Office implements AfterViewInit, OnDestroy {
         name: agent.name,
         desk,
         state: agent.state,
+        characterId: agent.characterId,
         position: desk.seat,
         path: [],
         progress: 0,
@@ -234,10 +556,18 @@ export class Office implements AfterViewInit, OnDestroy {
     }),
   );
   protected readonly selectedId = signal<string | null>(null);
-  protected readonly selectedObject = signal<Furniture | null>(null);
-  protected readonly cvOpen = signal(false);
-  protected readonly panelOpen = signal(false);
-  protected readonly furniture = FURNITURE;
+  protected readonly inspectorOpen = signal(false);
+  protected readonly inspectorTab = signal('live');
+  protected readonly inspectorTabs = [
+    { id: 'live', label: 'Live' },
+    { id: 'history', label: 'History' },
+    { id: 'memory', label: 'Memory' },
+    { id: 'controls', label: 'Controls' },
+  ] as const;
+  protected readonly question = signal('');
+  protected readonly askStatus = signal('');
+  private readonly questions = signal<Readonly<Record<string, readonly string[]>>>({});
+  protected readonly characters = CHARACTERS;
   protected readonly fps = signal(0);
   private readonly revision = signal(0);
   protected readonly selectedAgent = computed(() => {
@@ -286,18 +616,14 @@ export class Office implements AfterViewInit, OnDestroy {
     const linked = this.route.snapshot.queryParamMap.get('agent');
     if (linked !== null && this.engine.get(linked)) {
       this.selectedId.set(linked);
+      this.inspectorOpen.set(true);
     }
     const panel = this.route.snapshot.queryParamMap.get('panel');
     if (panel === 'cv' || panel === 'inspector') {
-      this.cvOpen.set(true);
-      queueMicrotask(() => this.focusAgent(this.selectedId()));
-    } else if (panel !== null) {
-      const object = FURNITURE.find((item) => item.id === panel);
-      if (object) {
-        this.openObject(object);
-      }
+      this.inspectorOpen.set(true);
+      this.inspectorTab.set('live');
     }
-    if (linked !== null) {
+    if (linked !== null && panel !== 'cv' && panel !== 'inspector') {
       queueMicrotask(() => this.focusAgent(linked));
     }
     this.updateScale();
@@ -318,27 +644,103 @@ export class Office implements AfterViewInit, OnDestroy {
     document.querySelector<HTMLElement>(`[data-testid="agent-${id}"]`)?.focus();
   }
 
-  protected openObject(object: Furniture): void {
-    this.selectedObject.set(object);
-    this.panelOpen.set(true);
-  }
-
-  protected closeObject(): void {
-    this.panelOpen.set(false);
-  }
-
   private updateScale(): void {
     const canvas = this.canvas().nativeElement;
     const available = canvas.parentElement?.clientWidth ?? CANVAS_WIDTH;
-    const scale = Math.max(1, Math.min(6, Math.floor(available / CANVAS_WIDTH)));
+    const scale = Math.max(1, Math.min(4, Math.floor(available / CANVAS_WIDTH)));
     canvas.style.width = `${scale * CANVAS_WIDTH}px`;
     canvas.style.height = `${scale * CANVAS_HEIGHT}px`;
   }
 
-  protected select(id: string): void {
-    this.selectedId.set(id);
+  protected characterId(agent: OfficeAgent): string {
+    return characterOrDefault(agent.characterId).id;
+  }
+
+  protected characterName(agent: OfficeAgent): string {
+    return characterOrDefault(agent.characterId).name;
+  }
+
+  protected characterSpeech(agent: OfficeAgent): string {
+    return characterOrDefault(agent.characterId).speech;
+  }
+
+  protected setCharacter(event: Event): void {
+    const target = event.target;
+    const id = this.selectedId();
+    if (!(target instanceof HTMLSelectElement) || id === null) {
+      return;
+    }
+    this.engine.setCharacter(id, target.value);
     this.revision.update((value) => value + 1);
     this.draw();
+  }
+
+  protected select(id: string): void {
+    this.selectedId.set(id);
+    this.inspectorOpen.set(true);
+    this.inspectorTab.set('live');
+    this.question.set('');
+    this.askStatus.set('');
+    this.revision.update((value) => value + 1);
+    this.draw();
+  }
+
+  protected pause(agent: OfficeAgent): void {
+    this.engine.setState(agent.id, 'paused');
+    this.questions.update((value) => ({
+      ...value,
+      [agent.id]: [...(value[agent.id] ?? []), 'Paused by the operator.'],
+    }));
+    this.revision.update((value) => value + 1);
+    this.draw();
+  }
+
+  protected resume(agent: OfficeAgent): void {
+    this.engine.setState(agent.id, 'working');
+    this.questions.update((value) => ({
+      ...value,
+      [agent.id]: [...(value[agent.id] ?? []), 'Resumed by the operator.'],
+    }));
+    this.revision.update((value) => value + 1);
+    this.draw();
+  }
+
+  protected onQuestionInput(event: Event): void {
+    const target = event.target;
+    if (target instanceof HTMLTextAreaElement) {
+      this.question.set(target.value);
+      this.askStatus.set('');
+    }
+  }
+
+  protected ask(agent: OfficeAgent): void {
+    const text = this.question().trim();
+    if (text.length < 3) {
+      return;
+    }
+    this.questions.update((value) => ({
+      ...value,
+      [agent.id]: [...(value[agent.id] ?? []), `You asked: ${text}`],
+    }));
+    this.question.set('');
+    this.askStatus.set(`Question queued for ${agent.name}.`);
+    this.revision.update((value) => value + 1);
+  }
+
+  protected currentCard(agent: OfficeAgent): string {
+    return AGENT_CARDS[agent.id] ?? 'No active card';
+  }
+
+  protected activities(agent: OfficeAgent): readonly string[] {
+    return [...(AGENT_ACTIVITY[agent.id] ?? []), ...(this.questions()[agent.id] ?? [])];
+  }
+
+  protected history(agent: OfficeAgent): readonly HistoryEntry[] {
+    return AGENT_HISTORY[agent.id] ?? [];
+  }
+
+  protected memory(agent: OfficeAgent): readonly MemoryEntry[] {
+    return AGENT_MEMORY[agent.id] ?? [];
   }
 
   protected moveTo(target: Point): void {
@@ -364,11 +766,6 @@ export class Office implements AfterViewInit, OnDestroy {
     const y = Math.floor(
       (((event.clientY - rect.top) / rect.height) * CANVAS_HEIGHT - OFFSET_Y) / TILE,
     );
-    const object = FURNITURE.find((item) => item.point.x === x && item.point.y === y);
-    if (object) {
-      this.openObject(object);
-      return;
-    }
     const agent = this.engine.agentAt({ x, y });
     if (agent) {
       this.select(agent.id);
@@ -423,89 +820,6 @@ export class Office implements AfterViewInit, OnDestroy {
     if (!context) {
       return;
     }
-    context.clearRect(0, 0, this.width, this.height);
-    for (let y = 0; y < OFFICE_HEIGHT; y += 1) {
-      for (let x = 0; x < OFFICE_WIDTH; x += 1) {
-        context.fillStyle = (x + y) % 2 === 0 ? '#1e293b' : '#182234';
-        context.fillRect(x * TILE, OFFSET_Y + y * TILE, TILE, TILE);
-        if (isBlocked({ x, y })) {
-          context.fillStyle = '#273449';
-          context.fillRect(x * TILE, OFFSET_Y + y * TILE, TILE, TILE);
-          context.fillStyle = '#94a3b8';
-          context.fillRect(x * TILE, OFFSET_Y + y * TILE, TILE, 2);
-        }
-      }
-    }
-    for (const desk of DESKS) {
-      context.strokeStyle = '#f2b84b';
-      context.lineWidth = 1;
-      context.strokeRect(
-        desk.seat.x * TILE + 3,
-        OFFSET_Y + desk.seat.y * TILE + 3,
-        TILE - 6,
-        TILE - 6,
-      );
-      context.fillStyle = '#94a3b8';
-      context.font = '6px monospace';
-      context.fillText(desk.name, desk.seat.x * TILE + 1, OFFSET_Y + desk.seat.y * TILE - 1);
-    }
-    for (const object of FURNITURE) {
-      context.fillStyle = '#334155';
-      context.fillRect(
-        object.point.x * TILE + 2,
-        OFFSET_Y + object.point.y * TILE + 2,
-        TILE - 4,
-        TILE - 4,
-      );
-      context.fillStyle = '#7dd3fc';
-      context.fillRect(
-        object.point.x * TILE + 4,
-        OFFSET_Y + object.point.y * TILE + 4,
-        TILE - 8,
-        3,
-      );
-    }
-    const selected = this.selectedId();
-    if (selected !== null) {
-      const agent = this.engine.get(selected);
-      if (agent) {
-        context.fillStyle = 'rgba(242,184,75,0.5)';
-        for (const step of agent.path) {
-          context.fillRect(
-            step.x * TILE + TILE / 2 - 1,
-            OFFSET_Y + step.y * TILE + TILE / 2 - 1,
-            2,
-            2,
-          );
-        }
-      }
-    }
-    const ordered = [...this.engine.list].sort((a, b) => {
-      const delta = this.engine.renderPosition(a).y - this.engine.renderPosition(b).y;
-      return delta !== 0 ? delta : a.id.localeCompare(b.id);
-    });
-    for (const agent of ordered) {
-      const rendered = this.engine.renderPosition(agent);
-      const sprite = SPRITES[rendered.animation];
-      const bob = rendered.frame % 2 === 0 ? 0 : 1;
-      const originX = Math.round(rendered.x * TILE) + 2;
-      const originY = OFFSET_Y + Math.round(rendered.y * TILE) + 2 + bob;
-      for (let row = 0; row < sprite.pattern.length; row += 1) {
-        const line = sprite.pattern[row] ?? '';
-        for (let column = 0; column < line.length; column += 1) {
-          const color = sprite.palette[line[column] ?? ''];
-          if (color === undefined) {
-            continue;
-          }
-          context.fillStyle = color;
-          context.fillRect(originX + column, originY + row, 1, 1);
-        }
-      }
-      if (agent.id === selected) {
-        context.strokeStyle = '#ffffff';
-        context.lineWidth = 1;
-        context.strokeRect(originX - 1, originY - 1, 9, 9);
-      }
-    }
+    drawOffice(context, this.engine, this.selectedId());
   }
 }

@@ -79,18 +79,35 @@ import { RunsStore } from './runs.store';
     .runs {
       width: 100%;
       border-collapse: collapse;
+      font-family: var(--ailab-font-sans);
       font-size: var(--ailab-font-size-md);
     }
     .runs__caption {
       text-align: left;
       color: var(--ailab-color-muted);
+      font-size: var(--ailab-font-size-xs);
+      font-weight: 650;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
       padding-bottom: var(--ailab-space-2);
     }
     .runs th,
     .runs td {
       text-align: left;
-      padding: var(--ailab-space-2);
-      border-bottom: 1px solid var(--ailab-color-surface-raised);
+      padding: 0.85rem 0.75rem;
+      border-bottom: 1px solid var(--ailab-color-border);
+    }
+    .runs th {
+      color: var(--ailab-color-muted);
+      font-size: var(--ailab-font-size-xs);
+      font-weight: 650;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .runs code {
+      color: var(--ailab-color-text);
+      font-size: var(--ailab-font-size-sm);
+      font-weight: 600;
     }
     .runs__sr {
       position: absolute;

@@ -5,7 +5,9 @@ import type {
   Agent,
   Card,
   EventEnvelope,
+  IdeaAck,
   LabSettings,
+  LabSummary,
   MemoryNote,
   Page,
   Problem,
@@ -18,14 +20,19 @@ import type {
 import {
   DEMO_AGENTS,
   DEMO_CARDS,
+  DEMO_EVENTS,
+  DEMO_LABS,
+  DEMO_LAB_ID,
   DEMO_PROJECTS,
   DEMO_PROVIDERS,
+  DEMO_RUNS,
   DEMO_SETTINGS,
   DEMO_SOW,
   DEMO_MEMORY,
   isDemoFallback,
 } from '../demo/demo-data';
 import { signal } from '@angular/core';
+import { createId } from '../ids';
 import { ApiProblem, toProblem } from './problem';
 
 interface RequestOptions {
@@ -46,13 +53,21 @@ export class ApiClient {
   /** True while the last read used the explicit demo read model. */
   readonly usingDemo = signal(false);
 
+  private isDemoUnavailable(error: unknown): boolean {
+    return (
+      isDemoFallback(error) ||
+      (error instanceof ApiProblem &&
+        (error.status === 401 || error.status === 403 || error.status === 422))
+    );
+  }
+
   private async withDemo<T>(path: string, demo: T): Promise<T> {
     try {
       const value = await this.send<T>(path);
       this.usingDemo.set(false);
       return value;
     } catch (error) {
-      if (isDemoFallback(error)) {
+      if (this.isDemoUnavailable(error)) {
         this.usingDemo.set(true);
         return demo;
       }
@@ -68,7 +83,7 @@ export class ApiClient {
     const token = sessionToken.read() ?? this.config.token;
     const headers: Record<string, string> = {
       accept: 'application/json',
-      'x-request-id': crypto.randomUUID(),
+      'x-request-id': createId(),
     };
     if (token !== null) {
       headers['authorization'] = `Bearer ${token}`;
@@ -130,20 +145,45 @@ export class ApiClient {
     throw new ApiProblem(toProblem(lastError));
   }
 
+  private static unwrapList<T>(
+    value: readonly T[] | { readonly data: readonly T[] },
+  ): readonly T[] {
+    return 'data' in value ? value.data : value;
+  }
+
   getBoard(projectId: string): Promise<readonly Card[]> {
     return this.withDemo(`/projects/${encodeURIComponent(projectId)}/board`, DEMO_CARDS);
   }
 
-  listAgents(): Promise<readonly Agent[]> {
-    return this.withDemo('/agents', DEMO_AGENTS);
+  async listLabs(): Promise<readonly LabSummary[]> {
+    const value = await this.withDemo<
+      readonly LabSummary[] | { readonly data: readonly LabSummary[] }
+    >('/labs', DEMO_LABS);
+    return ApiClient.unwrapList(value);
   }
 
-  listProjects(): Promise<readonly Project[]> {
-    return this.withDemo('/projects', DEMO_PROJECTS);
+  async listAgents(): Promise<readonly Agent[]> {
+    const value = await this.withDemo<readonly Agent[] | { readonly data: readonly Agent[] }>(
+      '/agents',
+      DEMO_AGENTS,
+    );
+    return ApiClient.unwrapList(value);
   }
 
-  listProviders(): Promise<readonly Provider[]> {
-    return this.withDemo('/providers', DEMO_PROVIDERS);
+  async listProjects(): Promise<readonly Project[]> {
+    const value = await this.withDemo<readonly Project[] | { readonly data: readonly Project[] }>(
+      '/projects',
+      DEMO_PROJECTS,
+    );
+    return ApiClient.unwrapList(value);
+  }
+
+  async listProviders(): Promise<readonly Provider[]> {
+    const value = await this.withDemo<readonly Provider[] | { readonly data: readonly Provider[] }>(
+      '/providers',
+      DEMO_PROVIDERS,
+    );
+    return ApiClient.unwrapList(value);
   }
 
   getSow(projectId: string): Promise<Sow> {
@@ -171,15 +211,59 @@ export class ApiClient {
     });
   }
 
-  listRuns(labId: string, cursor?: string): Promise<Page<RunView>> {
+  async listRuns(labId: string = DEMO_LAB_ID, cursor?: string): Promise<Page<RunView>> {
     const query = cursor === undefined ? '' : `?cursor=${encodeURIComponent(cursor)}`;
-    return this.send<Page<RunView>>(`/labs/${encodeURIComponent(labId)}/runs${query}`);
+    try {
+      const page = await this.send<Page<RunView>>(
+        `/labs/${encodeURIComponent(labId)}/runs${query}`,
+      );
+      this.usingDemo.set(false);
+      return page;
+    } catch (error) {
+      if (this.isDemoUnavailable(error)) {
+        this.usingDemo.set(true);
+        return { data: DEMO_RUNS, next_cursor: null, total_estimate: DEMO_RUNS.length };
+      }
+      throw error;
+    }
   }
 
-  listEvents(labId: string, after: number, limit = 1_000): Promise<Page<EventEnvelope>> {
-    return this.send<Page<EventEnvelope>>(
-      `/events?lab_id=${encodeURIComponent(labId)}&after=${after}&limit=${limit}`,
-    );
+  async listEvents(labId: string, after: number, limit = 1_000): Promise<Page<EventEnvelope>> {
+    try {
+      const page = await this.send<Page<EventEnvelope>>(
+        `/events?lab_id=${encodeURIComponent(labId)}&after=${after}&limit=${limit}`,
+      );
+      this.usingDemo.set(false);
+      return page;
+    } catch (error) {
+      if (this.isDemoUnavailable(error)) {
+        this.usingDemo.set(true);
+        return {
+          data: DEMO_EVENTS,
+          next_cursor: null,
+          total_estimate: DEMO_EVENTS.length,
+        };
+      }
+      throw error;
+    }
+  }
+
+  async submitIdea(text: string): Promise<IdeaAck> {
+    try {
+      const ack = await this.send<IdeaAck>('/ideas', {
+        method: 'POST',
+        body: { text },
+        retry: false,
+      });
+      this.usingDemo.set(false);
+      return ack;
+    } catch (error) {
+      if (this.isDemoUnavailable(error)) {
+        this.usingDemo.set(true);
+        return { id: `idea-${Date.now()}`, status: 'queued' };
+      }
+      throw error;
+    }
   }
 
   getRun(runId: string): Promise<RunView> {

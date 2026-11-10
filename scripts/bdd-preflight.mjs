@@ -6,7 +6,7 @@
 // human must perform are allowed in the file.
 //
 // Usage:
-//   node scripts/bdd-preflight.mjs [--file PATH] [--json]
+//   node scripts/bdd-preflight.mjs [--file PATH] [--live] [--json]
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -15,6 +15,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_FILE = resolve(HERE, '..', '.docs', 'e2e', 'req.md');
 
 const CHECKBOX_RE = /^\s*-\s*\[([ xX!-])\]\s*(.*)$/;
+const LIVE_MARKER_RE = /\((?:live|live-only)\)|\blive-only\b/i;
 
 export function parseChecklist(markdown) {
   const lines = markdown.split(/\r?\n/);
@@ -37,19 +38,30 @@ export function parseChecklist(markdown) {
       text,
       checked: marker === 'x' || marker === 'X',
       na: /\bN\/A\b/i.test(text),
+      liveOnly: LIVE_MARKER_RE.test(text),
     });
   }
   return items;
 }
 
-export function evaluateChecklist(markdown) {
+export function evaluateChecklist(markdown, { live = false } = {}) {
   const items = parseChecklist(markdown);
-  const missing = items.filter((item) => !item.checked && !item.na);
+  const missing = items.filter(
+    (item) => !item.checked && !item.na && !(item.liveOnly && !live),
+  );
+  const resolved = items.filter(
+    (item) => item.checked || item.na || (item.liveOnly && !live),
+  );
   return {
     ok: missing.length === 0,
+    live,
     total: items.length,
-    checked: items.filter((item) => item.checked || item.na).length,
-    missing: missing.map((item) => ({ line: item.line, text: item.text, marker: item.marker })),
+    checked: resolved.length,
+    missing: missing.map((item) => ({
+      line: item.line,
+      text: item.text,
+      marker: item.marker,
+    })),
   };
 }
 
@@ -70,11 +82,13 @@ function usage() {
 
 Options:
   --file PATH   Checklist file (default: .docs/e2e/req.md).
+  --live        Require items marked (live), used when AILAB_BDD_LIVE=1.
   --json        Emit machine-readable JSON.
   --help        Show this help.
 
 Rules:
   - every "- [ ]" item in the checklist is a missing prerequisite;
+  - an item marked (live) is required only with --live;
   - "- [x]" is satisfied;
   - an item marked N/A is satisfied;
   - checkboxes inside fenced code blocks are ignored.
@@ -89,6 +103,7 @@ function main() {
   const args = process.argv.slice(2);
   let file = DEFAULT_FILE;
   let json = false;
+  let live = false;
   for (let i = 0; i < args.length; i += 1) {
     const arg = args[i];
     if (arg === '--help' || arg === '-h') {
@@ -96,6 +111,7 @@ function main() {
       return;
     }
     if (arg === '--json') json = true;
+    else if (arg === '--live') live = true;
     else if (arg === '--file') file = resolve(args[++i] ?? '');
     else {
       process.stderr.write(`bdd-preflight: unknown argument: ${arg}\n`);
@@ -118,7 +134,7 @@ function main() {
     process.exit(2);
   }
 
-  const result = evaluateChecklist(markdown);
+  const result = evaluateChecklist(markdown, { live });
   if (json) {
     process.stdout.write(`${JSON.stringify({ ...result, file }, null, 2)}\n`);
   } else if (result.ok) {

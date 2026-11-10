@@ -7,6 +7,7 @@ import { Drawer } from '../../shared/ui/drawer/drawer';
 import { WsService } from '../../core/ws/ws.service';
 import { Telemetry } from '../../core/telemetry/telemetry.service';
 import { ErrorState } from '../../core/errors/error-state';
+import { DEMO_LAB_ID } from '../../core/demo/demo-data';
 
 @Component({
   selector: 'app-shell',
@@ -14,9 +15,9 @@ import { ErrorState } from '../../core/errors/error-state';
   template: `
     <a class="skip-link" href="#main">Skip to content</a>
     <div class="shell">
-      <app-sidebar />
+      <aside class="shell__sidebar"><app-sidebar /></aside>
       <div class="shell__content">
-        <app-topbar [connection]="connection()" [labId]="labId()" (menu)="drawerOpen.set(true)" />
+        <app-topbar [connection]="connection()" [labId]="labName()" (menu)="drawerOpen.set(true)" />
         @if (errorState.error(); as failure) {
           <div class="error-boundary" role="alert">
             <p>
@@ -59,6 +60,15 @@ import { ErrorState } from '../../core/errors/error-state';
     .shell {
       display: flex;
       min-height: 100dvh;
+      background: transparent;
+    }
+    .shell__sidebar {
+      position: sticky;
+      top: 0;
+      flex: 0 0 260px;
+      height: 100dvh;
+      overflow-y: auto;
+      z-index: 10;
     }
     .shell__content {
       display: flex;
@@ -67,7 +77,10 @@ import { ErrorState } from '../../core/errors/error-state';
       min-width: 0;
     }
     .shell__main {
-      padding: var(--ailab-space-4);
+      width: 100%;
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: clamp(1rem, 2.2vw, 2.25rem);
       flex: 1;
     }
     .shell__main:focus {
@@ -80,8 +93,10 @@ import { ErrorState } from '../../core/errors/error-state';
       z-index: var(--ailab-z-toast);
     }
     .error-boundary {
-      border-bottom: 2px solid var(--ailab-color-danger);
-      background: var(--ailab-color-surface);
+      margin: var(--ailab-space-4) clamp(1rem, 2.2vw, 2.25rem) 0;
+      border: 1px solid var(--ailab-color-danger-soft);
+      border-radius: var(--ailab-radius-md);
+      background: var(--ailab-color-danger-soft);
       color: var(--ailab-color-danger);
       padding: var(--ailab-space-3) var(--ailab-space-4);
     }
@@ -96,14 +111,19 @@ import { ErrorState } from '../../core/errors/error-state';
     }
     .toast {
       margin: 0;
-      padding: var(--ailab-space-2) var(--ailab-space-3);
-      border: 2px solid var(--ailab-color-accent);
+      padding: var(--ailab-space-3) var(--ailab-space-4);
+      border: 1px solid var(--ailab-color-border);
+      border-radius: var(--ailab-radius-md);
       background: var(--ailab-color-surface);
-      color: var(--ailab-color-accent);
+      color: var(--ailab-color-text);
+      box-shadow: var(--ailab-shadow-raised);
     }
-    @media (max-width: 767px) {
-      .shell {
-        flex-direction: column;
+    @media (max-width: 900px) {
+      .shell__sidebar {
+        display: none;
+      }
+      .shell__main {
+        padding: var(--ailab-space-4);
       }
     }
   `,
@@ -112,7 +132,8 @@ export class Shell implements OnInit {
   private readonly ws = inject(WsService);
   private readonly telemetry = inject(Telemetry);
   protected readonly errorState = inject(ErrorState);
-  protected readonly labId = signal('default');
+  protected readonly labId = signal(DEMO_LAB_ID);
+  protected readonly labName = signal('Demo Lab');
   protected readonly connection = this.ws.state;
   protected readonly toast = signal<string | null>(null);
   protected readonly drawerOpen = signal(false);

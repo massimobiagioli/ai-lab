@@ -16,11 +16,12 @@ import { Component, input } from '@angular/core';
       font-size: var(--ailab-font-size-sm);
     }
     .ui-spinner__frame {
-      width: 12px;
-      height: 12px;
-      border: 2px solid var(--ailab-color-muted);
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--ailab-color-border);
       border-top-color: var(--ailab-color-accent);
-      animation: ui-spin 0.8s steps(8) infinite;
+      border-radius: 50%;
+      animation: ui-spin 0.7s linear infinite;
     }
     @keyframes ui-spin {
       to {

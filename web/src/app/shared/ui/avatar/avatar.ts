@@ -8,12 +8,14 @@ import { Component, computed, input } from '@angular/core';
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 28px;
-      height: 28px;
-      border: 2px solid var(--ailab-color-muted);
-      background: var(--ailab-color-surface-raised);
-      color: var(--ailab-color-text);
+      width: 32px;
+      height: 32px;
+      border: 1px solid var(--ailab-color-accent-soft);
+      border-radius: var(--ailab-radius-pill);
+      background: var(--ailab-color-accent-soft);
+      color: var(--ailab-color-accent);
       font-size: var(--ailab-font-size-sm);
+      font-weight: 700;
       text-transform: uppercase;
     }
   `,

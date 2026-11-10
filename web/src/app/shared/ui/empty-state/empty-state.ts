@@ -11,16 +11,18 @@ import { Component, input } from '@angular/core';
   `,
   styles: `
     .ui-empty {
-      border: 2px dashed var(--ailab-color-muted);
+      border: 1px dashed var(--ailab-color-border-strong);
       border-radius: var(--ailab-radius);
-      padding: var(--ailab-space-6);
+      background: var(--ailab-color-surface);
+      padding: var(--ailab-space-10) var(--ailab-space-6);
       text-align: center;
       color: var(--ailab-color-muted);
     }
     .ui-empty__title {
       margin: 0 0 var(--ailab-space-2);
       color: var(--ailab-color-text);
-      font-size: var(--ailab-font-size-lg);
+      font-size: 1.05rem;
+      font-weight: 650;
     }
     .ui-empty__message {
       margin: 0;

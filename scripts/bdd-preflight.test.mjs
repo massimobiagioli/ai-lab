@@ -97,6 +97,58 @@ test('CLI exits 2 for an unchecked checklist', () => {
   }
 });
 
+
+test('live-only items are satisfied for fake runs', () => {
+  const markdown = '- [ ] (live) DeepSeek API key\n';
+  const fake = evaluateChecklist(markdown);
+  assert.equal(fake.ok, true);
+  assert.equal(fake.checked, 1);
+  assert.equal(fake.live, false);
+});
+
+test('live-only items block live runs when unchecked', () => {
+  const markdown = '- [ ] (live) DeepSeek API key\n';
+  const live = evaluateChecklist(markdown, { live: true });
+  assert.equal(live.ok, false);
+  assert.equal(live.live, true);
+  assert.deepEqual(live.missing, [
+    { line: 1, text: '(live) DeepSeek API key', marker: ' ' },
+  ]);
+});
+
+test('live mode still blocks non-live unchecked items', () => {
+  const result = evaluateChecklist('- [x] (live) key\n- [ ] database\n', { live: true });
+  assert.equal(result.ok, false);
+  assert.equal(result.missing.length, 1);
+  assert.match(result.missing[0].text, /database/);
+});
+
+test('CLI allows an unchecked live item without --live', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'ailab-bdd-preflight-'));
+  try {
+    const file = join(dir, 'req.md');
+    writeFileSync(file, '- [ ] (live) DeepSeek API key\n', 'utf8');
+    const result = runCli(['--file', file]);
+    assert.equal(result.status, 0);
+    assert.match(result.stdout, /BDD preflight: ready/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('CLI blocks an unchecked live item with --live', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'ailab-bdd-preflight-'));
+  try {
+    const file = join(dir, 'req.md');
+    writeFileSync(file, '- [ ] (live) DeepSeek API key\n', 'utf8');
+    const result = runCli(['--file', file, '--live']);
+    assert.equal(result.status, 2);
+    assert.match(result.stderr, /line 1: \(live\) DeepSeek API key/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('CLI exits 2 for an empty checklist', () => {
   const dir = mkdtempSync(join(tmpdir(), 'ailab-bdd-preflight-'));
   try {

@@ -12,6 +12,7 @@ import { StatusBadge } from '../../shared/status-badge/status-badge';
 import { Dialog } from '../../shared/ui/dialog/dialog';
 import { MemoryStore } from './store/memory.store';
 import type { MemoryNote } from '../../domain/models';
+import { createId } from '../../core/ids';
 
 @Component({
   selector: 'app-memory',
@@ -137,14 +138,23 @@ import type { MemoryNote } from '../../domain/models';
       gap: var(--ailab-space-3);
     }
     .note {
-      border: 2px solid var(--ailab-color-muted);
+      border: 1px solid var(--ailab-color-border);
+      border-radius: var(--ailab-radius);
       background: var(--ailab-color-surface);
-      padding: var(--ailab-space-3);
+      box-shadow: var(--ailab-shadow-card);
+      padding: var(--ailab-space-4);
       cursor: pointer;
+      transition:
+        border-color var(--ailab-motion-fast) ease,
+        transform var(--ailab-motion-fast) ease;
+    }
+    .note:hover {
+      border-color: var(--ailab-color-border-strong);
+      transform: translateY(-1px);
     }
     .note:focus-visible {
-      outline: 2px solid var(--ailab-color-accent);
-      outline-offset: 2px;
+      outline: none;
+      box-shadow: 0 0 0 3px var(--ailab-color-accent-soft);
     }
     .note__header {
       display: flex;
@@ -230,7 +240,7 @@ export class Memory implements OnInit {
       return;
     }
     this.store.addNote({
-      id: `note-${crypto.randomUUID()}`,
+      id: `note-${createId()}`,
       scope: 'project',
       title,
       snippet,

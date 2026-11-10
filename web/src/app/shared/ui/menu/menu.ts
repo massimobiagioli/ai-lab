@@ -36,7 +36,7 @@ export interface MenuItem {
       list-style: none;
       margin: 0;
       padding: 0;
-      border: 2px solid var(--ailab-color-muted);
+      border: var(--ailab-border);
       background: var(--ailab-color-surface);
       min-width: 160px;
     }
@@ -48,7 +48,7 @@ export interface MenuItem {
       border: 0;
       background: transparent;
       color: var(--ailab-color-text);
-      font-family: var(--ailab-font-mono);
+      font-family: var(--ailab-font-sans);
       cursor: pointer;
     }
     .ui-menu__item:hover,

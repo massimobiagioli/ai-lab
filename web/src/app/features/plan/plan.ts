@@ -74,7 +74,10 @@ import { SowStore } from '../sow/store/sow.store';
       display: flex;
       flex-direction: column;
       gap: var(--ailab-space-1);
-      border-left: 2px solid var(--ailab-color-accent);
+      border-left: 3px solid var(--ailab-color-accent);
+      border-radius: 0 var(--ailab-radius-sm) var(--ailab-radius-sm) 0;
+      background: var(--ailab-color-surface-raised);
+      padding: var(--ailab-space-2) var(--ailab-space-3);
       padding-left: var(--ailab-space-2);
     }
     .deps {

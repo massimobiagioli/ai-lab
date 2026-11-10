@@ -12,7 +12,8 @@ import { Component, input } from '@angular/core';
     .degraded {
       margin: 0 0 var(--ailab-space-3);
       padding: var(--ailab-space-2);
-      border: 2px dashed var(--ailab-color-warning);
+      border: 1px dashed var(--ailab-color-warning);
+      border-radius: var(--ailab-radius-md);
       color: var(--ailab-color-warning);
       font-size: var(--ailab-font-size-sm);
     }

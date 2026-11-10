@@ -1,4 +1,5 @@
 import { Component, input, model } from '@angular/core';
+import { createId } from '../../../core/ids';
 
 @Component({
   selector: 'app-pixel-textarea',
@@ -55,7 +56,7 @@ export class PixelTextarea {
   readonly rows = input(3);
   readonly error = input<string | null>(null);
   readonly disabled = input(false);
-  protected readonly errorId = `textarea-error-${crypto.randomUUID()}`;
+  protected readonly errorId = `textarea-error-${createId()}`;
 
   protected onInput(event: Event): void {
     const target = event.target;

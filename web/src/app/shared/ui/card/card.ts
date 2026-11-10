@@ -12,16 +12,18 @@ import { Component, input } from '@angular/core';
   `,
   styles: `
     .ui-card {
-      border: 2px solid var(--ailab-color-muted);
+      border: var(--ailab-border);
       border-radius: var(--ailab-radius);
       background: var(--ailab-color-surface);
-      padding: var(--ailab-space-4);
-      box-shadow: 4px 4px 0 var(--ailab-color-bg);
+      padding: clamp(1rem, 1.6vw, 1.5rem);
+      box-shadow: var(--ailab-shadow-card);
     }
     .ui-card__title {
       margin: 0 0 var(--ailab-space-3);
+      color: var(--ailab-color-text);
       font-size: var(--ailab-font-size-lg);
-      letter-spacing: 0.04em;
+      font-weight: 650;
+      letter-spacing: -0.015em;
     }
   `,
 })

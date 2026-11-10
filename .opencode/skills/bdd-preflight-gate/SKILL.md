@@ -29,6 +29,7 @@ Use `bdd-execution-triage` after the gate passes to interpret the run.
 3. Preflight parser rules:
    - a missing, empty or unreadable file exits `2`;
    - every `- [ ]` line is a missing prerequisite unless the line contains `N/A` or `n/a`;
+   - an item marked `(live)` is required only with `--live` (the runner passes it when `AILAB_BDD_LIVE=1`);
    - `- [x]` is satisfied;
    - checkbox-shaped text inside a fenced code block is ignored;
    - extra checked items are optional and never block;

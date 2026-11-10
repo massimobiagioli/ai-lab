@@ -1,4 +1,5 @@
 import { Component, input, model } from '@angular/core';
+import { createId } from '../../../core/ids';
 
 export interface SelectOption {
   readonly value: string;
@@ -19,7 +20,9 @@ export interface SelectOption {
         (change)="onChange($event)"
       >
         @for (option of options(); track option.value) {
-          <option [value]="option.value">{{ option.label }}</option>
+          <option [value]="option.value" [selected]="option.value === value()">
+            {{ option.label }}
+          </option>
         }
       </select>
       @if (error() !== null) {
@@ -35,10 +38,9 @@ export interface SelectOption {
       font-size: var(--ailab-font-size-md);
     }
     .ui-select__label {
-      color: var(--ailab-color-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
+      color: var(--ailab-color-text-soft);
       font-size: var(--ailab-font-size-sm);
+      font-weight: 600;
     }
     .ui-select__control:disabled {
       opacity: 0.5;
@@ -48,12 +50,17 @@ export interface SelectOption {
       font-size: var(--ailab-font-size-sm);
     }
     .ui-select__control {
-      padding: var(--ailab-space-2);
-      border: 2px solid var(--ailab-color-muted);
-      border-radius: var(--ailab-radius);
-      background: var(--ailab-color-surface-sunken);
+      padding: 0.65rem 0.8rem;
+      border: 1px solid var(--ailab-color-border);
+      border-radius: var(--ailab-radius-md);
+      background: var(--ailab-color-surface);
       color: var(--ailab-color-text);
-      font-family: var(--ailab-font-mono);
+      font-family: var(--ailab-font-sans);
+    }
+    .ui-select__control:focus-visible {
+      outline: none;
+      border-color: var(--ailab-color-accent);
+      box-shadow: 0 0 0 3px var(--ailab-color-accent-soft);
     }
   `,
 })
@@ -63,7 +70,7 @@ export class Select {
   readonly value = model('');
   readonly disabled = input(false);
   readonly error = input<string | null>(null);
-  protected readonly errorId = `select-error-${crypto.randomUUID()}`;
+  protected readonly errorId = `select-error-${createId()}`;
 
   protected onChange(event: Event): void {
     const target = event.target;

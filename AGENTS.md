@@ -239,7 +239,7 @@ Use the `quality-gates` skill for the exact commands and evidence rules.
 | `check-openapi-drift` | [`.tools/check-openapi-drift.py`](./.tools/check-openapi-drift.py) | Fail when an OpenAPI path is not served by the edge router. | `.tools/check-openapi-drift.py [--root DIR]` |
 | `check-observability` | [`.tools/check-observability.sh`](./.tools/check-observability.sh) | Validate the SLO, alert and Grafana dashboard artifacts. | `.tools/check-observability.sh` |
 | `run-e2e` | [`.tools/run-e2e.sh`](./.tools/run-e2e.sh) | Run Playwright in the official image (browser deps included). | `.tools/run-e2e.sh [args]` |
-| `bdd-preflight` | [`scripts/bdd-preflight.mjs`](./scripts/bdd-preflight.mjs) | Parse `.docs/e2e/req.md` and block the BDD suite when a manual item is missing. | `scripts/run-node.sh scripts/bdd-preflight.mjs [--json] [--file PATH]` |
+| `bdd-preflight` | [`scripts/bdd-preflight.mjs`](./scripts/bdd-preflight.mjs) | Parse `.docs/e2e/req.md` and block the BDD suite when a manual item is missing. | `scripts/run-node.sh scripts/bdd-preflight.mjs [--json] [--live] [--file PATH]` |
 | `bdd-preflight-test` | [`scripts/bdd-preflight.test.mjs`](./scripts/bdd-preflight.test.mjs) | Unit tests for the manual preflight parser. | `scripts/run-node.sh scripts/bdd-preflight.test.mjs` |
 | `bdd-set-api-key` | [`scripts/bdd-set-api-key.sh`](./scripts/bdd-set-api-key.sh) | Load the live DeepSeek key through a hidden prompt and create or rotate the provider. | `make bdd-set-api-key` |
 | `bdd-set-api-key-test` | [`scripts/bdd-set-api-key.test.sh`](./scripts/bdd-set-api-key.test.sh) | Fake-provider tests for the hidden-prompt key loader. | `bash scripts/bdd-set-api-key.test.sh` |

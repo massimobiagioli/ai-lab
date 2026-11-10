@@ -27,18 +27,7 @@ describe('Office', () => {
     );
     button?.click();
     fixture.detectChanges();
-    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Animation:');
-  });
-
-  it('opens an object panel from the object list', () => {
-    const fixture = TestBed.createComponent(Office);
-    fixture.detectChanges();
-    const objects = (fixture.nativeElement as HTMLElement).querySelectorAll(
-      '[data-testid^="object-"]',
-    );
-    expect(objects.length).toBe(7);
-    (objects[0] as HTMLButtonElement).click();
-    fixture.detectChanges();
-    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Kanban board');
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Current card');
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('History');
   });
 });

@@ -58,6 +58,21 @@ export interface EventEnvelope {
   readonly payload: Record<string, unknown>;
 }
 
+/** A lab summary used by the dashboard selector. */
+export interface LabSummary {
+  readonly id: string;
+  readonly name: string;
+  readonly slug: string;
+  readonly autonomyLevel: number;
+  readonly monthlyBudgetMicrousd: number;
+}
+
+/** Acknowledgement returned by the idea composer. */
+export interface IdeaAck {
+  readonly id: string;
+  readonly status: string;
+}
+
 /** Flow metrics used by the dashboard. */
 export interface FlowMetrics {
   readonly leadTimeP50Minutes: number;

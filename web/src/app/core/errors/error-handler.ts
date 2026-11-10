@@ -1,6 +1,7 @@
 import { ErrorHandler, inject, Injectable } from '@angular/core';
 import { Telemetry } from '../telemetry/telemetry.service';
 import { ErrorState } from './error-state';
+import { createId } from '../ids';
 
 /** Global error boundary that records telemetry and exposes a retryable state. */
 @Injectable()
@@ -10,7 +11,7 @@ export class AppErrorHandler implements ErrorHandler {
 
   handleError(error: unknown): void {
     const message = error instanceof Error ? error.message : String(error);
-    const traceId = crypto.randomUUID();
+    const traceId = createId();
     this.state.set(message.slice(0, 240), traceId);
     this.telemetry.capture('error', message, error);
   }

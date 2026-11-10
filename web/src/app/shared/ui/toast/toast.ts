@@ -11,7 +11,9 @@ import type { StatusTone } from '../../status-badge/status-badge';
   styles: `
     .ui-toast {
       padding: var(--ailab-space-2) var(--ailab-space-3);
-      border: 2px solid var(--ailab-color-muted);
+      border: var(--ailab-border);
+      border-radius: var(--ailab-radius-md);
+      box-shadow: var(--ailab-shadow-card);
       background: var(--ailab-color-surface);
     }
     .ui-toast--success {

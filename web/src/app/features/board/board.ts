@@ -136,33 +136,48 @@ const COLUMNS = [
     }
     .board {
       display: grid;
-      grid-template-columns: repeat(6, minmax(180px, 1fr));
-      gap: var(--ailab-space-2);
+      grid-template-columns: repeat(6, minmax(190px, 1fr));
+      gap: var(--ailab-space-3);
       overflow-x: auto;
       align-items: start;
+      padding-bottom: var(--ailab-space-2);
     }
     .column {
       background: var(--ailab-color-surface-sunken);
-      border: 2px solid var(--ailab-color-surface-raised);
-      padding: var(--ailab-space-2);
+      border: 1px solid var(--ailab-color-border);
+      border-radius: var(--ailab-radius);
+      padding: var(--ailab-space-3);
       min-height: 240px;
     }
     .column__title {
-      margin: 0 0 var(--ailab-space-2);
-      font-size: var(--ailab-font-size-sm);
+      margin: 0 0 var(--ailab-space-3);
+      font-size: var(--ailab-font-size-xs);
+      font-weight: 700;
       letter-spacing: 0.08em;
+      text-transform: uppercase;
       color: var(--ailab-color-muted);
     }
     .card {
       background: var(--ailab-color-surface);
-      border: 2px solid var(--ailab-color-muted);
-      padding: var(--ailab-space-2);
+      border: 1px solid var(--ailab-color-border);
+      border-radius: var(--ailab-radius-md);
+      box-shadow: var(--ailab-shadow-card);
+      padding: var(--ailab-space-3);
       margin-bottom: var(--ailab-space-2);
       cursor: grab;
+      transition:
+        border-color var(--ailab-motion-fast) ease,
+        box-shadow var(--ailab-motion-fast) ease,
+        transform var(--ailab-motion-fast) ease;
+    }
+    .card:hover {
+      border-color: var(--ailab-color-border-strong);
+      box-shadow: var(--ailab-shadow-raised);
+      transform: translateY(-1px);
     }
     .card:focus-visible {
-      outline: 2px solid var(--ailab-color-accent);
-      outline-offset: 2px;
+      outline: none;
+      box-shadow: 0 0 0 3px var(--ailab-color-accent-soft);
     }
     .card.is-moving {
       border-color: var(--ailab-color-accent);
@@ -195,7 +210,9 @@ const COLUMNS = [
       align-items: center;
       justify-content: space-between;
       gap: var(--ailab-space-2);
-      border: 2px solid var(--ailab-color-danger);
+      border: 1px solid var(--ailab-color-danger-soft);
+      border-radius: var(--ailab-radius-md);
+      background: var(--ailab-color-danger-soft);
       color: var(--ailab-color-danger);
       padding: var(--ailab-space-2);
       margin-top: var(--ailab-space-2);
