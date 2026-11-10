@@ -1,7 +1,7 @@
 @maintenance @metrics @p1 @fr-maint-001
 Feature: Maintenance, budgets and flow metrics
 
-  @E2E-181
+  @E2E-181 @suite-platform
   Scenario: E2E-181 Card and daily budgets are enforced
     Given a lab with a per-card and per-day budget
     When a run charges tokens
@@ -9,7 +9,7 @@ Feature: Maintenance, budgets and flow metrics
     Then the run stops before exceeding either budget
     Then the remaining budget is exposed as a metric
 
-  @E2E-182
+  @E2E-182 @suite-platform
   Scenario: E2E-182 Budget exhaustion pauses the lab and can resume
     Given the lab budget is exhausted
     When a run reaches the limit
@@ -18,28 +18,28 @@ Feature: Maintenance, budgets and flow metrics
     When the operator increases the budget
     Then the lab resumes and queued work continues
 
-  @E2E-183
+  @E2E-183 @suite-platform
   Scenario: E2E-183 Flow metrics are derived from immutable events
     Given the demo seed
     When I call GET /api/v1/labs/{lab_id}/metrics
     Then lead time, cycle time p50 and p95, throughput, WIP and blocked counts are returned
     Then the values agree with the card_events trail
 
-  @E2E-184
+  @E2E-184 @suite-platform
   Scenario: E2E-184 Spend is visible at every level with a trend
     Given completed runs with recorded costs
     When I view spend by lab, project, card and agent
     Then each level shows its spend
     Then a 30-day trend and a forecast are available
 
-  @E2E-185
+  @E2E-185 @suite-platform
   Scenario: E2E-185 The maintenance job catalog is seeded and idempotent
     Given the migrated database
     When the worker ticks
     Then the job catalog includes data_integrity, memory_compaction, cv_reflection_backfill, dependency_check, stale_card_scan, overdue_notify and provider_health
     Then each job runs idempotently and records a structured outcome
 
-  @E2E-186
+  @E2E-186 @suite-platform
   Scenario: E2E-186 Maintenance jobs create work without auto-moving cards
     Given a dependency finding and a card stale for more than seven days
     When the dependency_check and stale_card_scan jobs run
@@ -47,7 +47,7 @@ Feature: Maintenance, budgets and flow metrics
     Then the stale card is flagged with a refinement nudge
     Then no card is moved automatically
 
-  @E2E-187
+  @E2E-187 @suite-platform
   Scenario: E2E-187 Memory hygiene and CV backfill are bounded and observable
     Given episodes eligible for compaction and runs missing CV evidence
     When memory_compaction and cv_reflection_backfill run
@@ -55,7 +55,7 @@ Feature: Maintenance, budgets and flow metrics
     Then the CV backfill is bounded to 500 runs
     Then both jobs emit completion events and metrics
 
-  @E2E-188
+  @E2E-188 @suite-platform
   Scenario: E2E-188 Provider health probing drives status and events
     Given a provider endpoint that starts failing
     When the provider_health probe runs on its 60-second schedule

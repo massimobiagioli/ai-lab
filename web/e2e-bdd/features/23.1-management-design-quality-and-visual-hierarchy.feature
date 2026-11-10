@@ -1,7 +1,7 @@
 @inventory @lab @ui @visual @p0 @ux-060
 Feature: Management design quality and visual hierarchy
 
-  @E2E-361
+  @E2E-361 @suite-management
   Scenario: E2E-361 The management shell uses the pixel design tokens consistently
     Given I open the agents, projects, providers and settings routes
     When the computed styles are inspected
@@ -9,7 +9,7 @@ Feature: Management design quality and visual hierarchy
     Then no feature component hardcodes a colour or spacing value
     Then the same primitive looks identical on every management route
 
-  @E2E-362
+  @E2E-362 @suite-management
   Scenario: E2E-362 Every management screen has one clear primary action
     Given the agents, projects, providers and settings screens
     When the visual hierarchy is inspected
@@ -17,7 +17,7 @@ Feature: Management design quality and visual hierarchy
     Then secondary actions are visually subordinate
     Then the page title, subtitle and primary action form a clear reading order
 
-  @E2E-363
+  @E2E-363 @suite-management
   Scenario: E2E-363 The chrome rejects the generic SaaS look
     Given any management surface
     When borders, radii and shadows are measured
@@ -26,7 +26,7 @@ Feature: Management design quality and visual hierarchy
     Then borders are crisp 1px or 2px lines
     Then there is no soft rounded card or floating glass effect
 
-  @E2E-364
+  @E2E-364 @suite-management
   Scenario: E2E-364 The spacing rhythm is consistent
     Given a management screen with forms, tables and drawers
     When the vertical and horizontal gaps are measured
@@ -34,7 +34,7 @@ Feature: Management design quality and visual hierarchy
     Then related elements are closer than unrelated groups
     Then no gap looks accidental or cramped
 
-  @E2E-365
+  @E2E-365 @suite-management
   Scenario: E2E-365 Icons and labels are consistent and crisp
     Given buttons, tables, menus and tabs
     When their icons are inspected
@@ -42,7 +42,7 @@ Feature: Management design quality and visual hierarchy
     Then icons use crisp edges without anti-aliasing
     Then every icon has a label or an accessible name that matches its meaning
 
-  @E2E-366
+  @E2E-366 @suite-management
   Scenario: E2E-366 Status is never conveyed by colour alone
     Given agents, projects and providers in every status
     When the badges and rows are inspected
@@ -50,7 +50,7 @@ Feature: Management design quality and visual hierarchy
     Then a colourblind simulation still distinguishes the status
     Then the same status looks the same across every list
 
-  @E2E-367
+  @E2E-367 @suite-management
   Scenario: E2E-367 Focus is visible, consistent and never lost
     Given I navigate a management screen with the keyboard
     When focus moves through links, inputs, buttons, tabs and rows
@@ -58,7 +58,7 @@ Feature: Management design quality and visual hierarchy
     Then the ring meets contrast requirements
     Then focus is never hidden behind a sticky element
 
-  @E2E-368
+  @E2E-368 @suite-management
   Scenario: E2E-368 Text contrast meets WCAG 2.2 AA
     Given the management routes with normal and large text
     When contrast is measured
@@ -66,7 +66,7 @@ Feature: Management design quality and visual hierarchy
     Then large text is at least 3 to 1
     Then disabled text remains readable and is not mistaken for enabled text
 
-  @E2E-369
+  @E2E-369 @suite-management
   Scenario: E2E-369 Loading does not cause layout shift
     Given a slow management list load
     When data is replaced by skeletons and then by rows
@@ -74,7 +74,7 @@ Feature: Management design quality and visual hierarchy
     Then the cumulative layout shift is at most 0.1
     Then the page does not jump under the pointer
 
-  @E2E-370
+  @E2E-370 @suite-management
   Scenario: E2E-370 Motion is restrained and purposeful
     Given drawers, toasts, tabs and menus
     When they open and close
@@ -83,7 +83,7 @@ Feature: Management design quality and visual hierarchy
     Then reduced motion removes non-essential animation
     Then no animation delays an action by more than 240 ms
 
-  @E2E-371
+  @E2E-371 @suite-management
   Scenario: E2E-371 Every action exposes hover, press, disabled and loading states
     Given every interactive control on the management routes
     When it is hovered, pressed, disabled or loading
@@ -91,7 +91,7 @@ Feature: Management design quality and visual hierarchy
     Then the control remains readable
     Then a loading control prevents a second submit
 
-  @E2E-372
+  @E2E-372 @suite-management
   Scenario: E2E-372 Destructive actions look and behave as destructive
     Given archive, delete, retire and reset controls
     When they are rendered and triggered

@@ -1,7 +1,7 @@
 @inventory @scm @p0 @fr-inv-030
 Feature: Projects and GitHub credentials
 
-  @E2E-027
+  @E2E-027 @suite-core
   Scenario: E2E-027 Create a GitHub project referencing an SCM credential
     Given a lab and an SCM credential exist
     When I submit a project with name, unique slug, owner/repo and credential_id
@@ -9,14 +9,14 @@ Feature: Projects and GitHub credentials
     Then the project stores a credential reference, not a raw token
     Then the default branch defaults to main
 
-  @E2E-028
+  @E2E-028 @suite-core
   Scenario: E2E-028 Duplicate project slug or key prefix is rejected
     Given a lab already has a project with slug "csv-lab" and prefix "CSV"
     When I create another project in the same lab with the same slug or prefix
     Then the response status is 422
     Then the error code is VALIDATION_FAILED
 
-  @E2E-029
+  @E2E-029 @suite-core
   Scenario: E2E-029 Project key prefix pattern is enforced
     Given the project create form
     When I submit a prefix such as "1abc", "CSV-TOOL" or "abcdefghijk"
@@ -24,14 +24,14 @@ Feature: Projects and GitHub credentials
     When I submit "C" + up to nine uppercase alphanumerics
     Then the response status is 201
 
-  @E2E-030
+  @E2E-030 @suite-core
   Scenario: E2E-030 The SCM token is write-only
     Given I create a GitHub credential with a fine-grained PAT
     Then the response exposes only the last four characters
     Then no subsequent GET returns the plaintext token
     Then the stored value is encrypted ciphertext with a key version
 
-  @E2E-031
+  @E2E-031 @suite-core
   Scenario: E2E-031 Project sync is queued and reconciles repository state
     Given an active GitHub-connected project
     When I call POST /api/v1/projects/{project_id}/sync
@@ -39,14 +39,14 @@ Feature: Projects and GitHub credentials
     Then a sync job records the repository metadata and default branch
     Then the result is observable in the project detail
 
-  @E2E-032
+  @E2E-032 @suite-core
   Scenario: E2E-032 Unsafe repositories are refused
     Given a repository that is archived, disabled or empty
     When I connect it or trigger a sync
     Then the operation is refused with a validation error
     Then no branch, PR or check operation is attempted
 
-  @E2E-033
+  @E2E-033 @suite-core
   Scenario: E2E-033 Branch naming and path safety are enforced
     Given card key "AIL-42" and title "CSV inference"
     When the adapter creates the branch
@@ -54,7 +54,7 @@ Feature: Projects and GitHub credentials
     Then a path containing "..", a leading slash or ".git/" is rejected
     Then a branch name with unsafe characters is rejected
 
-  @E2E-034
+  @E2E-034 @suite-core
   Scenario: E2E-034 Pull request conventions and webhook verification
     Given a branch and a card
     When the adapter opens the pull request

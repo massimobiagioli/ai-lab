@@ -1,7 +1,7 @@
 @inventory @lab @a11y @p0 @fe-010
 Feature: Management accessibility and keyboard
 
-  @E2E-467
+  @E2E-467 @suite-management
   Scenario: E2E-467 Every management route has landmarks and a heading order
     Given the agents, projects, providers and settings routes
     When the accessibility tree is inspected
@@ -9,7 +9,7 @@ Feature: Management accessibility and keyboard
     Then the skip link is the first focusable element
     Then there is exactly one h1 per route
 
-  @E2E-468
+  @E2E-468 @suite-management
   Scenario: E2E-468 Focus order follows the visual order
     Given a management screen with a sidebar, header, form and actions
     When I tab through it
@@ -17,7 +17,7 @@ Feature: Management accessibility and keyboard
     Then it never jumps into an off-screen or hidden region
     Then the focused element is scrolled into view
 
-  @E2E-469
+  @E2E-469 @suite-management
   Scenario: E2E-469 Form errors are programmatically linked
     Given an invalid management form
     When the error appears
@@ -25,7 +25,7 @@ Feature: Management accessibility and keyboard
     Then the error is announced
     Then the error summary is focusable
 
-  @E2E-470
+  @E2E-470 @suite-management
   Scenario: E2E-470 Tabs, menus and lists use roving tabindex
     Given tabs, menus and row action menus
     When I use Arrow, Home, End, Enter and Escape
@@ -33,7 +33,7 @@ Feature: Management accessibility and keyboard
     Then focus stays within the component
     Then the selection is announced
 
-  @E2E-471
+  @E2E-471 @suite-management
   Scenario: E2E-471 Drawers and dialogs are accessible modals
     Given an open drawer or dialog
     When it renders
@@ -41,7 +41,7 @@ Feature: Management accessibility and keyboard
     Then focus is trapped and restored
     Then the background is inert to assistive technology
 
-  @E2E-472
+  @E2E-472 @suite-management
   Scenario: E2E-472 Status and validation are never colour-only
     Given statuses and validation errors
     When they render
@@ -49,7 +49,7 @@ Feature: Management accessibility and keyboard
     Then a colourblind simulation still communicates the meaning
     Then contrast remains sufficient
 
-  @E2E-473
+  @E2E-473 @suite-management
   Scenario: E2E-473 Axe finds no critical management issues
     Given the agents, projects, providers and settings routes
     When axe runs with WCAG 2.2 AA rules
@@ -57,7 +57,7 @@ Feature: Management accessibility and keyboard
     Then the result is attached to the certification evidence
     Then keyboard and screen-reader checks pass
 
-  @E2E-474
+  @E2E-474 @suite-management
   Scenario: E2E-474 Table, filter and pagination changes are announced
     Given a screen reader on a management list
     When I sort, filter or change page

@@ -18,30 +18,30 @@ Use `bdd-scenario-design` to author scenarios and `bdd-step-engineering` to impl
 ## Preconditions
 
 - Read `.docs/e2e/BDD.md`; the expected count is 480 unique ids `E2E-001` … `E2E-480`.
-- Read `.tools/gen-bdd-features.mjs`, `.tools/gen-bdd-steps.mjs`, `.tools/check-bdd-coverage.mjs`, `web/e2e-bdd/manual-scenarios.md` and `web/e2e-bdd/reports/results.json`.
+- Read `.tools/gen-bdd-features.mjs`, `.tools/gen-bdd-steps.mjs`, `.tools/check-bdd-coverage.mjs`, `.docs/e2e/suites.json`, `web/e2e-bdd/manual-scenarios.md` and `web/e2e-bdd/reports/results.json`.
 - Know the area-to-feature mapping and the generated feature layout.
 - Know the fake harness and the deterministic seed.
 
 ## Workflow
 
-1. Inventory the ids: fail on duplicates, gaps, malformed ids or a count other than 480.
+1. Inventory the ids and the suite manifest: fail on duplicates, gaps, malformed ids, a count other than 480, a scenario assigned to more than one suite or a scenario with no suite.
 2. Generate one feature file per `## N.` area with `.tools/gen-bdd-features.mjs --write`:
    - preserve area order, scenario order, wording and tags;
    - strip the checklist marker from the generated title;
-   - add `@E2E-XXX` as the first scenario tag;
+   - add `@E2E-XXX` and `@suite-<id>` as the scenario tags;
    - preserve the step text and resolve `And`/`But` to the previous primary keyword so patterns stay unambiguous.
 3. Generate narrative steps with `.tools/gen-bdd-steps.mjs --write`.
 4. Verify with `.tools/gen-bdd-features.mjs --check` and `.tools/gen-bdd-steps.mjs --check` that the generated files are not stale.
 5. Verify with `.tools/check-bdd-coverage.mjs` that:
-   - every id appears exactly once;
+   - every id appears exactly once and belongs to exactly one of the six suites;
    - every scenario has at least one matching step definition or a `@manual` entry with owner, reason and review date;
    - no id is missing or duplicated.
 6. Keep `web/e2e-bdd/manual-scenarios.md` current for every `@manual` scenario.
 7. Keep the live map current for every `@live` scenario and the condition under which it runs.
 8. After execution, map every `results.json` entry to its `E2E-XXX` id, status and artifacts.
-9. Update the coverage summary, progress tracker and gap-analysis sections when the scenario set changes.
-9. Never renumber or delete an id. Append new gaps with the next free id.
-10. Run the coverage check in `run-bdd.sh` and in CI before the suite.
+9. Update the coverage summary, suite split, progress tracker and gap-analysis sections when the scenario set changes.
+10. Never renumber or delete an id. Append new gaps with the next free id.
+11. Run the coverage check in `run-bdd.sh` and in CI before the suite.
 
 ## Checklist
 
@@ -50,9 +50,11 @@ Use `bdd-scenario-design` to author scenarios and `bdd-step-engineering` to impl
 - [ ] One generated feature per area.
 - [ ] Generated features are not stale.
 - [ ] Every id appears in exactly one scenario.
+- [ ] Every id belongs to exactly one of the six suites.
+- [ ] The six suite counts match the manifest.
 - [ ] Every scenario has a matching step or a `@manual` entry with owner and reason.
 - [ ] No unused step definitions.
-- [ ] `results.json` has one entry per id.
+- [ ] The full `results.json` has one entry per id; a suite run has entries for the selected tests only.
 - [ ] Every result references its evidence or artifact.
 - [ ] Coverage summary, progress tracker and gap analysis are consistent.
 - [ ] No id was renumbered or deleted.

@@ -1,7 +1,7 @@
 @inventory @providers @security @ui @p0 @ux-060
 Feature: Providers inventory and write-only key UI
 
-  @E2E-407
+  @E2E-407 @suite-management
   Scenario: E2E-407 The providers list is readable and operational
     Given several providers
     When the list renders
@@ -9,7 +9,7 @@ Feature: Providers inventory and write-only key UI
     Then the status and last4 are immediately legible
     Then the create action is obvious
 
-  @E2E-408
+  @E2E-408 @suite-management
   Scenario: E2E-408 The provider creation wizard covers the contract
     Given the create-provider action
     When I open the wizard
@@ -17,7 +17,7 @@ Feature: Providers inventory and write-only key UI
     Then the key is a write-only input
     Then I cannot submit an invalid provider
 
-  @E2E-409
+  @E2E-409 @suite-management
   Scenario: E2E-409 The API key is never echoed or recoverable
     Given the provider key field and a saved provider
     When I type, save and reopen the provider
@@ -25,7 +25,7 @@ Feature: Providers inventory and write-only key UI
     Then only the last four characters are displayed
     Then the field is cleared after submit
 
-  @E2E-410
+  @E2E-410 @suite-management
   Scenario: E2E-410 Provider fields are validated inline
     Given the provider form
     When I submit a non-HTTPS URL, a duplicate name, a non-positive limit or a key outside the allowed length
@@ -33,7 +33,7 @@ Feature: Providers inventory and write-only key UI
     Then a valid provider is accepted
     Then the validation happens before any external call
 
-  @E2E-411
+  @E2E-411 @suite-management
   Scenario: E2E-411 Provider verification shows actionable states
     Given a provider
     When I verify it and the upstream returns success, degraded, timeout or unauthorized
@@ -41,7 +41,7 @@ Feature: Providers inventory and write-only key UI
     Then the provider status updates accordingly
     Then a failure offers a retry or an edit action
 
-  @E2E-412
+  @E2E-412 @suite-management
   Scenario: E2E-412 Key rotation is hidden, confirmed and audited
     Given an existing provider
     When I rotate its key
@@ -49,7 +49,7 @@ Feature: Providers inventory and write-only key UI
     Then the old last4 is replaced only after a successful save
     Then the audit row records the rotation without the key
 
-  @E2E-413
+  @E2E-413 @suite-management
   Scenario: E2E-413 Disabling and enabling a provider is deliberate
     Given an active provider
     When I disable and then enable it
@@ -57,7 +57,7 @@ Feature: Providers inventory and write-only key UI
     Then a confirmation explains the impact on runs
     Then the action is audited
 
-  @E2E-414
+  @E2E-414 @suite-management
   Scenario: E2E-414 Provider health detail is understandable
     Given a provider with a health history
     When I open its detail
@@ -65,7 +65,7 @@ Feature: Providers inventory and write-only key UI
     Then the difference between degraded and disabled is explained
     Then the next action is clear
 
-  @E2E-415
+  @E2E-415 @suite-management
   Scenario: E2E-415 Provider errors are actionable, not alarming
     Given an invalid key, a 401, a degraded endpoint or a timeout
     When the error is displayed
@@ -73,7 +73,7 @@ Feature: Providers inventory and write-only key UI
     Then it uses the precise operational tone with no exclamation marks
     Then the provider form remains editable
 
-  @E2E-416
+  @E2E-416 @suite-management
   Scenario: E2E-416 No secret leaks through any management surface
     Given a provider key was entered
     When I inspect the DOM, network, logs, toasts, errors and traces

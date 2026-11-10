@@ -104,6 +104,8 @@ Every document under `.docs` is listed here. When a document is created, renamed
 | Delivery appendix | WBS, acceptance tests, ADRs, environment variables, docs manifest. | [`.docs/technical-specification/APPENDIX-D-DELIVERY.md`](./.docs/technical-specification/APPENDIX-D-DELIVERY.md) |
 | E2E BDD checklist | 480 Gherkin end-to-end scenarios, including 120 Amiga-style UI and 120 Inventory/Lab management certification scenarios, with execution checkboxes. | [`.docs/e2e/BDD.md`](./.docs/e2e/BDD.md) |
 | E2E manual pre-test requirements | Manual-only pre-test checklist for credentials, external services, policy approvals, environment and sign-off. | [`.docs/e2e/req.md`](./.docs/e2e/req.md) |
+| Final user playbook | Compact PDF guide for the end user: start, screens, everyday actions and blocked work. | [`.docs/playbooks/final-user-playbook.pdf`](./.docs/playbooks/final-user-playbook.pdf) |
+| Operations playbook | Compact PDF guide to run the stack on Docker, operate it and run the test and BDD suites. | [`.docs/playbooks/operation-playbook.pdf`](./.docs/playbooks/operation-playbook.pdf) |
 | SOW index | Delivery index, status model, dependency graph, milestones. | [`.docs/sow/SOW.md`](./.docs/sow/SOW.md) |
 | Review plan checklist | Ordered execution plan to finish the full WP review (2026-11-09). | [`.docs/sow/review-plan-chacklist-20261109.md`](./.docs/sow/review-plan-chacklist-20261109.md) |
 | WP-00 Governance | Program governance, Lean/Agile delivery, quality system. | [`.docs/sow/WP-00-GOVERNANCE.md`](./.docs/sow/WP-00-GOVERNANCE.md) |
@@ -239,11 +241,13 @@ Use the `quality-gates` skill for the exact commands and evidence rules.
 | `bdd-preflight-test` | [`scripts/bdd-preflight.test.mjs`](./scripts/bdd-preflight.test.mjs) | Unit tests for the manual preflight parser. | `node scripts/bdd-preflight.test.mjs` |
 | `bdd-set-api-key` | [`scripts/bdd-set-api-key.sh`](./scripts/bdd-set-api-key.sh) | Load the live DeepSeek key through a hidden prompt and create or rotate the provider. | `make bdd-set-api-key` |
 | `bdd-set-api-key-test` | [`scripts/bdd-set-api-key.test.sh`](./scripts/bdd-set-api-key.test.sh) | Fake-provider tests for the hidden-prompt key loader. | `bash scripts/bdd-set-api-key.test.sh` |
-| `gen-bdd-features` | [`.tools/gen-bdd-features.mjs`](./.tools/gen-bdd-features.mjs) | Generate deterministic `.feature` files from `.docs/e2e/BDD.md`. | `.tools/gen-bdd-features.mjs --check\|--write` |
+| `gen-bdd-features` | [`.tools/gen-bdd-features.mjs`](./.tools/gen-bdd-features.mjs) | Generate deterministic `.feature` files with `@suite-*` tags from `.docs/e2e/BDD.md`. | `.tools/gen-bdd-features.mjs --check\|--write` |
 | `gen-bdd-steps` | [`.tools/gen-bdd-steps.mjs`](./.tools/gen-bdd-steps.mjs) | Generate exact-match step definitions for narrative scenarios that lack a curated step. | `.tools/gen-bdd-steps.mjs --check\|--write` |
 | `check-bdd-coverage` | [`.tools/check-bdd-coverage.mjs`](./.tools/check-bdd-coverage.mjs) | Enforce the 480-id coverage, drift and zero-pending-step gate. | `.tools/check-bdd-coverage.mjs [--report-only]` |
 | `bdd-self-test` | [`.tools/bdd-self-test.sh`](./.tools/bdd-self-test.sh) | Fixture-based negative tests for the generator and coverage checker. | `.tools/bdd-self-test.sh` |
-| `run-bdd` | [`scripts/run-bdd.sh`](./scripts/run-bdd.sh) | Guarded make-only BDD runner: preflight, drift, coverage, readiness, bddgen, Playwright, full log. | `make bdd` |
+| `run-bdd` | [`scripts/run-bdd.sh`](./scripts/run-bdd.sh) | Guarded make-only BDD runner: preflight, drift, coverage, readiness, bddgen, Playwright, full log. | `make bdd [SUITE=id] [UP_TO=id]` |
+| `bdd-suites` | [`scripts/bdd-suites.sh`](./scripts/bdd-suites.sh) | List and resolve the six BDD suites for a single, up-to or all selection. | `make bdd-list` / `scripts/bdd-suites.sh --list` |
+| `bdd-suites-test` | [`scripts/bdd-suites.test.mjs`](./scripts/bdd-suites.test.mjs) | Unit tests for the suite manifest, selection and grep. | `node scripts/bdd-suites.test.mjs` |
 | `run-load` | [`.tools/run-load.sh`](./.tools/run-load.sh) | Run the k6 edge load scenario against the API namespace. | `.tools/run-load.sh [args]` |
 | `chaos-worker-kill` | [`.tools/chaos-worker-kill.sh`](./.tools/chaos-worker-kill.sh) | Kill/restart the worker and verify recovery. | `.tools/chaos-worker-kill.sh` |
 | `check-coverage` | [`.tools/check-coverage.sh`](./.tools/check-coverage.sh) | Enforce backend 80, domain 90 and web 80 line coverage. | `.tools/check-coverage.sh` |

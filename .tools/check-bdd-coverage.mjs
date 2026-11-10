@@ -14,6 +14,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildFeatures, EXPECTED_SCENARIO_COUNT } from './lib/bdd-parser.mjs';
 import { computeCoverage, loadStepDefinitions } from './lib/step-parser.mjs';
+import { loadSuites, suiteCounts, validateSuites } from './lib/suites.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_ROOT = resolve(HERE, '..');
@@ -94,9 +95,14 @@ function main() {
 
   if (!existsSync(sourceFile)) fail(`missing source: ${sourceFile}`);
   const markdown = readFileSync(sourceFile, 'utf8');
-  const { files, features, scenarios, errors } = buildFeatures(markdown, { expectedCount: expected });
+  const suites = loadSuites(root);
+  const suiteValidation = validateSuites(suites, expected);
+  const { files, features, scenarios, errors } = buildFeatures(markdown, {
+    expectedCount: expected,
+    suiteByScenario: suiteValidation.suiteByScenario,
+  });
 
-  const structural = [...errors];
+  const structural = [...errors, ...suiteValidation.errors];
   const diff = compareFeatures(featureDir, files);
   for (const name of diff.missing) structural.push(`missing generated feature: ${name}`);
   for (const name of diff.stale) structural.push(`stale generated feature: ${name}`);
@@ -121,6 +127,7 @@ function main() {
     definitions: allDefinitions.length,
     curatedDefinitions: curatedDefinitions.length,
     generatedDefinitions: allDefinitions.length - curatedDefinitions.length,
+    suites: suiteCounts(suites),
     manualScenarios: [...manual.ids].sort(),
     unmatchedSteps: coverage.unmatchedSteps,
     pendingScenarios,
@@ -141,6 +148,7 @@ function main() {
       process.stderr.write(`check-bdd-coverage: structural errors:\n${structural.map((e) => `  - ${e}`).join('\n')}\n`);
     }
     process.stdout.write(`check-bdd-coverage: ${scenarios.length} scenarios, ${features.length} features, ${allDefinitions.length} step definitions (${report.generatedDefinitions} generated).\n`);
+    process.stdout.write(`  suites:            ${report.suites.map((suite) => `${suite.id}:${suite.count}`).join(', ')}\n`);
     process.stdout.write(`  pending scenarios: ${pendingScenarios.length}\n`);
     process.stdout.write(`  pending steps:     ${coverage.unmatchedSteps.length}\n`);
     process.stdout.write(`  curated pending:   ${report.curatedPendingScenarios.length} scenarios / ${report.curatedPendingSteps} steps\n`);

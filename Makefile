@@ -12,7 +12,7 @@ WEB := $(ROOT)/scripts/run-web.sh
 
 .PHONY: help setup hooks compose-validate up up-dev up-obs up-tls up-egress down reset logs ps migrate seed seed-demo \
 	fmt fmt-check lint typecheck test check frontend-build frontend-test frontend-lint \
-	e2e bdd bdd-set-api-key load doctor backup restore-drill openapi asyncapi sbom sow-lint \
+	e2e bdd bdd-list bdd-set-api-key load doctor backup restore-drill openapi asyncapi sbom sow-lint \
 	docs-check arch-fitness crate-fitness compose-validate compose-isolation db-check supply-chain-test clean
 
 help: ## List targets with one-line descriptions
@@ -119,8 +119,11 @@ e2e: ## Run Playwright end-to-end tests (WP-17/WP-21)
 	@test -f $(ROOT)/web/playwright.config.ts || { echo "error: Playwright is owned by WP-17/WP-21 and is not configured yet" >&2; exit 1; }
 	$(WEB) npx playwright test
 
-bdd: ## Run the BDD E2E suite (requires .docs/e2e/req.md to be complete)
-	@AILAB_BDD_VIA_MAKE=1 scripts/run-bdd.sh
+bdd: ## Run the BDD E2E suite (all, SUITE=id, or UP_TO=id)
+	@AILAB_BDD_VIA_MAKE=1 AILAB_BDD_SUITE="$(SUITE)" AILAB_BDD_UP_TO="$(UP_TO)" scripts/run-bdd.sh
+
+bdd-list: ## List the six BDD suites and their scenario counts
+	@scripts/bdd-suites.sh --list
 
 bdd-set-api-key: ## Load the DeepSeek API key for live BDD runs (hidden prompt)
 	@scripts/bdd-set-api-key.sh

@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "suites": [
+    {
+      "id": "core",
+      "order": 1,
+      "title": "Core platform",
+      "description": "Health, providers, models, labs, agents, CV, projects, SCM and the inventory/team gap closure.",
+      "ranges": [
+        ["E2E-001", "E2E-034"],
+        ["E2E-201", "E2E-207"]
+      ]
+    },
+    {
+      "id": "kanban",
+      "order": 2,
+      "title": "Kanban flow",
+      "description": "Board and card lifecycle, transitions and invariants, idea intake and the Kanban/data gap closure.",
+      "ranges": [
+        ["E2E-035", "E2E-082"],
+        ["E2E-224", "E2E-225"]
+      ]
+    },
+    {
+      "id": "delivery",
+      "order": 3,
+      "title": "Delivery pipeline",
+      "description": "SOW, plan and WBS, runs and orchestration, QA and merge, and the delivery gap closure.",
+      "ranges": [
+        ["E2E-083", "E2E-126"],
+        ["E2E-214", "E2E-219"]
+      ]
+    },
+    {
+      "id": "platform",
+      "order": 4,
+      "title": "Platform services",
+      "description": "Memory, realtime, security, API and observability, maintenance and metrics, journeys, reliability and the platform gap closure.",
+      "ranges": [
+        ["E2E-127", "E2E-144"],
+        ["E2E-165", "E2E-200"],
+        ["E2E-208", "E2E-213"],
+        ["E2E-220", "E2E-223"],
+        ["E2E-231", "E2E-240"]
+      ]
+    },
+    {
+      "id": "office",
+      "order": 5,
+      "title": "Office experience",
+      "description": "Virtual office, Amiga-style UI certification and the office/frontend gap closure.",
+      "ranges": [
+        ["E2E-145", "E2E-156"],
+        ["E2E-226", "E2E-230"],
+        ["E2E-241", "E2E-360"]
+      ]
+    },
+    {
+      "id": "management",
+      "order": 6,
+      "title": "Management UI",
+      "description": "Dashboard, product UI and accessibility, and the inventory/lab management UI certification.",
+      "ranges": [
+        ["E2E-157", "E2E-164"],
+        ["E2E-361", "E2E-480"]
+      ]
+    }
+  ]
+}

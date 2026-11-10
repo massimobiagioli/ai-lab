@@ -136,6 +136,12 @@ export function parseBdd(markdown, options = {}) {
 
   const scenarios = features.flatMap((feature) => feature.scenarios);
   canonicalizeKeywords(scenarios);
+  if (options.suiteByScenario instanceof Map) {
+    for (const scenario of scenarios) {
+      const suite = options.suiteByScenario.get(scenario.id);
+      if (suite) scenario.suite = suite;
+    }
+  }
   const errors = [];
   const ids = scenarios.map((scenario) => scenario.id);
   const seen = new Map();
@@ -197,7 +203,7 @@ export function renderFeature(feature) {
   lines.push(`Feature: ${feature.name}`);
   lines.push('');
   for (const scenario of feature.scenarios) {
-    lines.push(`  @${scenario.id}`);
+    lines.push(`  @${scenario.id}${scenario.suite ? ` @suite-${scenario.suite}` : ''}`);
     lines.push(`  Scenario: ${scenario.id} ${scenario.title}`);
     for (const step of scenario.steps) {
       lines.push(`    ${step.keyword} ${step.text}`);

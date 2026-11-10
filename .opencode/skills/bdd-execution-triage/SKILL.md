@@ -27,7 +27,7 @@ Use `bdd-preflight-gate` when the suite refuses to start and `bdd-step-engineeri
 ## Workflow
 
 1. Complete every manual item in `.docs/e2e/req.md`. Do not edit the parser to bypass a missing item. For live runs, load the key with `make bdd-set-api-key`; never through `.env`, a file or a command-line argument.
-2. Run `make bdd`. Do not invoke `scripts/run-bdd.sh`, `npx bddgen` or `npx playwright` directly.
+2. Run `make bdd` for all suites, `make bdd SUITE=<id>` for one suite, or `make bdd UP_TO=<id>` for the ordered prefix. Do not invoke `scripts/run-bdd.sh`, `npx bddgen` or `npx playwright` directly.
 3. If the preflight blocks, fix the checklist and re-run. The message lists the missing item and its line.
 4. If the guard blocks, use `make bdd`. If the environment is unreachable, prepare it manually; the suite never starts or resets it.
 5. Read `web/e2e-bdd/reports/results.json` and `web/e2e-bdd/reports/make-bdd.log`, then group failures by area and by step.
@@ -46,9 +46,9 @@ Use `bdd-preflight-gate` when the suite refuses to start and `bdd-step-engineeri
 ## Checklist
 
 - [ ] `.docs/e2e/req.md` is complete.
-- [ ] The run used `make bdd`.
+- [ ] The run used `make bdd` with the intended suite selection (all, `SUITE=` or `UP_TO=`).
 - [ ] For live runs, the key was loaded with `make bdd-set-api-key` and never through `.env`, a file or an argument.
-- [ ] `results.json` contains one entry per `E2E-XXX` id.
+- [ ] `results.json` contains one entry per selected `E2E-XXX` id.
 - [ ] `reports/make-bdd.log` contains the full console output of the run.
 - [ ] Every failure is classified and linked to a defect or a fix.
 - [ ] Flaky scenarios are quarantined with an owner and a card.

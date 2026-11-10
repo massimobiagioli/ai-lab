@@ -1,7 +1,7 @@
 @inventory @lab @ui @tables @p1 @fe-008
 Feature: Management tables, filters and states
 
-  @E2E-441
+  @E2E-441 @suite-management
   Scenario: E2E-441 Tables are semantic and accessible
     Given the agents, projects and providers tables
     When they render
@@ -9,7 +9,7 @@ Feature: Management tables, filters and states
     Then sortable headers expose aria-sort
     Then row actions have accessible names
 
-  @E2E-442
+  @E2E-442 @suite-management
   Scenario: E2E-442 Columns adapt without losing meaning
     Given a management table at desktop, tablet and phone widths
     When the viewport changes
@@ -17,7 +17,7 @@ Feature: Management tables, filters and states
     Then the primary identity and action remain visible
     Then no critical value is hidden without access
 
-  @E2E-443
+  @E2E-443 @suite-management
   Scenario: E2E-443 Filters are visible, resettable and persistent
     Given a list with search and filters
     When I apply filters and reload
@@ -25,7 +25,7 @@ Feature: Management tables, filters and states
     Then a reset action clears them
     Then the URL preserves the filter state
 
-  @E2E-444
+  @E2E-444 @suite-management
   Scenario: E2E-444 Empty filter results are recoverable
     Given a filter that matches nothing
     When the result renders
@@ -33,7 +33,7 @@ Feature: Management tables, filters and states
     Then a clear-filters action is present
     Then the user can recover without retyping
 
-  @E2E-445
+  @E2E-445 @suite-management
   Scenario: E2E-445 Loading skeletons preserve the final layout
     Given a slow list request
     When the skeleton renders
@@ -41,7 +41,7 @@ Feature: Management tables, filters and states
     Then the layout shift is minimal
     Then the ready state does not jump
 
-  @E2E-446
+  @E2E-446 @suite-management
   Scenario: E2E-446 List errors are actionable
     Given a failing list request
     When the error state renders
@@ -49,7 +49,7 @@ Feature: Management tables, filters and states
     Then the trace id is available
     Then the rest of the shell remains usable
 
-  @E2E-447
+  @E2E-447 @suite-management
   Scenario: E2E-447 Pagination boundaries are correct
     Given the first, middle and last page
     When I navigate
@@ -57,7 +57,7 @@ Feature: Management tables, filters and states
     Then the page size is respected
     Then the cursor is stable across reloads
 
-  @E2E-448
+  @E2E-448 @suite-management
   Scenario: E2E-448 Row actions are keyboard and pointer equivalent
     Given a table row
     When I open its actions with a mouse, keyboard or touch
@@ -65,7 +65,7 @@ Feature: Management tables, filters and states
     Then arrow, Home, End and Escape work
     Then the action result is identical
 
-  @E2E-449
+  @E2E-449 @suite-management
   Scenario: E2E-449 Narrow screens have an explicit table strategy
     Given a phone width
     When a management table renders
@@ -73,7 +73,7 @@ Feature: Management tables, filters and states
     Then the affordance is visible
     Then no action is unreachable
 
-  @E2E-450
+  @E2E-450 @suite-management
   Scenario: E2E-450 Filters and sorting never lie
     Given a filtered and sorted list
     When I inspect the rows
