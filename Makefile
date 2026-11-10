@@ -12,14 +12,14 @@ WEB := $(ROOT)/scripts/run-web.sh
 
 .PHONY: help setup hooks compose-validate up up-dev up-obs up-tls up-egress down reset logs ps migrate seed seed-demo \
 	fmt fmt-check lint typecheck test check frontend-build frontend-test frontend-lint \
-	e2e bdd bdd-list bdd-set-api-key load doctor backup restore-drill openapi asyncapi sbom sow-lint \
+	e2e bdd bdd-list bdd-set-api-key load doctor generate-key backup restore-drill openapi asyncapi sbom sow-lint \
 	docs-check arch-fitness crate-fitness compose-validate compose-isolation db-check supply-chain-test clean
 
 help: ## List targets with one-line descriptions
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## ' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-22s %s\n", $$1, $$2}'
 
-setup: ## Install local dependencies (cargo fetch, npm ci)
-	cargo fetch
+setup: ## Install dependencies and tool images (Docker only)
+	scripts/run-rust.sh cargo fetch
 	$(WEB) npm ci
 
 hooks: ## Install commit hooks (lefthook or native git hooks)
@@ -83,20 +83,20 @@ seed: ## Seed reference data (WP-04)
 seed-demo: ## Seed the deterministic demo dataset (WP-04)
 	scripts/seed-demo.sh
 
-fmt: ## Format Rust and frontend code
-	cargo fmt --all
+fmt: ## Format Rust and frontend code in Docker
+	scripts/run-rust.sh cargo fmt --all
 	$(WEB) npm run format
 
-fmt-check: ## Check formatting without writing
-	cargo fmt --all --check
+fmt-check: ## Check formatting in Docker
+	scripts/run-rust.sh cargo fmt --all --check
 	$(WEB) npm run format:check
 
-lint: ## Clippy with -D warnings and ESLint
-	cargo clippy --workspace --all-targets -- -D warnings
+lint: ## Clippy with -D warnings and ESLint in Docker
+	scripts/run-rust.sh cargo clippy --workspace --all-targets -- -D warnings
 	$(WEB) npm run lint
 
-test: ## Rust and frontend unit/integration tests
-	@if command -v cargo-nextest >/dev/null 2>&1; then cargo nextest run --workspace; else cargo test --workspace; fi
+test: ## Rust and frontend tests in Docker
+	scripts/run-rust.sh cargo test --workspace
 	$(WEB) npm test
 
 typecheck: ## Type-check the frontend without emitting
@@ -115,9 +115,9 @@ frontend-lint: ## Run ESLint and Prettier checks
 	$(WEB) npm run lint
 	$(WEB) npm run format:check
 
-e2e: ## Run Playwright end-to-end tests (WP-17/WP-21)
+e2e: ## Run Playwright end-to-end tests in the Playwright container
 	@test -f $(ROOT)/web/playwright.config.ts || { echo "error: Playwright is owned by WP-17/WP-21 and is not configured yet" >&2; exit 1; }
-	$(WEB) npx playwright test
+	.tools/run-e2e.sh
 
 bdd: ## Run the BDD E2E suite (all, SUITE=id, or UP_TO=id)
 	@AILAB_BDD_VIA_MAKE=1 AILAB_BDD_SUITE="$(SUITE)" AILAB_BDD_UP_TO="$(UP_TO)" scripts/run-bdd.sh
@@ -128,12 +128,13 @@ bdd-list: ## List the six BDD suites and their scenario counts
 bdd-set-api-key: ## Load the DeepSeek API key for live BDD runs (hidden prompt)
 	@scripts/bdd-set-api-key.sh
 
-load: ## Run k6 load scenarios (WP-21)
-	@command -v k6 >/dev/null 2>&1 || { echo "error: k6 is not installed; owned by WP-21" >&2; exit 1; }
-	k6 run infra/load/board.js
+load: ## Run k6 load scenarios in the k6 container
+	.tools/run-load.sh
 
-doctor: ## Validate Docker, ports, disk, tools, keys and connectivity
+doctor: ## Validate Docker, ports, disk, env, images and connectivity
 	scripts/doctor.sh
+generate-key: ## Generate the local master key and runner token in .env (Docker)
+	@scripts/generate-key.sh
 
 backup: ## Dump the database and write an artifact manifest (WP-03/WP-20)
 	scripts/backup.sh
@@ -146,16 +147,17 @@ openapi: ## Regenerate OpenAPI and client types (WP-16)
 	scripts/gen-openapi.sh
 
 openapi-drift: ## Fail when an OpenAPI path is not served by the router
-	.tools/check-openapi-drift.py
+	scripts/run-python.sh .tools/check-openapi-drift.py --root .
 
 asyncapi: ## Regenerate AsyncAPI (WP-16)
 	scripts/gen-asyncapi.sh
 
-sbom: ## Generate SBOMs for built images (WP-22)
-	@command -v syft >/dev/null 2>&1 || { echo "error: syft is not installed; owned by WP-22" >&2; exit 1; }
+sbom: ## Generate SBOMs for built images in the Syft container (WP-22)
 	@test -n "$(IMAGES)" || { echo "usage: make sbom IMAGES='ailab/api:1.0.0 ...'" >&2; exit 1; }
 	@mkdir -p artifacts/sbom
-	@for image in $(IMAGES); do syft "$$image" -o cyclonedx-json > "artifacts/sbom/$$(echo $$image | tr '/:' '__').cdx.json"; done
+	@for image in $(IMAGES); do \
+		docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$(ROOT)/artifacts/sbom:/out" anchore/syft:latest "$$image" -o cyclonedx-json="/out/$$(echo $$image | tr '/:' '__').cdx.json"; \
+	done
 	@echo "sbom: written to artifacts/sbom"
 
 sow-lint: ## Validate SOW statuses, links, checklists and dependencies
@@ -184,6 +186,6 @@ supply-chain-test: ## Negative tests for npm audit and cargo-deny
 	.tools/test-supply-chain.sh
 
 clean: ## Remove build artifacts, never source
-	cargo clean
-	rm -rf web/dist web/.angular web/coverage artifacts/backups artifacts/sbom
+	@docker volume rm ailab-cargo-target >/dev/null 2>&1 || true
+	rm -rf target web/dist web/.angular web/coverage artifacts/backups artifacts/sbom
 	@echo "clean: build artifacts removed"

@@ -14,6 +14,8 @@ description: Use before declaring any task or work package done, or when changin
 
 ## Preconditions
 
+- Application toolchains run in Docker (ADR-0027); use the Make targets and `scripts/run-*.sh` wrappers, never host `cargo`/`npm`/`npx`/`node`/`python3`.
+
 - Read `.docs/sow/WP-21-TESTING.md`, `.docs/sow/WP-00-GOVERNANCE.md` §3.8 and `.docs/technical-specification/AI-LAB-TECHNICAL-SPECIFICATION.md` §19.
 - Know which gates apply to the changed area.
 - Have the deterministic seed and fakes available.
@@ -24,9 +26,9 @@ description: Use before declaring any task or work package done, or when changin
    - `make check`
    - `scripts/harness-lint.sh`
 2. Run the relevant suites:
-   - `cargo nextest run --workspace`
-   - `npm --prefix web test`
-   - `npx --prefix web playwright test`
+   - `make test`
+   - `make frontend-test`
+   - `make e2e`
 3. Run contract and invariant suites:
    - `make openapi`
    - `make asyncapi`
@@ -35,8 +37,8 @@ description: Use before declaring any task or work package done, or when changin
    - memory leakage fixture
 4. Run security gates:
    - `gitleaks detect --source . --no-git`
-   - `cargo deny check`
-   - `npm --prefix web audit --audit-level=high`
+   - `make supply-chain-test`
+   - `scripts/run-web.sh npm audit --audit-level=high`
    - Trivy on changed images
 5. Run performance and resilience gates when affected:
    - `make load`

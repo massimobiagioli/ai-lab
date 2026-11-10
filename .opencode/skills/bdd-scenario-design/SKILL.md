@@ -38,7 +38,7 @@ Use `bdd-step-engineering` to implement the steps and `bdd-coverage-traceability
 6. Use a deterministic fixture or the demo seed; never depend on wall-clock time, execution order or a real external service.
 7. For a `@manual` scenario, record the owner, reason, required human evidence and review date in the manual-scenario map.
 8. Update the coverage summary and the progress tracker when an area count changes. Add a gap-analysis row when a scenario closes a specification gap.
-9. Run `.tools/check-bdd-coverage.mjs` and `.tools/gen-bdd-features.mjs --check`.
+9. Run `scripts/run-node.sh .tools/check-bdd-coverage.mjs` and `scripts/run-node.sh .tools/gen-bdd-features.mjs --check`.
 
 ## Checklist
 

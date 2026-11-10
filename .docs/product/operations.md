@@ -16,7 +16,7 @@ This document covers install, run, upgrade, backup, restore, scale and troublesh
 
 - Docker Engine ≥ 27 and Docker Compose ≥ 2.30. Older versions work for development but emit a warning in `make doctor`.
 - ≥ 4 vCPU, ≥ 8 GB RAM, ≥ 20 GB free disk.
-- Rust 1.99.1 for local builds (`rust-toolchain.toml`), Node 24/npm 11 for the frontend, or the pinned container fallback used by `scripts/run-web.sh`.
+- Make and Git. Rust, Node/npm, Python and OpenSSL run in the pinned Docker images; host toolchains are not required or supported (ADR-0027).
 - Outbound HTTPS to DeepSeek, GitHub and Docker Hub.
 
 ## 2. Install
@@ -25,15 +25,14 @@ This document covers install, run, upgrade, backup, restore, scale and troublesh
 git clone <repository> ai-lab
 cd ai-lab
 make setup
-cp .env.example .env
-scripts/doctor.sh --generate-key
+make generate-key
 make doctor
 make up
 ```
 
-`make up` builds the five images and starts the `core` profile: `postgres`, `redis`, `migrate`, `api`, `worker`, `runner`, `docker-socket-proxy`, `web`. The web UI is at `http://127.0.0.1:8080`.
+`make setup` fetches the dependencies and warms the Docker toolchain caches; `make generate-key` writes the local secrets. `make up` builds the five images and starts the `core` profile: `postgres`, `redis`, `migrate`, `api`, `worker`, `runner`, `docker-socket-proxy`, `web`. The web UI is at `http://127.0.0.1:8080`.
 
-`.env` is gitignored. `--generate-key` writes a development `AILAB_MASTER_KEY`; production requires an operator-supplied key.
+`.env` is gitignored. `make generate-key` creates it from `.env.example` if needed and writes a development `AILAB_MASTER_KEY` and `AILAB_RUNNER_TOKEN` in Docker; production requires an operator-supplied key.
 
 ## 3. Profiles
 

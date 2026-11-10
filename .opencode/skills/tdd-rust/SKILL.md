@@ -15,8 +15,10 @@ Do not use this skill for frontend-only or documentation-only tasks.
 
 ## Preconditions
 
+- Application toolchains run in Docker (ADR-0027); use `scripts/run-rust.sh` and never run `cargo` on the host.
+
 - Rust toolchain `1.99.1` is active (`rustup show`).
-- The workspace builds: `cargo check --workspace`.
+- The workspace builds in Docker: `scripts/run-rust.sh cargo check --workspace`.
 - The target crate and its package name are known. Package names follow `ailab-<crate>` for first-party crates.
 - Database tests have a migrated template database available through `DATABASE_URL` or testcontainers.
 
@@ -25,19 +27,19 @@ Do not use this skill for frontend-only or documentation-only tasks.
 1. Read the task's acceptance criteria and the relevant spec section.
 2. Write a failing test in the crate's `tests/` or a `#[cfg(test)]` module. Use `proptest` for invariants and `insta` for event/prompt/DTO snapshots.
 3. Run the focused test and confirm the expected failure:
-   - `cargo nextest run -p ailab-domain <test_name>`
-   - or `cargo test -p ailab-domain <test_name>`
+   - `scripts/run-rust.sh cargo test -p ailab-domain <test_name>`
+   - or `scripts/run-rust.sh cargo test -p ailab-domain <test_name>`
 4. Implement the minimum production code.
 5. Run the focused test, then the crate suite:
-   - `cargo nextest run -p ailab-domain`
+   - `scripts/run-rust.sh cargo test -p ailab-domain`
 6. Refactor with tests green.
 7. Run the full relevant suite and gates:
-   - `cargo fmt --check`
-   - `cargo clippy --workspace --all-targets -- -D warnings`
-   - `cargo nextest run --workspace`
-   - `cargo llvm-cov --workspace --summary-only` when coverage is affected
+   - `make fmt-check`
+   - `make lint`
+   - `make test`
+   - `scripts/run-rust.sh cargo llvm-cov --workspace --summary-only` when coverage is affected
 8. For repository tests, use `sqlx::test` or testcontainers with the PostgreSQL 18 + pgvector image. Never mock the database for constraint or concurrency tests.
-9. For compile-time SQL, run `cargo sqlx prepare --workspace` and commit `.sqlx` changes when queries change.
+9. For compile-time SQL, run `scripts/run-rust.sh cargo sqlx prepare --workspace` and commit `.sqlx` changes when queries change.
 10. Record exact commands and results in the WP progress line.
 
 ## Checklist
@@ -47,8 +49,8 @@ Do not use this skill for frontend-only or documentation-only tasks.
 - [ ] Production change is the minimum required.
 - [ ] Refactor completed with tests green.
 - [ ] Unit, integration and repository tests pass.
-- [ ] `cargo fmt --check` passes.
-- [ ] `cargo clippy --workspace --all-targets -- -D warnings` passes.
+- [ ] `make fmt-check` passes.
+- [ ] `make lint` passes.
 - [ ] No `unwrap` or `expect` in production paths.
 - [ ] No `unsafe` in first-party crates.
 - [ ] Database constraints and concurrency covered where relevant.

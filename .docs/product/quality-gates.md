@@ -15,23 +15,23 @@ A pull request may merge only when every applicable gate below is green. Branch 
 
 ## 1. Required check names
 
-These names are exact. They are the required status contexts for the default branch and the source of truth for branch protection.
+These names are exact. They are the required status contexts for the default branch and the source of truth for branch protection. All application commands run in Docker (ADR-0027); host Rust, Node, Python and OpenSSL are not used.
 
 | Check | Owner | Command | Threshold | Failure action |
 |---|---|---|---|---|
-| `fmt` | Dev | `cargo fmt --all --check` | Zero diff | Author formats; merge blocked |
-| `clippy` | Dev | `cargo clippy --workspace --all-targets -- -D warnings` | Zero warnings | Author fixes; merge blocked |
-| `rust-unit` | Dev | `cargo nextest run --workspace --lib --bins` | All pass | Author fixes; P1 if flaky > 24 h |
-| `rust-integration` | Dev | `cargo nextest run --workspace --test '*'` | All pass | Author fixes; merge blocked |
-| `frontend-lint` | Dev | `npm --prefix web run lint` | Zero errors | Author fixes; merge blocked |
-| `frontend-unit` | Dev | `npm --prefix web test` | All pass; line coverage ≥ 80% | Author fixes; merge blocked |
-| `frontend-build` | Dev | `npm --prefix web run build` | Exit 0; bundle budgets met | Author fixes; merge blocked |
-| `e2e` | QA | `npx --prefix web playwright test` | All pass; no new flaky entry | QA triages; release blocked |
-| `a11y` | QA | `npx --prefix web playwright test --project=a11y` | Zero serious/critical axe findings | QA files defect; merge blocked |
-| `visual` | QA | `npx --prefix web playwright test --project=visual` | Within approved threshold | QA reviews diff; merge blocked |
+| `fmt` | Dev | `make fmt-check` | Zero diff | Author formats; merge blocked |
+| `clippy` | Dev | `make lint` | Zero warnings | Author fixes; merge blocked |
+| `rust-unit` | Dev | `scripts/run-rust.sh cargo test --workspace --lib --bins` | All pass | Author fixes; P1 if flaky > 24 h |
+| `rust-integration` | Dev | `scripts/run-rust.sh cargo test --workspace --tests` | All pass | Author fixes; merge blocked |
+| `frontend-lint` | Dev | `make frontend-lint` | Zero errors | Author fixes; merge blocked |
+| `frontend-unit` | Dev | `make frontend-test` | All pass; line coverage ≥ 80% | Author fixes; merge blocked |
+| `frontend-build` | Dev | `make frontend-build` | Exit 0; bundle budgets met | Author fixes; merge blocked |
+| `e2e` | QA | `make e2e` | All pass; no new flaky entry | QA triages; release blocked |
+| `a11y` | QA | `.tools/run-e2e.sh --project=a11y` | Zero serious/critical axe findings | QA files defect; merge blocked |
+| `visual` | QA | `.tools/run-e2e.sh --project=visual` | Within approved threshold | QA reviews diff; merge blocked |
 | `openapi-compat` | Dev | `make openapi` + `make asyncapi` + `git diff --exit-code` | No drift | Author regenerates; merge blocked |
 | `security-secrets` | QA | `gitleaks detect --source . --no-git` | Zero findings | Revoke secret; rotate; P0 |
-| `security-deps` | QA | `cargo deny check` + `npm --prefix web audit --audit-level=high` + `.tools/test-supply-chain.sh` | No high/critical; negative fixtures rejected | Upgrade or approved ADR; merge blocked |
+| `security-deps` | QA | `make supply-chain-test` + `scripts/run-web.sh npm audit --audit-level=high` | No high/critical; negative fixtures rejected | Upgrade or approved ADR; merge blocked |
 | `security-image` | QA | `trivy image <changed-image>` | No high/critical with a fix | Rebuild; merge blocked |
 | `docs-build` | Analyst | `scripts/harness-lint.sh` + docs build + link check + `.tools/check-architecture-fitness.sh` | Zero broken links; fitness green; build exit 0 | Author fixes; release blocked |
 | `sow-lint` | Tech Lead | `scripts/sow-lint.sh` | Exit 0 | Author fixes; merge blocked |

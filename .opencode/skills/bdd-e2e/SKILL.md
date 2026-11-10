@@ -29,12 +29,12 @@ Do not use this skill for the plain Playwright specs in `web/e2e`, for product c
 ## Workflow
 
 1. Verify the source contract:
-   - `.tools/gen-bdd-features.mjs --check` reports no drift.
-   - `.tools/gen-bdd-steps.mjs --check` reports no drift.
-   - `.tools/check-bdd-coverage.mjs` reports 480 unique ids, zero missing and zero duplicate.
+   - `scripts/run-node.sh .tools/gen-bdd-features.mjs --check` reports no drift.
+   - `scripts/run-node.sh .tools/gen-bdd-steps.mjs --check` reports no drift.
+   - `scripts/run-node.sh .tools/check-bdd-coverage.mjs` reports 480 unique ids, zero missing and zero duplicate.
 2. Generate features and narrative steps when `BDD.md` changed:
-   - `.tools/gen-bdd-features.mjs --write`
-   - `.tools/gen-bdd-steps.mjs --write`
+   - `scripts/run-node.sh .tools/gen-bdd-features.mjs --write`
+   - `scripts/run-node.sh .tools/gen-bdd-steps.mjs --write`
    - Keep one feature file per `## N.` area, preserve order, wording and tags, and add `@E2E-XXX` to each scenario.
    - Strip the checklist marker from the generated scenario title, never from `BDD.md`.
 3. Implement or update steps:

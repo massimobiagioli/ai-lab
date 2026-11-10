@@ -13,7 +13,7 @@ Paths are relative to the repository root. `present` means the artifact exists a
 | 1 | README and quickstart | `README.md` | present | Clean-clone steps; timing video pending AC-001 |
 | 2 | Architecture (C4) | `.docs/product/architecture.md` | present | Context/container/component and trust boundaries |
 | 3 | Domain model | `.docs/product/domain-model.md` | present | Aggregates, invariants and events |
-| 4 | ADRs | `.docs/adr/` | present | 25 accepted ADRs, registry linked |
+| 4 | ADRs | `.docs/adr/` | present | 27 accepted ADRs, registry linked |
 | 5 | API reference | `.docs/product/api/openapi.json` | present | Generated; contract tests in `make check` |
 | 6 | Event reference | `.docs/product/api/asyncapi.json` | present | Generated from the event catalog |
 | 7 | Database dictionary and ERD | `.docs/product/database.md` | present | Tables, columns, indexes and ownership |
@@ -29,6 +29,9 @@ Paths are relative to the repository root. `present` means the artifact exists a
 | 17 | Changelog, SECURITY, LICENSE, CoC | repo root | present | SemVer changelog, Apache-2.0, disclosure and CoC |
 | 18 | Demo script and media | `.docs/product/demo-script.md` | partial | Script ≤5 min; recording (`media/demo.mp4`) missing (AC-015) |
 | 19 | Glossary | `.docs/product/glossary.md` | present | Terms match the domain model |
+| 20 | User playbook | `.docs/playbooks/final-user-playbook.pdf` | present | Compact end-user PDF; Docker-only quickstart |
+| 21 | Operations playbook | `.docs/playbooks/operation-playbook.pdf` | present | Compact Docker, test and BDD operations PDF |
+| 22 | Claude guardrails | `CLAUDE.md` | present | Docker-only rule and source-of-truth pointer |
 
 ## Open items
 

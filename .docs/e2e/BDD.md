@@ -110,7 +110,7 @@ The QA cross-check maps every normative area of the capitolato to the scenarios 
 | §23 Global acceptance criteria | 19 | 21.7 |
 | Appendices B and C (contracts, agents, Kanban) | 4, 5, 6, 13, 17 | 21.1 – 21.5 |
 
-> Scenarios are end-to-end behaviour checks. Gates that are not scenario-shaped — mutation score, fuzzing, coverage thresholds, schema drift, dependency and image scanning — remain enforced by `cargo nextest`, `cargo-fuzz`, `.tools/check-coverage.sh`, `make openapi`, `cargo deny`, `npm audit`, gitleaks and Trivy as listed in `.docs/product/testing.md` and `.docs/product/quality-gates.md`; they are out of scope for this checklist and are not counted as missing scenarios.
+> Scenarios are end-to-end behaviour checks. Gates that are not scenario-shaped — mutation score, fuzzing, coverage thresholds, schema drift, dependency and image scanning — remain enforced by `make test`, `cargo-fuzz`, `.tools/check-coverage.sh`, `make openapi`, `make supply-chain-test`, `scripts/run-web.sh npm audit`, gitleaks and Trivy as listed in `.docs/product/testing.md` and `.docs/product/quality-gates.md`; they are out of scope for this checklist and are not counted as missing scenarios.
 
 ### QA gap analysis (2026-11-09)
 

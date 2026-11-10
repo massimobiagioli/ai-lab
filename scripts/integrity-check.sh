@@ -16,25 +16,7 @@ docker compose -f "$COMPOSE_FILE" exec -T postgres \
   < "$ROOT/scripts/data-integrity.sql" > "$REPORT"
 
 # Expose the result to the /metrics textfile collector even when the check fails.
-MISMATCHES="$(python3 - "$REPORT" <<'PY'
-import json
-import sys
-
-data = json.load(open(sys.argv[1]))
-print(sum(1 for value in data.values() if value))
-PY
-)"
+MISMATCHES="$(cat "$REPORT" | "$ROOT/scripts/run-python.sh" -c 'import json,sys; data=json.load(sys.stdin); print(sum(1 for value in data.values() if value))')"
 printf 'ailab_integrity_mismatches %s\n' "$MISMATCHES" > "$ROOT/artifacts/metrics/integrity.prom"
 
-python3 - "$REPORT" <<'PY'
-import json
-import sys
-
-data = json.load(open(sys.argv[1]))
-print(json.dumps(data, sort_keys=True))
-bad = {key: value for key, value in data.items() if value}
-if bad:
-    print("INTEGRITY: FAILED", file=sys.stderr)
-    sys.exit(1)
-print("INTEGRITY: OK")
-PY
+cat "$REPORT" | "$ROOT/scripts/run-python.sh" -c 'import json,sys; data=json.load(sys.stdin); print(json.dumps(data, sort_keys=True)); bad={k:v for k,v in data.items() if v}; print("INTEGRITY: FAILED", file=sys.stderr) if bad else print("INTEGRITY: OK"); sys.exit(1 if bad else 0)'

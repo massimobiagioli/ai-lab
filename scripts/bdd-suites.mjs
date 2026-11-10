@@ -20,6 +20,7 @@ Options:
   --suite ID      Select one suite.
   --up-to ID      Select every suite up to and including ID.
   --json          Emit machine-readable JSON for the selection.
+  --tsv           Emit suites, grep and total as one tab-separated line.
   --root DIR      Repository root (default: ${DEFAULT_ROOT}).
   --help          Show this help.
 
@@ -30,12 +31,13 @@ Exit codes:
 }
 
 function parseArgs(argv) {
-  const args = { root: DEFAULT_ROOT, list: false, json: false };
+  const args = { root: DEFAULT_ROOT, list: false, json: false, tsv: false };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--help' || arg === '-h') return { help: true, args };
     if (arg === '--list') args.list = true;
     else if (arg === '--json') args.json = true;
+    else if (arg === '--tsv') args.tsv = true;
     else if (arg === '--suite') args.suite = argv[++i];
     else if (arg === '--up-to') args.upTo = argv[++i];
     else if (arg === '--root') args.root = resolve(argv[++i] ?? '');
@@ -56,7 +58,7 @@ function main() {
     process.stderr.write(`bdd-suites: ${parsed.error}\n`);
     process.exit(2);
   }
-  const { root, list, json, suite, upTo } = parsed.args;
+  const { root, list, json, tsv, suite, upTo } = parsed.args;
   const suites = loadSuites(root);
   const validation = validateSuites(suites);
   if (validation.errors.length > 0) {
@@ -91,6 +93,10 @@ function main() {
     all: isAll,
   };
 
+  if (tsv) {
+    process.stdout.write(`${selectedIds.join(', ')}\t${payload.grep}\t${payload.total}\n`);
+    return;
+  }
   if (json) {
     process.stdout.write(`${JSON.stringify(payload, null, 2)}\n`);
     return;

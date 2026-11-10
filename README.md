@@ -9,6 +9,7 @@ AI-Lab turns a raw idea into a maintained software product through a managed tea
 | Document | Path |
 |---|---|
 | Agent operating manual | [`AGENTS.md`](./AGENTS.md) |
+| Claude agent guardrails | [`CLAUDE.md`](./CLAUDE.md) |
 | Constitution | [`.docs/CONSTITUTION.md`](./.docs/CONSTITUTION.md) |
 | Development principles | [`.docs/PRINCIPLES.md`](./.docs/PRINCIPLES.md) |
 | Stack | [`.docs/STACK.md`](./.docs/STACK.md) |
@@ -16,6 +17,9 @@ AI-Lab turns a raw idea into a maintained software product through a managed tea
 | SOW index | [`.docs/sow/SOW.md`](./.docs/sow/SOW.md) |
 | ADR registry | [`.docs/adr/registry.md`](./.docs/adr/registry.md) |
 | Harness generation prompt | [`.prompts/harness-prompt.md`](./.prompts/harness-prompt.md) |
+| User playbook | [`.docs/playbooks/final-user-playbook.pdf`](./.docs/playbooks/final-user-playbook.pdf) |
+| Operations playbook | [`.docs/playbooks/operation-playbook.pdf`](./.docs/playbooks/operation-playbook.pdf) |
+| BDD checklist | [`.docs/e2e/BDD.md`](./.docs/e2e/BDD.md) |
 
 ## Repository map
 
@@ -39,14 +43,13 @@ scripts/           doctor, wait-for, sow-lint, hooks, generators
 ```bash
 git clone <repository> ai-lab
 cd ai-lab
-make setup                 # cargo fetch + npm ci
-cp .env.example .env
-scripts/doctor.sh --generate-key
+make setup                 # fetch dependencies in Docker
+make generate-key          # create .env with the master key and runner token
 make doctor
-make check                 # fast local gate
+make check                 # fast local gate in Docker
 ```
 
-`make check` runs formatting, clippy, ESLint/Prettier, Rust and frontend unit tests, `sow-lint`, documentation links and architecture fitness. The frontend works on a host with Node 24/npm 11; if Node is absent, `scripts/run-web.sh` uses the pinned `node:24.22.0-trixie-slim` container.
+`make check` runs formatting, clippy, ESLint/Prettier, Rust and frontend unit tests, `sow-lint`, documentation links and architecture fitness. **Every application command runs in Docker** (ADR-0027): the host needs Docker, Docker Compose, Make and Git only. Rust, Node, Python and OpenSSL are not installed or used on the host.
 
 The runtime stack starts when WP-03 lands:
 

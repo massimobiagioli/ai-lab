@@ -12,9 +12,9 @@ Status meanings: `evidenced` (artifact and reproducible evidence linked), `parti
 | AC | Criterion | Evidence | Status |
 |---|---|---|---|
 | AC-001 | Bootstrap | `scripts/doctor.sh`, `make reset` (2026-11-09: 0 → running), `README.md` | partial: timed clean-clone log and video missing |
-| AC-002 | Inventory | WP-19 inventory tests, `npm --prefix web test`; API inventory tests | partial: E2E recording missing |
+| AC-002 | Inventory | WP-19 inventory tests, `make frontend-test`; API inventory tests | partial: E2E recording missing |
 | AC-003 | Idea → cards | WP-10 materialization tests; SOW JSON fixtures | partial: timing histogram missing |
-| AC-004 | Kanban invariants | Orchestrator/application guard tests, `cargo nextest run --workspace` | partial: matrix report not exported |
+| AC-004 | Kanban invariants | Orchestrator/application guard tests, `make test` | partial: matrix report not exported |
 | AC-005 | Office | WP-18 office tests, Playwright `/` smoke and axe | partial: FPS report and screenshots missing |
 | AC-006 | SOW and plan | WP-10 tests, acyclic WBS fixtures, `.docs/product/sow.md` | partial: traceability export missing |
 | AC-007 | Execution | WP-13 run pipeline tests | not evidenced: no live run trace and merge SHA |

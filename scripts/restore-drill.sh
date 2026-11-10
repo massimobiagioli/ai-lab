@@ -29,11 +29,7 @@ if [ ! -f "$MANIFEST" ]; then
   echo "restore-drill: missing manifest $MANIFEST" >&2
   exit 1
 fi
-EXPECTED="$(python3 - "$MANIFEST" <<'PY'
-import json, sys
-print(json.load(open(sys.argv[1])).get("sha256", ""))
-PY
-)"
+EXPECTED="$(cat "$MANIFEST" | "$ROOT/scripts/run-python.sh" -c 'import json,sys; print(json.load(sys.stdin).get("sha256", ""))')"
 if command -v sha256sum >/dev/null 2>&1; then
   ACTUAL="$(sha256sum "$BACKUP" | awk '{print $1}')"
 else
@@ -74,7 +70,7 @@ done
 # 4. The integrity checks must be clean on the restored copy.
 if ! docker compose -f "$COMPOSE_FILE" exec -T postgres psql -U "$DB_USER" -d "$SCRATCH" \
   -tA -v ON_ERROR_STOP=1 < "$ROOT/scripts/data-integrity.sql" \
-  | python3 -c 'import json,sys; d=json.load(sys.stdin); bad={k:v for k,v in d.items() if v}; print(d); sys.exit(1 if bad else 0)'; then
+  | "$ROOT/scripts/run-python.sh" -c 'import json,sys; d=json.load(sys.stdin); bad={k:v for k,v in d.items() if v}; print(d); sys.exit(1 if bad else 0)'; then
   echo "restore-drill: integrity checks failed on the restored copy" >&2
   FAILED=1
 fi

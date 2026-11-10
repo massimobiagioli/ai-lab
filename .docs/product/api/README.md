@@ -18,4 +18,4 @@ The generation scripts copy the source to the generated file, so the output is d
 
 Core REST paths: health, providers, models, projects, board, cards, transition, events backfill and metrics. Core event channels: inventory, kanban, delivery, memory and system health. Errors use RFC 9457 with a stable `code` and `violations[]`.
 
-The contract is validated by `cargo test -p ailab-api` and the `openapi-compat` CI job.
+The contract is validated by `scripts/run-rust.sh cargo test -p ailab-api` and the `openapi-compat` CI job.

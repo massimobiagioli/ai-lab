@@ -118,26 +118,30 @@ The exact tree and ownership are defined in `.docs/sow/WP-02-REPOSITORY-DEVEX.md
 | `make down` | Stop the stack, preserving volumes |
 | `make reset` | Stop, remove volumes, start, migrate, seed demo |
 | `make logs` | Follow logs for core services |
-| `make doctor` | Validate Docker, ports, disk, tools, keys and connectivity |
-| `make fmt` | Format Rust and frontend code |
-| `make lint` | Clippy with `-D warnings` and ESLint |
+| `make doctor` | Validate Docker, Compose, images, ports, disk, `.env` keys and connectivity |
+| `make setup` | Fetch dependencies and warm the Docker toolchain images/caches |
+| `make generate-key` | Generate the local master key and runner token in `.env` in Docker |
+| `make fmt` | Format Rust and frontend code in Docker |
+| `make lint` | Clippy with `-D warnings` and ESLint in Docker |
 | `make check` | Fast local gate: format check, lint, typecheck, unit tests, SOW lint, docs links |
-| `make test` | Rust and frontend unit/integration suites |
-| `make e2e` | Playwright end-to-end suite |
+| `make test` | Rust and frontend unit/integration suites in Docker |
+| `make e2e` | Playwright end-to-end suite in the Playwright container |
 | `make bdd` | Gherkin BDD E2E suite; all, `SUITE=id` or `UP_TO=id`, preflight-gated and make-only |
 | `make bdd-list` | List the six BDD suites and their scenario counts |
 | `make bdd-set-api-key` | Load the live DeepSeek API key through a hidden prompt |
-| `make load` | k6 load scenarios |
+| `make load` | k6 load scenarios in the k6 container |
 | `make seed-demo` | Deterministic demo dataset |
 | `make migrate` | Apply sqlx migrations |
 | `make openapi` | Regenerate OpenAPI and client types |
 | `make asyncapi` | Regenerate AsyncAPI |
-| `make sbom` | Generate SBOMs for images |
+| `make sbom` | Generate SBOMs for images in the Syft container |
 | `make sow-lint` | Validate SOW statuses, links, checklists and dependencies |
 | `scripts/harness-lint.sh` | Validate the agent harness (docs, skills, commands, ADRs, `AGENTS.md`) |
 | `make backup` | Create a database dump and artifact manifest |
 | `make restore-drill` | Restore into a scratch database and verify |
 | `make clean` | Remove build artifacts, never source |
+
+Application toolchains are **Docker-only** (ADR-0027). Use `scripts/run-rust.sh`, `scripts/run-web.sh`, `scripts/run-node.sh` and `scripts/run-python.sh`; host `cargo`, `npm`, `npx`, `node`, `python3` and `openssl` are not supported. A host fallback in a wrapper or Makefile is a review defect.
 
 Every command is idempotent and non-interactive. Failures exit non-zero with an actionable message.
 

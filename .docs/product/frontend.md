@@ -51,7 +51,7 @@ Vitest + Angular TestBed: 52 tests covering the API client, WS resync, runs stor
 ## 8. Budgets and quality
 
 - Initial bundle budget 350 kB error / 300 kB warning; office chunk 180 kB; component styles 60 kB.
-- `npm run lint`, `npm test`, `npm run build`, `npm run format:check` are required.
+- `make frontend-lint`, `make frontend-test`, `make frontend-build` and `make fmt-check` are required; they run in Docker (ADR-0027).
 - CSP is set in `web/src/index.html`; no inline or third-party scripts.
 
 ## 9. Deferred to consumer work packages

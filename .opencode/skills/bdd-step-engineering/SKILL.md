@@ -34,11 +34,11 @@ Use `bdd-scenario-design` before changing the feature wording. Use `bdd-coverage
 7. Use bounded polling helpers, never sleeps. Keep timeouts in `support/env.ts`.
 8. Redact tokens, keys and cookies in failure messages, traces, screenshots and reports.
 9. Run the focused scenario through `make bdd` with the documented tag/filter variables, then run the full `make bdd`.
-10. Run `.tools/check-bdd-coverage.mjs` and confirm zero unmatched and zero unused steps.
+10. Run `scripts/run-node.sh .tools/check-bdd-coverage.mjs` and confirm zero unmatched and zero unused steps.
 11. For section 22 (Amiga-style UI certification), implement the visual steps: screenshot diff at 0.1 percent with documented masks, canvas pixel sampling for palette and anti-aliasing, integer-scale and buffer checks, scanline opacity, frame-hash determinism, FPS and draw-call probes, axe, keyboard, screen reader and reduced-motion emulation.
 12. For section 23 (Inventory and Lab management UI), implement the management steps: token and computed-style checks, hierarchy and spacing assertions, wizard and form flows, inline validation, tables/filters/pagination, responsive breakpoints, touch and keyboard parity, screen-reader announcements, axe and performance sampling.
 13. Attach the screenshot, frame hash, FPS sample, axe result, performance sample and logs for every certification scenario to `results.json` by `E2E-XXX`. Never widen a threshold, edit a baseline or mask a real regression to make a visual step pass.
-14. For narrative scenarios without a curated step, use `.tools/gen-bdd-steps.mjs --write` to regenerate `steps/generated.steps.ts`. Do not hand-edit it; implement the semantic handler in `support/generated-step-handler.ts` and replace curated gaps with real steps over time.
+14. For narrative scenarios without a curated step, use `scripts/run-node.sh .tools/gen-bdd-steps.mjs --write` to regenerate `steps/generated.steps.ts`. Do not hand-edit it; implement the semantic handler in `support/generated-step-handler.ts` and replace curated gaps with real steps over time.
 
 ## Checklist
 

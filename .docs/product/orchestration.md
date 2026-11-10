@@ -41,7 +41,7 @@ A card is eligible when it is `READY`, the agent is active, the budget is availa
 
 ## 7. Tests
 
-`cargo test -p ailab-orchestrator` covers eligibility reasons, lease contention, expiry/reap, run transitions, retry classification, budget hard stop and reconciliation.
+`scripts/run-rust.sh cargo test -p ailab-orchestrator` covers eligibility reasons, lease contention, expiry/reap, run transitions, retry classification, budget hard stop and reconciliation.
 
 ## 8. Worker loop
 

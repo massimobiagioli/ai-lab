@@ -33,7 +33,7 @@ Provider and SCM secrets are stored as encrypted material and never returned; on
 
 ## 4. Tests
 
-`cargo test -p ailab-domain` covers provider lifecycle and validation, model seeding, SCM write-only credentials, agent description/lifecycle/CV, the one-Tech-Lead invariant, and project card sequences.
+`scripts/run-rust.sh cargo test -p ailab-domain` covers provider lifecycle and validation, model seeding, SCM write-only credentials, agent description/lifecycle/CV, the one-Tech-Lead invariant, and project card sequences.
 
 ## 5. Deferred to consumer WPs
 

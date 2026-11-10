@@ -1,24 +1,24 @@
 #!/usr/bin/env bash
-# AI-Lab developer environment doctor.
+# AI-Lab host doctor.
 #
-# Usage: scripts/doctor.sh [--generate-key] [--connectivity]
-#   --generate-key   write a development AILAB_MASTER_KEY to .env if absent
-#   --connectivity   probe DeepSeek, GitHub and Docker Hub with a short timeout
+# Usage: scripts/doctor.sh [--connectivity]
+#   --connectivity   Probe DeepSeek, GitHub and Docker Hub with a short timeout.
 #
-# Read-only except for --generate-key. Exit 1 on a hard failure, 0 otherwise.
+# The doctor checks the host prerequisites only. Rust, Node, Python and OpenSSL
+# run inside Docker; the host toolchains are intentionally not required.
+#
+# Read-only. Exit 1 on a hard failure, 0 otherwise.
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT" || exit 2
 
-GENERATE_KEY=0
 CONNECTIVITY=0
 for arg in "$@"; do
   case "$arg" in
-    --generate-key) GENERATE_KEY=1 ;;
     --connectivity) CONNECTIVITY=1 ;;
     -h|--help)
-      sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'
+      sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'
       exit 0 ;;
     *) echo "doctor: unknown argument $arg" >&2; exit 2 ;;
   esac
@@ -65,32 +65,19 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# Toolchains
+# Docker images
 # ---------------------------------------------------------------------------
-for tool in cargo rustc python3 git openssl; do
-  if command -v "$tool" >/dev/null 2>&1; then
-    pass "$tool $("$tool" --version 2>/dev/null | head -1)"
+for image in \
+  "rust:1.99.1-trixie@sha256:8a4e90c7946b74626488b1446f712c0fe0ed1a596cbd3d871684bc9c5433ae07" \
+  "node:24.22.0-trixie-slim" \
+  "python:3.12.6-slim-bookworm" \
+  "mcr.microsoft.com/playwright:v1.65.0-noble"; do
+  if docker image inspect "$image" >/dev/null 2>&1; then
+    pass "image present: $image"
   else
-    fail "$tool is not installed"
+    warn "image not pulled yet: $image (it will be pulled on first use)"
   fi
 done
-
-if command -v rustc >/dev/null 2>&1; then
-  rust_version="$(rustc --version | awk '{print $2}')"
-  if version_ge "$rust_version" "1.99.1"; then
-    pass "Rust $rust_version meets the 1.99.1 pin"
-  else
-    fail "Rust $rust_version is below the 1.99.1 pin (run rustup toolchain install 1.99.1)"
-  fi
-fi
-
-if command -v node >/dev/null 2>&1 && command -v npm >/dev/null 2>&1; then
-  pass "node $(node --version), npm $(npm --version)"
-elif docker image inspect node:24.22.0-trixie-slim >/dev/null 2>&1; then
-  warn "node/npm are not on the host; the container fallback node:24.22.0-trixie-slim is available"
-else
-  fail "node 24 and npm 11 are not available on the host or as node:24.22.0-trixie-slim"
-fi
 
 # ---------------------------------------------------------------------------
 # Disk and ports
@@ -118,48 +105,21 @@ fi
 # Environment and secrets
 # ---------------------------------------------------------------------------
 ENV_FILE="$ROOT/.env"
-if [ "$GENERATE_KEY" -eq 1 ]; then
-  if [ ! -f "$ENV_FILE" ]; then
-    cp "$ROOT/.env.example" "$ENV_FILE"
-  fi
-  if grep -qE '^AILAB_MASTER_KEY=(replace-.*)?$' "$ENV_FILE"; then
-    key="$(openssl rand -base64 32)"
-    if sed -i.bak "s|^AILAB_MASTER_KEY=.*|AILAB_MASTER_KEY=${key}|" "$ENV_FILE"; then
-      rm -f "$ENV_FILE.bak"
-      pass "generated AILAB_MASTER_KEY in .env (development only)"
-    else
-      fail "could not write AILAB_MASTER_KEY to .env"
-    fi
-  else
-    pass "AILAB_MASTER_KEY already configured in .env"
-  fi
-  if grep -qE '^AILAB_RUNNER_TOKEN=$' "$ENV_FILE"; then
-    token="$(openssl rand -hex 32)"
-    if sed -i.bak "s|^AILAB_RUNNER_TOKEN=.*|AILAB_RUNNER_TOKEN=${token}|" "$ENV_FILE"; then
-      rm -f "$ENV_FILE.bak"
-      pass "generated AILAB_RUNNER_TOKEN in .env (development only)"
-    else
-      fail "could not write AILAB_RUNNER_TOKEN to .env"
-    fi
-  else
-    pass "AILAB_RUNNER_TOKEN is present in .env"
-  fi
-elif [ -f "$ENV_FILE" ] \
-  && grep -qE '^AILAB_MASTER_KEY=[A-Za-z0-9+/=]{20,}' "$ENV_FILE" \
-  && grep -qE '^AILAB_RUNNER_TOKEN=[A-Za-z0-9._-]{16,}' "$ENV_FILE"; then
-  pass "AILAB_MASTER_KEY and AILAB_RUNNER_TOKEN are present in .env"
+if [ ! -f "$ENV_FILE" ]; then
+  fail ".env is missing; run make generate-key"
 else
-  fail "AILAB_MASTER_KEY or AILAB_RUNNER_TOKEN is missing; run scripts/doctor.sh --generate-key for development"
-fi
-
-if [ -f "$ENV_FILE" ]; then
-  missing="$(comm -23 \
-    <(grep -E '^[A-Z0-9_]+=' "$ROOT/.env.example" | cut -d= -f1 | sort) \
-    <(grep -E '^[A-Z0-9_]+=' "$ENV_FILE" | cut -d= -f1 | sort) | tr '\n' ' ')"
-  if [ -n "$missing" ]; then
-    warn ".env is missing variables: $missing"
+  master="$(grep -E '^AILAB_MASTER_KEY=' "$ENV_FILE" | head -1 | cut -d= -f2-)"
+  runner="$(grep -E '^AILAB_RUNNER_TOKEN=' "$ENV_FILE" | head -1 | cut -d= -f2-)"
+  master_bytes="$(printf '%s' "$master" | base64 -d 2>/dev/null | wc -c | tr -d ' ')"
+  if [ "$master_bytes" = "32" ]; then
+    pass "AILAB_MASTER_KEY is a base64 32-byte key"
   else
-    pass ".env covers every .env.example variable"
+    fail "AILAB_MASTER_KEY is missing or invalid; run make generate-key"
+  fi
+  if [ "${#runner}" -ge 32 ]; then
+    pass "AILAB_RUNNER_TOKEN is present (${#runner} chars)"
+  else
+    fail "AILAB_RUNNER_TOKEN is missing or too short; run make generate-key"
   fi
 fi
 

@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Tests for scripts/bdd-set-api-key.sh with a fake provider API.
 #
+# The fake API runs in Docker; the test itself uses host bash and curl only.
+#
 # Usage: bash scripts/bdd-set-api-key.test.sh
 set -uo pipefail
 
@@ -11,10 +13,10 @@ PORT="${AILAB_BDD_TEST_PORT:-18999}"
 BASE="http://127.0.0.1:${PORT}"
 PASS=0
 FAIL=0
-SERVER_PID=""
+SERVER_NAME="ailab-bdd-key-test-$$"
 
 cleanup() {
-  if [ -n "$SERVER_PID" ]; then kill "$SERVER_PID" 2>/dev/null || true; fi
+  docker rm -f "$SERVER_NAME" >/dev/null 2>&1 || true
   rm -rf "$TMP"
 }
 trap cleanup EXIT INT TERM
@@ -22,74 +24,54 @@ trap cleanup EXIT INT TERM
 pass() { printf 'PASS  %s\n' "$1"; PASS=$((PASS + 1)); }
 fail() { printf 'FAIL  %s\n' "$1"; FAIL=$((FAIL + 1)); }
 
-cat > "$TMP/server.py" <<'PY'
-import json
-import sys
-import http.server
-import socketserver
+cat > "$TMP/server.mjs" <<'JS'
+import http from 'node:http';
+import { appendFileSync } from 'node:fs';
 
-port = int(sys.argv[1])
-log_path = sys.argv[2]
-providers = []
+const port = Number(process.argv[2]);
+const log = process.argv[3];
+const providers = [];
 
-class Handler(http.server.BaseHTTPRequestHandler):
-    def log_message(self, *args):
-        pass
+const server = http.createServer((request, response) => {
+  let body = '';
+  request.on('data', (chunk) => { body += chunk; });
+  request.on('end', () => {
+    const send = (status, payload) => {
+      const data = JSON.stringify(payload);
+      response.writeHead(status, { 'content-type': 'application/json', 'content-length': Buffer.byteLength(data) });
+      response.end(data);
+    };
+    if (request.method === 'GET' && (request.url === '/healthz' || request.url === '/api/v1/health/live')) {
+      return send(200, { status: 'ok' });
+    }
+    if (request.method === 'GET' && request.url.startsWith('/api/v1/providers')) {
+      return send(200, { data: providers });
+    }
+    if (request.method === 'POST') {
+      let parsed = {};
+      try { parsed = JSON.parse(body); } catch { parsed = {}; }
+      appendFileSync(log, `${JSON.stringify({ method: 'POST', path: request.url, body: parsed })}\n`);
+      if (request.url === '/api/v1/providers') {
+        const item = { id: 'p1', kind: parsed.kind || 'deepseek', status: 'active', api_key_last4: String(parsed.api_key || '').slice(-4) };
+        providers.push(item);
+        return send(201, item);
+      }
+      if (request.url === '/api/v1/providers/p1/rotate-key') {
+        return send(200, { id: 'p1', kind: 'deepseek', status: 'active', api_key_last4: String(parsed.api_key || '').slice(-4) });
+      }
+    }
+    send(404, { error: 'not found' });
+  });
+});
+server.listen(port);
+JS
 
-    def _send(self, code, payload):
-        body = json.dumps(payload).encode()
-        self.send_response(code)
-        self.send_header('content-type', 'application/json')
-        self.send_header('content-length', str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
-
-    def _log(self, method, path, body):
-        with open(log_path, 'a', encoding='utf-8') as handle:
-            handle.write(json.dumps({'method': method, 'path': path, 'body': body}) + '\n')
-
-    def do_GET(self):
-        if self.path in ('/healthz', '/api/v1/health/live'):
-            return self._send(200, {'status': 'ok'})
-        if self.path.startswith('/api/v1/providers'):
-            return self._send(200, {'data': providers})
-        return self._send(404, {'error': 'not found'})
-
-    def do_POST(self):
-        length = int(self.headers.get('content-length', '0'))
-        raw = self.rfile.read(length).decode('utf-8')
-        try:
-            body = json.loads(raw)
-        except Exception:
-            body = {}
-        self._log('POST', self.path, body)
-        if self.path == '/api/v1/providers':
-            item = {
-                'id': 'p1',
-                'kind': body.get('kind', 'deepseek'),
-                'status': 'active',
-                'api_key_last4': body.get('api_key', '')[-4:],
-            }
-            providers.append(item)
-            return self._send(201, item)
-        if self.path == '/api/v1/providers/p1/rotate-key':
-            return self._send(200, {
-                'id': 'p1',
-                'kind': 'deepseek',
-                'status': 'active',
-                'api_key_last4': body.get('api_key', '')[-4:],
-            })
-        return self._send(404, {'error': 'not found'})
-
-class Server(socketserver.TCPServer):
-    allow_reuse_address = True
-
-with Server(('127.0.0.1', port), Handler) as httpd:
-    httpd.serve_forever()
-PY
-
-python3 "$TMP/server.py" "$PORT" "$TMP/requests.log" &
-SERVER_PID=$!
+docker run --rm -d --name "$SERVER_NAME" -p "$PORT:$PORT" \
+  -v "$TMP:/app" -w /app node:24.22.0-trixie-slim \
+  node server.mjs "$PORT" /app/requests.log >/dev/null || {
+  echo "FAIL  fake provider container did not start" >&2
+  exit 1
+}
 
 for _ in $(seq 1 50); do
   if curl -fsS --max-time 1 "$BASE/healthz" >/dev/null 2>&1; then break; fi
@@ -143,12 +125,12 @@ if run_case "provider rotate" "$VALID" "$BASE" 0; then
   fi
 fi
 
-if grep -q '"path": "/api/v1/providers"' "$TMP/requests.log"; then
+if grep -q '"path":"/api/v1/providers"' "$TMP/requests.log"; then
   pass "the fake API received the create request"
 else
   fail "the fake API did not receive the create request"
 fi
-if grep -q '"path": "/api/v1/providers/p1/rotate-key"' "$TMP/requests.log"; then
+if grep -q '"path":"/api/v1/providers/p1/rotate-key"' "$TMP/requests.log"; then
   pass "the fake API received the rotate request"
 else
   fail "the fake API did not receive the rotate request"
@@ -164,7 +146,6 @@ else
   fail "the key cleanup trap is missing"
 fi
 
-# The provider creation body must contain the key; the script output must not.
 if grep -q "$VALID" "$TMP/requests.log"; then
   pass "the key reached the provider API"
 else

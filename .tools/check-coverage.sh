@@ -5,10 +5,10 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 status=0
 
-backend="$(cargo llvm-cov --workspace --summary-only 2>/dev/null | awk '/^TOTAL/{v=$10; gsub(/%/,"",v); print v}' | tail -1)"
+backend="$("$ROOT/scripts/run-rust.sh" cargo llvm-cov --workspace --summary-only 2>/dev/null | awk '/^TOTAL/{v=$10; gsub(/%/,"",v); print v}' | tail -1)"
 awk -v v="${backend:-0}" 'BEGIN { printf "backend line coverage: %s%% (min 80)\n", v; exit !(v+0 >= 80) }' || status=1
 
-domain="$(cargo llvm-cov -p ailab-domain --summary-only 2>/dev/null | awk '/^TOTAL/{v=$10; gsub(/%/,"",v); print v}' | tail -1)"
+domain="$("$ROOT/scripts/run-rust.sh" cargo llvm-cov -p ailab-domain --summary-only 2>/dev/null | awk '/^TOTAL/{v=$10; gsub(/%/,"",v); print v}' | tail -1)"
 awk -v v="${domain:-0}" 'BEGIN { printf "domain line coverage: %s%% (min 90)\n", v; exit !(v+0 >= 90) }' || status=1
 
 web_out="$(mktemp)"

@@ -14,9 +14,9 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 COMPOSE_FILE="$ROOT/infra/compose/docker-compose.yml"
 [ -f "$COMPOSE_FILE" ] || { echo "ENV ERROR: missing $COMPOSE_FILE" >&2; exit 2; }
 command -v docker >/dev/null 2>&1 || { echo "ENV ERROR: docker missing" >&2; exit 2; }
-command -v python3 >/dev/null 2>&1 || { echo "ENV ERROR: python3 missing" >&2; exit 2; }
 
-TMP="$(mktemp "${TMPDIR:-/tmp}/ailab-compose.XXXXXX.json")"
+mkdir -p "$ROOT/.cache"
+TMP="$ROOT/.cache/compose-isolation.json"
 trap 'rm -f "$TMP"' EXIT
 
 if ! docker compose -f "$COMPOSE_FILE" --profile core config --format json > "$TMP" 2>/tmp/ailab-compose.err; then
@@ -25,7 +25,7 @@ if ! docker compose -f "$COMPOSE_FILE" --profile core config --format json > "$T
   exit 2
 fi
 
-python3 - "$TMP" <<'PY'
+"$ROOT/scripts/run-python.sh" - /src/.cache/compose-isolation.json <<'PY'
 import json
 import sys
 

@@ -54,7 +54,7 @@ score    = weighted * exp(-age_days / 30) * scope_boost
 
 ## 7. Tests
 
-`cargo test -p ailab-domain` covers lab team/settings/archive, scope consistency, secret quarantine, deterministic chunking, scope leakage, the hybrid formula, near-duplicate dedupe and compaction with pins.
+`scripts/run-rust.sh cargo test -p ailab-domain` covers lab team/settings/archive, scope consistency, secret quarantine, deterministic chunking, scope leakage, the hybrid formula, near-duplicate dedupe and compaction with pins.
 
 ## 8. Deferred to consumer WPs
 

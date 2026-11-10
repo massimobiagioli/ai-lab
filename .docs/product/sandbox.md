@@ -42,7 +42,7 @@ The sandbox is the only place agent code runs. The specification, egress policy,
 
 ## 6. Tests
 
-`cargo test -p ailab-orchestrator` covers spec validation and isolation, egress allow/deny, role allowlists, forbidden commands, force-push, publish, protected paths, traversal and the lifecycle.
+`scripts/run-rust.sh cargo test -p ailab-orchestrator` covers spec validation and isolation, egress allow/deny, role allowlists, forbidden commands, force-push, publish, protected paths, traversal and the lifecycle.
 
 ## 7. Runner control plane
 

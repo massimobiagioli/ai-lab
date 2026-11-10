@@ -38,7 +38,7 @@ Stable codes: `SEPARATION_OF_DUTIES`, `QA_NOT_APPROVED`, `CI_NOT_GREEN`, `PR_NOT
 
 ## 5. Tests
 
-`cargo test -p ailab-application` covers a clean A2 merge, self-review, human-required A1, and the collected violation set.
+`scripts/run-rust.sh cargo test -p ailab-application` covers a clean A2 merge, self-review, human-required A1, and the collected violation set.
 
 ## 6. Deferred to consumer WPs
 

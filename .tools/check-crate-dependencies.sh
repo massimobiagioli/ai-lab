@@ -6,16 +6,16 @@
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-command -v python3 >/dev/null 2>&1 || { echo "ENV ERROR: python3 missing" >&2; exit 2; }
-command -v cargo >/dev/null 2>&1 || { echo "ENV ERROR: cargo missing" >&2; exit 2; }
+CACHE="$ROOT/.cache"
+mkdir -p "$CACHE"
 
-if ! cargo metadata --no-deps --format-version 1 > /tmp/ailab-crate-metadata.json 2>/tmp/ailab-crate-metadata.err; then
-  echo "ENV ERROR: cargo metadata failed" >&2
-  cat /tmp/ailab-crate-metadata.err >&2
+if ! "$ROOT/scripts/run-rust.sh" cargo metadata --no-deps --format-version 1 > "$CACHE/crate-metadata.json" 2>"$CACHE/crate-metadata.err"; then
+  echo "ENV ERROR: cargo metadata failed in the Rust container" >&2
+  cat "$CACHE/crate-metadata.err" >&2
   exit 2
 fi
 
-python3 - /tmp/ailab-crate-metadata.json "$ROOT" <<'PY'
+"$ROOT/scripts/run-python.sh" - /src/.cache/crate-metadata.json /src <<'PY'
 import json
 import pathlib
 import sys

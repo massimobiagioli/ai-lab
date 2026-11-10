@@ -9,26 +9,15 @@ TMP="$(mktemp -d)"
 PASS=0
 FAIL=0
 
-if command -v node >/dev/null 2>&1; then
-  NODE_MODE="host"
-  TOOLS="$ROOT/.tools"
-  FIXTURE="$TMP"
-else
-  NODE_MODE="docker"
-  TOOLS="/repo/.tools"
-  FIXTURE="/tmp/bdd"
-fi
+TOOLS="/repo/.tools"
+FIXTURE="/tmp/bdd"
 
 cleanup() { rm -rf "$TMP"; }
 trap cleanup EXIT INT TERM
 
 run_node() {
-  if [ "$NODE_MODE" = "host" ]; then
-    node "$@"
-  else
-    docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp \
-      -v "$ROOT:/repo" -v "$TMP:/tmp/bdd" -w /repo node:24.22.0-trixie-slim node "$@"
-  fi
+  docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp \
+    -v "$ROOT:/repo" -v "$TMP:/tmp/bdd" -w /repo node:24.22.0-trixie-slim node "$@"
 }
 
 pass() { printf 'PASS  %s\n' "$1"; PASS=$((PASS + 1)); }

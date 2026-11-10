@@ -55,7 +55,7 @@ Walking frames are deterministic (`floor(elapsed / 200) % 4`). The UI never inve
 
 ## 5. Tests
 
-`npm --prefix web test` covers octile A* (shortest, corner cutting, unreachable), the state/animation mapping, occupancy/determinism, sprites, the WS state bridge, deep links and object selection.
+`make frontend-test` covers octile A* (shortest, corner cutting, unreachable), the state/animation mapping, occupancy/determinism, sprites, the WS state bridge, deep links and object selection.
 
 ## 6. Deferred to WP-19/WP-21
 

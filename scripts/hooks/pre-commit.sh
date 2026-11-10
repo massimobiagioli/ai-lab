@@ -19,7 +19,7 @@ if git diff --cached | grep -qE '^(<<<<<<<|=======|>>>>>>>)'; then
 fi
 
 if printf '%s\n' "$STAGED" | grep -qE '\.rs$'; then
-  cargo fmt --all --check || { echo "pre-commit: cargo fmt failed" >&2; exit 1; }
+  scripts/run-rust.sh cargo fmt --all --check || { echo "pre-commit: cargo fmt failed" >&2; exit 1; }
 fi
 
 if printf '%s\n' "$STAGED" | grep -qE '^web/'; then

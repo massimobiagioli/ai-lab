@@ -33,7 +33,7 @@ Approved/Draft --revise--> Draft (new immutable version)
 
 ## 3. Tests
 
-`cargo test -p ailab-domain` covers required sections, duplicate requirement IDs, structured-requirement validation, deterministic Markdown, the submit/approve/reject/revise/supersede lifecycle, version immutability and the change-note guard.
+`scripts/run-rust.sh cargo test -p ailab-domain` covers required sections, duplicate requirement IDs, structured-requirement validation, deterministic Markdown, the submit/approve/reject/revise/supersede lifecycle, version immutability and the change-note guard.
 
 ## 4. Deferred to consumer WPs
 

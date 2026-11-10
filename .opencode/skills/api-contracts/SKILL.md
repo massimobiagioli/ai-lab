@@ -29,15 +29,15 @@ description: Use when changing REST endpoints, DTOs, OpenAPI, WebSocket events, 
 4. Regenerate the artifacts:
    - `make openapi`
    - `make asyncapi`
-   - `npm --prefix web run generate:api`
+   - `scripts/run-web.sh npm run generate:api`
 5. Verify determinism: running generation twice produces no diff.
 6. Run compatibility checks:
    - `openapi-diff` or the project compatibility job;
    - AsyncAPI schema validation;
    - client type check.
 7. Run the contract suite:
-   - `cargo nextest run -p ailab-api`
-   - `npx --prefix web playwright test`
+   - `scripts/run-rust.sh cargo test -p ailab-api`
+   - `make e2e`
    - `schemathesis run .docs/product/api/openapi.json`
 8. Update the error catalog and the event catalog if a new code or event was added.
 9. Record the change in the WP progress line and, if architectural, in an ADR.

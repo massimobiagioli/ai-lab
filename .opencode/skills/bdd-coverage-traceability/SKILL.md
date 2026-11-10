@@ -18,21 +18,21 @@ Use `bdd-scenario-design` to author scenarios and `bdd-step-engineering` to impl
 ## Preconditions
 
 - Read `.docs/e2e/BDD.md`; the expected count is 480 unique ids `E2E-001` … `E2E-480`.
-- Read `.tools/gen-bdd-features.mjs`, `.tools/gen-bdd-steps.mjs`, `.tools/check-bdd-coverage.mjs`, `.docs/e2e/suites.json`, `web/e2e-bdd/manual-scenarios.md` and `web/e2e-bdd/reports/results.json`.
+- Read `scripts/run-node.sh .tools/gen-bdd-features.mjs`, `scripts/run-node.sh .tools/gen-bdd-steps.mjs`, `scripts/run-node.sh .tools/check-bdd-coverage.mjs`, `.docs/e2e/suites.json`, `web/e2e-bdd/manual-scenarios.md` and `web/e2e-bdd/reports/results.json`.
 - Know the area-to-feature mapping and the generated feature layout.
 - Know the fake harness and the deterministic seed.
 
 ## Workflow
 
 1. Inventory the ids and the suite manifest: fail on duplicates, gaps, malformed ids, a count other than 480, a scenario assigned to more than one suite or a scenario with no suite.
-2. Generate one feature file per `## N.` area with `.tools/gen-bdd-features.mjs --write`:
+2. Generate one feature file per `## N.` area with `scripts/run-node.sh .tools/gen-bdd-features.mjs --write`:
    - preserve area order, scenario order, wording and tags;
    - strip the checklist marker from the generated title;
    - add `@E2E-XXX` and `@suite-<id>` as the scenario tags;
    - preserve the step text and resolve `And`/`But` to the previous primary keyword so patterns stay unambiguous.
-3. Generate narrative steps with `.tools/gen-bdd-steps.mjs --write`.
-4. Verify with `.tools/gen-bdd-features.mjs --check` and `.tools/gen-bdd-steps.mjs --check` that the generated files are not stale.
-5. Verify with `.tools/check-bdd-coverage.mjs` that:
+3. Generate narrative steps with `scripts/run-node.sh .tools/gen-bdd-steps.mjs --write`.
+4. Verify with `scripts/run-node.sh .tools/gen-bdd-features.mjs --check` and `scripts/run-node.sh .tools/gen-bdd-steps.mjs --check` that the generated files are not stale.
+5. Verify with `scripts/run-node.sh .tools/check-bdd-coverage.mjs` that:
    - every id appears exactly once and belongs to exactly one of the six suites;
    - every scenario has at least one matching step definition or a `@manual` entry with owner, reason and review date;
    - no id is missing or duplicated.

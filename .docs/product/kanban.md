@@ -57,7 +57,7 @@ Every transition appends one immutable `DomainEvent` (`kanban.card.moved`) with 
 
 ## 5. Tests
 
-`cargo test -p ailab-domain` covers:
+`scripts/run-rust.sh cargo test -p ailab-domain` covers:
 
 - the 36 ordered column pairs (12 allowed, 24 denied, same-column denied);
 - DoR and DoD guards;

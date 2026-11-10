@@ -17,6 +17,7 @@ web/coverage/
 *.key
 
 # Runtime artifacts
+.cache/
 artifacts/
 workspaces/
 

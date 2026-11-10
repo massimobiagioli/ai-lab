@@ -43,7 +43,7 @@ GitHub is the only v1 SCM, behind an `ScmProvider` port. The adapter talks over 
 
 ## 6. Tests
 
-`cargo test -p ailab-scm` covers repo/branch/path validation, PR conventions, HMAC success/failure/replay/age, checks mapping, merge separation and green checks, PR request construction, and token issue/revoke.
+`scripts/run-rust.sh cargo test -p ailab-scm` covers repo/branch/path validation, PR conventions, HMAC success/failure/replay/age, checks mapping, merge separation and green checks, PR request construction, and token issue/revoke.
 
 ## 7. Deferred to consumer WPs
 

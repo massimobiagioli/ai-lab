@@ -43,6 +43,7 @@ This registry is the index of all architecture decisions. Every ADR is immutable
 | ADR-0024 | TypeScript 6.0.x for Angular 22.2 compatibility | accepted | 2026-11-07 | — | — | [adr-0024.md](./adr-0024.md) |
 | ADR-0025 | Orchestrator as the delivery-card coordinator | accepted | 2026-11-07 | — | — | [adr-0025-orchestrator-card-coordinator.md](./adr-0025-orchestrator-card-coordinator.md) |
 | ADR-0026 | BDD E2E suite with Playwright-BDD and a make-only gate | accepted | 2026-11-09 | — | — | [adr-0026-bdd-e2e-suite.md](./adr-0026-bdd-e2e-suite.md) |
+| ADR-0027 | Docker-only development toolchain | accepted | 2026-11-10 | — | — | [adr-0027-docker-only-toolchain.md](./adr-0027-docker-only-toolchain.md) |
 
 ## Rules
 

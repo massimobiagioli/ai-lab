@@ -91,6 +91,7 @@ Every document under `.docs` is listed here. When a document is created, renamed
 | Document | Purpose | Path |
 |---|---|---|
 | Constitution | Project non-negotiables, decision rights, change control, source-of-truth order. | [`.docs/CONSTITUTION.md`](./.docs/CONSTITUTION.md) |
+| Claude agent guardrails | Docker-only toolchain guardrails and source-of-truth pointer for Claude-based agents. | [`CLAUDE.md`](./CLAUDE.md) |
 | Principles | TDD, Security First, Clean Code, Agile/Lean, DDD, UX and their enforcement. | [`.docs/PRINCIPLES.md`](./.docs/PRINCIPLES.md) |
 | Stack | Pinned versions, architecture, repository layout, commands, constraints. | [`.docs/STACK.md`](./.docs/STACK.md) |
 | Backend instructions | Backend rules: architecture, Rust, data, API, security, testing, observability. | [`.docs/BACKEND-INSTRUCTIONS.md`](./.docs/BACKEND-INSTRUCTIONS.md) |
@@ -193,18 +194,18 @@ A task or work package is not done until all applicable gates pass:
 1. `scripts/harness-lint.sh`.
 2. `scripts/sow-lint.sh`.
 3. `make check`.
-4. `cargo fmt --check`.
-5. `cargo clippy --workspace --all-targets -- -D warnings`.
-6. `cargo nextest run --workspace`.
-7. `npm --prefix web run lint`.
-8. `npm --prefix web test`.
-9. `npm --prefix web run build`.
-10. `npx --prefix web playwright test`.
+4. `make fmt-check`.
+5. `make lint`.
+6. `make test`.
+7. `make frontend-lint`.
+8. `make frontend-test`.
+9. `make frontend-build`.
+10. `make e2e`.
 11. `make openapi` and `make asyncapi` with no drift.
 12. `schemathesis run .docs/product/api/openapi.json`.
 13. `gitleaks detect --source . --no-git`.
-14. `cargo deny check`.
-15. `npm --prefix web audit --audit-level=high`.
+14. `make supply-chain-test` (npm audit and cargo-deny in Docker).
+15. `scripts/run-web.sh npm audit --audit-level=high`.
 16. Trivy on changed images, plus SBOM and signature at release.
 17. Coverage thresholds: backend line at least 80 percent, domain at least 90 percent, frontend at least 80 percent, new code at least 80 percent.
 18. No P0 or P1 open; reviewer is not the author; merger is not the author.
@@ -216,6 +217,7 @@ Use the `quality-gates` skill for the exact commands and evidence rules.
 ## Language and tooling
 
 - **English only.** Every repository artifact MUST be written in English: code, comments, commit messages, documentation, skills, commands, ADRs, tests, logs, UI copy and generated reports. No other language is permitted in files under version control.
+- **Docker-only toolchain.** Application toolchains MUST run in Docker (ADR-0027). The host provides Docker, Compose, Make, Git and basic shell utilities only. Use `scripts/run-rust.sh`, `scripts/run-web.sh`, `scripts/run-node.sh` and `scripts/run-python.sh`; never run `cargo`, `rustc`, `npm`, `npx`, `node`, `python3` or `openssl` on the host. Key generation is `make generate-key`. A host fallback in a wrapper, Makefile, script, playbook or prompt is a review defect.
 - **Reusable tools.** Every time a task needs a reusable script, checker, generator, formatter, migration helper or analysis utility, you MUST:
   1. create it under `.tools/` with a stable kebab-case filename;
   2. make it executable and give it a `--help` output or a header usage comment;
@@ -237,25 +239,30 @@ Use the `quality-gates` skill for the exact commands and evidence rules.
 | `check-openapi-drift` | [`.tools/check-openapi-drift.py`](./.tools/check-openapi-drift.py) | Fail when an OpenAPI path is not served by the edge router. | `.tools/check-openapi-drift.py [--root DIR]` |
 | `check-observability` | [`.tools/check-observability.sh`](./.tools/check-observability.sh) | Validate the SLO, alert and Grafana dashboard artifacts. | `.tools/check-observability.sh` |
 | `run-e2e` | [`.tools/run-e2e.sh`](./.tools/run-e2e.sh) | Run Playwright in the official image (browser deps included). | `.tools/run-e2e.sh [args]` |
-| `bdd-preflight` | [`scripts/bdd-preflight.mjs`](./scripts/bdd-preflight.mjs) | Parse `.docs/e2e/req.md` and block the BDD suite when a manual item is missing. | `node scripts/bdd-preflight.mjs [--json] [--file PATH]` |
-| `bdd-preflight-test` | [`scripts/bdd-preflight.test.mjs`](./scripts/bdd-preflight.test.mjs) | Unit tests for the manual preflight parser. | `node scripts/bdd-preflight.test.mjs` |
+| `bdd-preflight` | [`scripts/bdd-preflight.mjs`](./scripts/bdd-preflight.mjs) | Parse `.docs/e2e/req.md` and block the BDD suite when a manual item is missing. | `scripts/run-node.sh scripts/bdd-preflight.mjs [--json] [--file PATH]` |
+| `bdd-preflight-test` | [`scripts/bdd-preflight.test.mjs`](./scripts/bdd-preflight.test.mjs) | Unit tests for the manual preflight parser. | `scripts/run-node.sh scripts/bdd-preflight.test.mjs` |
 | `bdd-set-api-key` | [`scripts/bdd-set-api-key.sh`](./scripts/bdd-set-api-key.sh) | Load the live DeepSeek key through a hidden prompt and create or rotate the provider. | `make bdd-set-api-key` |
 | `bdd-set-api-key-test` | [`scripts/bdd-set-api-key.test.sh`](./scripts/bdd-set-api-key.test.sh) | Fake-provider tests for the hidden-prompt key loader. | `bash scripts/bdd-set-api-key.test.sh` |
-| `gen-bdd-features` | [`.tools/gen-bdd-features.mjs`](./.tools/gen-bdd-features.mjs) | Generate deterministic `.feature` files with `@suite-*` tags from `.docs/e2e/BDD.md`. | `.tools/gen-bdd-features.mjs --check\|--write` |
-| `gen-bdd-steps` | [`.tools/gen-bdd-steps.mjs`](./.tools/gen-bdd-steps.mjs) | Generate exact-match step definitions for narrative scenarios that lack a curated step. | `.tools/gen-bdd-steps.mjs --check\|--write` |
-| `check-bdd-coverage` | [`.tools/check-bdd-coverage.mjs`](./.tools/check-bdd-coverage.mjs) | Enforce the 480-id coverage, drift and zero-pending-step gate. | `.tools/check-bdd-coverage.mjs [--report-only]` |
+| `gen-bdd-features` | [`.tools/gen-bdd-features.mjs`](./.tools/gen-bdd-features.mjs) | Generate deterministic `.feature` files with `@suite-*` tags from `.docs/e2e/BDD.md`. | `scripts/run-node.sh .tools/gen-bdd-features.mjs --check\|--write` |
+| `gen-bdd-steps` | [`.tools/gen-bdd-steps.mjs`](./.tools/gen-bdd-steps.mjs) | Generate exact-match step definitions for narrative scenarios that lack a curated step. | `scripts/run-node.sh .tools/gen-bdd-steps.mjs --check\|--write` |
+| `check-bdd-coverage` | [`.tools/check-bdd-coverage.mjs`](./.tools/check-bdd-coverage.mjs) | Enforce the 480-id coverage, drift and zero-pending-step gate. | `scripts/run-node.sh .tools/check-bdd-coverage.mjs [--report-only]` |
 | `bdd-self-test` | [`.tools/bdd-self-test.sh`](./.tools/bdd-self-test.sh) | Fixture-based negative tests for the generator and coverage checker. | `.tools/bdd-self-test.sh` |
 | `run-bdd` | [`scripts/run-bdd.sh`](./scripts/run-bdd.sh) | Guarded make-only BDD runner: preflight, drift, coverage, readiness, bddgen, Playwright, full log. | `make bdd [SUITE=id] [UP_TO=id]` |
 | `bdd-suites` | [`scripts/bdd-suites.sh`](./scripts/bdd-suites.sh) | List and resolve the six BDD suites for a single, up-to or all selection. | `make bdd-list` / `scripts/bdd-suites.sh --list` |
-| `bdd-suites-test` | [`scripts/bdd-suites.test.mjs`](./scripts/bdd-suites.test.mjs) | Unit tests for the suite manifest, selection and grep. | `node scripts/bdd-suites.test.mjs` |
+| `bdd-suites-test` | [`scripts/bdd-suites.test.mjs`](./scripts/bdd-suites.test.mjs) | Unit tests for the suite manifest, selection and grep. | `scripts/run-node.sh scripts/bdd-suites.test.mjs` |
 | `run-load` | [`.tools/run-load.sh`](./.tools/run-load.sh) | Run the k6 edge load scenario against the API namespace. | `.tools/run-load.sh [args]` |
 | `chaos-worker-kill` | [`.tools/chaos-worker-kill.sh`](./.tools/chaos-worker-kill.sh) | Kill/restart the worker and verify recovery. | `.tools/chaos-worker-kill.sh` |
 | `check-coverage` | [`.tools/check-coverage.sh`](./.tools/check-coverage.sh) | Enforce backend 80, domain 90 and web 80 line coverage. | `.tools/check-coverage.sh` |
 | `check-architecture-fitness` | [`.tools/check-architecture-fitness.sh`](./.tools/check-architecture-fitness.sh) | Validate context ownership, dependency acyclicity, cross-context table access and Compose catalog coverage. | `.tools/check-architecture-fitness.sh [--root DIR]` |
 | `architecture-fitness-self-test` | [`.tools/architecture-fitness-self-test.sh`](./.tools/architecture-fitness-self-test.sh) | Exercise the architecture fitness check against disposable roots. | `.tools/architecture-fitness-self-test.sh` |
 | `check-crate-dependencies` | [`.tools/check-crate-dependencies.sh`](./.tools/check-crate-dependencies.sh) | Validate crate direction, acyclicity, `#![forbid(unsafe_code)]` and the no-unwrap gate. | `.tools/check-crate-dependencies.sh` |
-| `doctor` | [`scripts/doctor.sh`](./scripts/doctor.sh) | Validate Docker, ports, disk, tools, keys and connectivity. | `scripts/doctor.sh [--generate-key] [--connectivity]` |
-| `run-web` | [`scripts/run-web.sh`](./scripts/run-web.sh) | Run a command in `web/` with host npm or the pinned Node container. | `scripts/run-web.sh npm run lint` |
+| `doctor` | [`scripts/doctor.sh`](./scripts/doctor.sh) | Validate Docker, Compose, images, ports, disk, `.env` keys and connectivity. | `scripts/doctor.sh [--connectivity]` |
+| `run-web` | [`scripts/run-web.sh`](./scripts/run-web.sh) | Run a command in `web/` in the pinned Node container (Docker only). | `scripts/run-web.sh npm run lint` |
+| `run-rust` | [`scripts/run-rust.sh`](./scripts/run-rust.sh) | Run a Rust command in the pinned Rust container (Docker only). | `scripts/run-rust.sh cargo test --workspace` |
+| `run-node` | [`scripts/run-node.sh`](./scripts/run-node.sh) | Run a Node script in the pinned Node container (Docker only). | `scripts/run-node.sh scripts/bdd-suites.mjs --list` |
+| `run-python` | [`scripts/run-python.sh`](./scripts/run-python.sh) | Run a Python script in the pinned Python container (Docker only). | `scripts/run-python.sh .tools/gen-asyncapi.py --root .` |
+| `run-cargo-deny` | [`scripts/run-cargo-deny.sh`](./scripts/run-cargo-deny.sh) | Run cargo-deny in the Rust container, installing it into the Docker cache on first use. | `scripts/run-cargo-deny.sh check` |
+| `generate-key` | [`scripts/generate-key.sh`](./scripts/generate-key.sh) | Generate or validate the local master key and runner token in `.env` in Docker. | `make generate-key` |
 | `wait-for` | [`scripts/wait-for.sh`](./scripts/wait-for.sh) | Wait for a TCP host and port. | `scripts/wait-for.sh HOST PORT [TIMEOUT]` |
 | `install-hooks` | [`scripts/hooks/install.sh`](./scripts/hooks/install.sh) | Install lefthook or native git hooks. | `scripts/hooks/install.sh` |
 | `gen-openapi` | [`scripts/gen-openapi.sh`](./scripts/gen-openapi.sh) | Generate `.docs/product/api/openapi.json` (WP-16). | `scripts/gen-openapi.sh` |

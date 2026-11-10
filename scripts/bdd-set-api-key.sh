@@ -9,6 +9,9 @@
 # does.
 set -uo pipefail
 
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+NODE="$ROOT/scripts/run-node.sh"
+
 BASE="${AILAB_BDD_BASE_URL:-http://127.0.0.1:8080}"
 BASE="${BASE%/}"
 KEY=""
@@ -103,42 +106,49 @@ fi
 LAST4="${KEY: -4}"
 
 PROVIDERS="$(curl_json -f "$BASE/api/v1/providers")" || fail "could not list providers"
-PROVIDER_ID="$(printf '%s' "$PROVIDERS" | python3 -c '
-import json, sys
-try:
-    data = json.load(sys.stdin)
-except Exception:
-    data = {}
-items = data if isinstance(data, list) else data.get("data", [])
-for item in items:
-    if isinstance(item, dict) and item.get("kind") == "deepseek":
-        print(item.get("id", ""))
-        break
+PROVIDER_ID="$(printf '%s' "$PROVIDERS" | "$NODE" -e '
+let input = "";
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", (chunk) => { input += chunk; });
+process.stdin.on("end", () => {
+  let data = {};
+  try { data = JSON.parse(input); } catch {}
+  const items = Array.isArray(data) ? data : (data.data || []);
+  const provider = items.find((item) => item && item.kind === "deepseek");
+  process.stdout.write(provider ? String(provider.id || "") : "");
+});
 ' 2>/dev/null)" || fail "could not parse the provider list"
 
 if [ -z "$PROVIDER_ID" ]; then
-  RAW="$(printf '%s' "$KEY" | python3 -c '
-import json, sys
-key = sys.stdin.read().strip()
-print(json.dumps({
-    "name": "DeepSeek",
-    "kind": "deepseek",
-    "base_url": "https://api.deepseek.com",
-    "api_key": key,
-    "rate_limit_rpm": 60,
-    "rate_limit_tpm": 60000,
-    "timeout_ms": 120000,
-}))
+  RAW="$(printf '%s' "$KEY" | "$NODE" -e '
+let input = "";
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", (chunk) => { input += chunk; });
+process.stdin.on("end", () => {
+  const key = input.trim();
+  process.stdout.write(JSON.stringify({
+    name: "DeepSeek",
+    kind: "deepseek",
+    base_url: "https://api.deepseek.com",
+    api_key: key,
+    rate_limit_rpm: 60,
+    rate_limit_tpm: 60000,
+    timeout_ms: 120000,
+  }));
+});
 ' | curl_write_status -X POST "$BASE/api/v1/providers" --data-binary @-)" || fail "could not create the provider"
   HTTP_STATUS="${RAW##*$'\n'}"
   RESPONSE="${RAW%$'\n'*}"
   [[ "$HTTP_STATUS" == 2* ]] || fail "provider API returned HTTP ${HTTP_STATUS}"
   ACTION="created"
 else
-  RAW="$(printf '%s' "$KEY" | python3 -c '
-import json, sys
-key = sys.stdin.read().strip()
-print(json.dumps({"api_key": key}))
+  RAW="$(printf '%s' "$KEY" | "$NODE" -e '
+let input = "";
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", (chunk) => { input += chunk; });
+process.stdin.on("end", () => {
+  process.stdout.write(JSON.stringify({ api_key: input.trim() }));
+});
 ' | curl_write_status -X POST "$BASE/api/v1/providers/${PROVIDER_ID}/rotate-key" --data-binary @-)" || fail "could not rotate the provider key"
   HTTP_STATUS="${RAW##*$'\n'}"
   RESPONSE="${RAW%$'\n'*}"
@@ -148,14 +158,15 @@ fi
 
 unset KEY
 
-PARSED="$(printf '%s' "$RESPONSE" | python3 -c '
-import json, sys
-try:
-    data = json.load(sys.stdin)
-except Exception:
-    data = {}
-print(data.get("status", "unknown"))
-print(data.get("api_key_last4", data.get("last4", "????")))
+PARSED="$(printf '%s' "$RESPONSE" | "$NODE" -e '
+let input = "";
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", (chunk) => { input += chunk; });
+process.stdin.on("end", () => {
+  let data = {};
+  try { data = JSON.parse(input); } catch {}
+  process.stdout.write(`${data.status || "unknown"}\n${data.api_key_last4 || data.last4 || "????"}`);
+});
 ' 2>/dev/null)" || fail "could not parse the provider response"
 
 STATUS="$(printf '%s\n' "$PARSED" | sed -n '1p')"

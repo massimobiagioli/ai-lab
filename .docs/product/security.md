@@ -130,7 +130,7 @@ Security incidents are P0/P1 and block release. The incident runbook is `.docs/p
 ## 13. Testing and evidence
 
 ```bash
-cargo test -p ailab-infrastructure
+scripts/run-rust.sh cargo test -p ailab-infrastructure
 .tools/test-supply-chain.sh
 gitleaks detect --source . --no-git
 make check

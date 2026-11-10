@@ -13,11 +13,11 @@
 - [ ] `scripts/harness-lint.sh` green.
 - [ ] `scripts/sow-lint.sh` green with every WP `done`.
 - [ ] `make check` green.
-- [ ] `cargo test --workspace` green.
+- [ ] `scripts/run-rust.sh cargo test --workspace` green.
 - [ ] Frontend lint/test/build green.
 - [ ] Playwright E2E/a11y/visual green (WP-21 follow-up).
 - [ ] `openapi-compat` and `asyncapi` drift check green.
-- [ ] gitleaks, cargo-deny, npm audit high, Trivy high/critical clean.
+- [ ] gitleaks, `make supply-chain-test`, `scripts/run-web.sh npm audit --audit-level=high` and Trivy high/critical clean.
 - [ ] No open P0/P1; reviewer ≠ author; merger ≠ author.
 
 ## 2. Artifacts

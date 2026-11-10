@@ -3,18 +3,16 @@
 ## 1. Prerequisites
 
 - Docker Engine ≥ 27 and Docker Compose ≥ 2.30.
-- Rust 1.99.1 (declared in `rust-toolchain.toml`; `rustup` installs it automatically).
-- Node.js 24 LTS and npm 11 (declared in `.tool-versions`). If Node is not installed on the host, `scripts/run-web.sh` falls back to the pinned `node:24.22.0-trixie-slim` container.
-- Python 3.12 for tooling.
+- Make and Git.
+- Nothing else: Rust, Node/npm, Python and OpenSSL run in the pinned Docker images (ADR-0027). Do not install or use host toolchains.
 
 ## 2. Setup
 
 ```bash
 git clone <repository> ai-lab
 cd ai-lab
-make setup          # cargo fetch + npm ci
-cp .env.example .env
-scripts/doctor.sh --generate-key
+make setup          # fetch dependencies in Docker
+make generate-key   # create .env in Docker
 make doctor
 make check
 ```

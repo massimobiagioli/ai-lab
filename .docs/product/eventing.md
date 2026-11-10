@@ -81,9 +81,9 @@ A consumer keeps the last applied `seq` per lab and a seen `event_id` set (or a 
 ## 7. Testing
 
 ```bash
-cargo test -p ailab-domain
-cargo test -p ailab-infrastructure
-cargo test -p ailab-testkit
+scripts/run-rust.sh cargo test -p ailab-domain
+scripts/run-rust.sh cargo test -p ailab-infrastructure
+scripts/run-rust.sh cargo test -p ailab-testkit
 .tools/check-crate-dependencies.sh
 ```
 

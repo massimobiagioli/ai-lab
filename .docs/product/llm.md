@@ -65,7 +65,7 @@ Structured calls are parsed into a typed value and validated. An invalid output 
 
 ## 7. Tests
 
-`cargo test -p ailab-llm` covers prompt determinism and wrapping, secret detection, the character cap, routing, budget hard stop, micro-USD cost, retry/backoff/breaker, DeepSeek retry on 429, no retry on 401, structured repair once, and failure after one repair.
+`scripts/run-rust.sh cargo test -p ailab-llm` covers prompt determinism and wrapping, secret detection, the character cap, routing, budget hard stop, micro-USD cost, retry/backoff/breaker, DeepSeek retry on 429, no retry on 401, structured repair once, and failure after one repair.
 
 ## 8. Deferred to consumer WPs
 

@@ -33,7 +33,7 @@ The client sends `subscribe`/`unsubscribe` with topics such as `lab:{id}`, `card
 
 ## 4. Tests
 
-`cargo test -p ailab-api` covers the envelope round-trip, `events_after` filtering/dedupe/order, pagination, rate limits and origin/JSON guards.
+`scripts/run-rust.sh cargo test -p ailab-api` covers the envelope round-trip, `events_after` filtering/dedupe/order, pagination, rate limits and origin/JSON guards.
 
 ## 5. Deferred to the WP-16 follow-up
 

@@ -32,18 +32,8 @@ fi
 export AILAB_BDD_BASE_URL="$BASE"
 export AILAB_DEV_FAKES="${AILAB_DEV_FAKES:-1}"
 
-if ! command -v python3 >/dev/null 2>&1; then
-  echo "bdd: python3 is required by the preflight gate." >&2
-  exit 2
-fi
-
 run_node() {
-  if command -v node >/dev/null 2>&1; then
-    node "$@"
-  else
-    docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp \
-      -v "$ROOT:/app" -w /app node:24.22.0-trixie-slim node "$@"
-  fi
+  "$ROOT/scripts/run-node.sh" "$@"
 }
 
 run_node scripts/bdd-preflight.mjs
@@ -66,14 +56,12 @@ SUITE_ARGS=()
 if [ -n "${AILAB_BDD_SUITE:-}" ]; then SUITE_ARGS+=(--suite "$AILAB_BDD_SUITE"); fi
 if [ -n "${AILAB_BDD_UP_TO:-}" ]; then SUITE_ARGS+=(--up-to "$AILAB_BDD_UP_TO"); fi
 
-SELECTION_JSON="$(run_node scripts/bdd-suites.mjs "${SUITE_ARGS[@]+"${SUITE_ARGS[@]}"}" --json)"
+SELECTION="$(run_node scripts/bdd-suites.mjs "${SUITE_ARGS[@]+"${SUITE_ARGS[@]}"}" --tsv)"
 SELECTION_STATUS=$?
 if [ "$SELECTION_STATUS" -ne 0 ]; then
   exit "$SELECTION_STATUS"
 fi
-BDD_SUITES="$(printf '%s' "$SELECTION_JSON" | python3 -c 'import json,sys; print(", ".join(json.load(sys.stdin).get("suites", [])))')"
-BDD_GREP="$(printf '%s' "$SELECTION_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("grep", ""))')"
-BDD_TOTAL="$(printf '%s' "$SELECTION_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("total", 0))')"
+IFS=$'\t' read -r BDD_SUITES BDD_GREP BDD_TOTAL <<< "$SELECTION"
 echo "BDD suites: ${BDD_SUITES} (${BDD_TOTAL} scenarios)"
 if [ -n "$BDD_GREP" ]; then
   echo "BDD selection: ${BDD_GREP}"

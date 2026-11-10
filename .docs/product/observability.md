@@ -54,7 +54,7 @@ OTLP HTTP/gRPC from api, worker and runner to the collector. Sampling: 100% erro
 
 ## 7. Tests
 
-`cargo test -p ailab-telemetry` checks the stable metric contract. `make compose-validate` validates the Prometheus configuration and alert rules. Load, soak and chaos suites are WP-21.
+`scripts/run-rust.sh cargo test -p ailab-telemetry` checks the stable metric contract. `make compose-validate` validates the Prometheus configuration and alert rules. Load, soak and chaos suites are WP-21.
 
 ## 8. Deferred to the WP-20 follow-up
 

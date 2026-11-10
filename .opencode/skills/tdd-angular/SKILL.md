@@ -15,10 +15,12 @@ Do not use this skill for Rust-only or documentation-only tasks.
 
 ## Preconditions
 
-- Node.js 24 LTS and npm 11 are active.
-- `web/package-lock.json` is installed: `npm --prefix web ci`.
-- The API contract is generated: `npm --prefix web run generate:api` or the checked-in generated client is current.
-- The dev server can run: `npm --prefix web start`.
+- Application toolchains run in Docker (ADR-0027); use `scripts/run-web.sh` and never run `npm`/`npx` on the host.
+
+- Docker is running; all frontend commands run in the pinned Node container (ADR-0027).
+- `web/package-lock.json` is installed: `scripts/run-web.sh npm ci`.
+- The API contract is generated: `scripts/run-web.sh npm run generate:api` or the checked-in generated client is current.
+- Use the Docker-only `make e2e` harness; do not run a host dev server.
 
 ## Workflow
 
@@ -28,17 +30,17 @@ Do not use this skill for Rust-only or documentation-only tasks.
    - Component: TestBed with DOM assertions and keyboard interactions.
    - E2E: Playwright for the journey.
 3. Run the focused test and confirm the expected failure:
-   - `npm --prefix web test -- --include <pattern>`
-   - `npx --prefix web playwright test <spec>`
+   - `scripts/run-web.sh npm test -- --include <pattern>`
+   - `.tools/run-e2e.sh <spec>`
 4. Implement the minimum component, store or service change.
 5. Run the focused test, then the suite:
-   - `npm --prefix web test`
+   - `make frontend-test`
 6. Refactor with tests green.
 7. Run gates:
-   - `npm --prefix web run lint`
-   - `npm --prefix web run build`
-   - `npx --prefix web playwright test`
-   - `npx --prefix web axe <route>` or the project's axe Playwright check
+   - `make frontend-lint`
+   - `make frontend-build`
+   - `make e2e`
+   - `make e2e` (the axe checks run in the Playwright container)
 8. Verify the visual state with the deterministic seed and update screenshots only when the change is intentional.
 9. Check budgets: initial JS gzip, office chunk gzip, CSS gzip, LCP and TTI.
 10. Record exact commands and results in the WP progress line.

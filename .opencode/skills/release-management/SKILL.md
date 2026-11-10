@@ -26,8 +26,8 @@ description: Use for versioning, changelog, release candidate verification, SBOM
 3. Generate the changelog from Conventional Commits with `git-cliff` and curate breaking changes and migration notes.
 4. Build reproducibly:
    - `cargo build --release --locked`
-   - `npm --prefix web ci`
-   - `npm --prefix web run build`
+   - `scripts/run-web.sh npm ci`
+   - `make frontend-build`
    - `docker compose build`
 5. Verify:
    - full CI, E2E, load, soak, security scans, restore drill;

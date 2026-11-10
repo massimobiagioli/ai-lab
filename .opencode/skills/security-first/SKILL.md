@@ -34,7 +34,7 @@ description: Use for any change touching authentication, secrets, sandbox, LLM p
 5. Run the security gates:
    - `gitleaks detect --source . --no-git`
    - `cargo deny check`
-   - `npm --prefix web audit --audit-level=high`
+   - `scripts/run-web.sh npm audit --audit-level=high`
    - Trivy on changed images
    - the sandbox escape suite
    - the prompt-injection fixtures

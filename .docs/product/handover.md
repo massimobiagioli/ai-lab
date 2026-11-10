@@ -8,8 +8,8 @@
 
 ## First run
 
-1. `./scripts/doctor.sh --generate-key` and fill the remaining `.env` values.
-2. `make reset` (builds, migrates and seeds the deterministic demo).
+1. `make setup` then `make generate-key`, and fill the remaining `.env` values.
+2. `make doctor` then `make reset` (builds, migrates and seeds the deterministic demo).
 3. Open `http://127.0.0.1:8080`; the dashboard health badge must be green.
 4. Run `.tools/chaos-worker-kill.sh` and one restore drill (`scripts/restore-drill.sh <dump>`) before accepting ownership.
 

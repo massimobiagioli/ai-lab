@@ -52,14 +52,15 @@ fi
 # ---------------------------------------------------------------------------
 # cargo-deny license negative fixture
 # ---------------------------------------------------------------------------
-if ! command -v cargo-deny >/dev/null 2>&1; then
-  echo "ENV ERROR: cargo-deny is not installed (cargo install cargo-deny --locked)" >&2
+WORK="$ROOT/.cache/supply-chain-cargo"
+rm -rf "$WORK"
+mkdir -p "$WORK"
+cp -R "$CARGO_FIXTURE"/. "$WORK"/
+if ! "$ROOT/scripts/run-cargo-deny.sh" --version >/dev/null 2>&1; then
+  echo "ENV ERROR: cargo-deny could not be prepared in the Rust container" >&2
   exit 2
 fi
-(
-  cd "$CARGO_FIXTURE" || exit 2
-  cargo deny check licenses
-) >/tmp/ailab-cargo-deny-fixture.log 2>&1
+AILAB_RUST_WORKDIR=/src/.cache/supply-chain-cargo "$ROOT/scripts/run-cargo-deny.sh" check licenses >/tmp/ailab-cargo-deny-fixture.log 2>&1
 cargo_code=$?
 if [ "$cargo_code" -eq 0 ]; then
   fail "cargo-deny accepted the GPL-3.0 fixture"

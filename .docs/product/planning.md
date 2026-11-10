@@ -34,7 +34,7 @@ A plan is rejected when:
 
 ## 4. Tests
 
-`cargo test -p ailab-domain` covers cycle, unknown dependency and duplicate-key rejection, topological order, leaf selection, FR coverage, traceability and the approve/materialize lifecycle.
+`scripts/run-rust.sh cargo test -p ailab-domain` covers cycle, unknown dependency and duplicate-key rejection, topological order, leaf selection, FR coverage, traceability and the approve/materialize lifecycle.
 
 ## 5. Deferred to consumer WPs
 
