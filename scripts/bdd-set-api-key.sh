@@ -16,6 +16,17 @@ BASE="${AILAB_BDD_BASE_URL:-http://127.0.0.1:8080}"
 BASE="${BASE%/}"
 KEY=""
 
+if [ -z "${AILAB_API_TOKEN:-}" ] && [ -f "$ROOT/.env" ]; then
+  AILAB_API_TOKEN="$(grep -E '^AILAB_API_TOKEN=' "$ROOT/.env" | head -1 | cut -d= -f2-)"
+fi
+if [ -z "${AILAB_API_TOKEN:-}" ] && [ -f "$ROOT/infra/compose/docker-compose.yml" ]; then
+  API_CONTAINER="$(docker compose -f "$ROOT/infra/compose/docker-compose.yml" ps -q api 2>/dev/null | head -1)"
+  if [ -n "$API_CONTAINER" ]; then
+    AILAB_API_TOKEN="$(docker inspect "$API_CONTAINER" --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null | sed -n 's/^AILAB_API_TOKEN=//p' | head -1)"
+  fi
+fi
+export AILAB_API_TOKEN
+
 usage() {
   cat <<'EOF'
 Usage: make bdd-set-api-key
@@ -27,7 +38,9 @@ Rules:
   - the key must start with "sk-" and be 20 to 256 characters long;
   - the key is never accepted as a command-line argument or environment variable;
   - the key is never written to disk, logs or the terminal;
-  - the stack must already be running and reachable.
+  - the stack must already be running and reachable;
+  - the provider persistence endpoints are owned by WP-07/WP-16;
+    until they land, the command reports HTTP 501 and does not store the key.
 
 Exit codes:
   0  provider created or rotated
@@ -105,7 +118,15 @@ fi
 
 LAST4="${KEY: -4}"
 
-PROVIDERS="$(curl_json -f "$BASE/api/v1/providers")" || fail "could not list providers"
+LIST_RAW="$(curl_write_status "$BASE/api/v1/providers")" || fail "could not list providers"
+LIST_STATUS="${LIST_RAW##*$'\n'}"
+PROVIDERS="${LIST_RAW%$'\n'*}"
+if [ "$LIST_STATUS" = "501" ]; then
+  fail "the AI-Lab provider API is not implemented in this build (HTTP 501). The DeepSeek key is valid; there is no provider endpoint to store it. This is a product gap (WP-07/WP-16)."
+fi
+if [[ "$LIST_STATUS" != 2* ]]; then
+  fail "could not list providers (HTTP ${LIST_STATUS}); the API may require an operator token. Set AILAB_API_TOKEN in .env or start the stack on loopback."
+fi
 PROVIDER_ID="$(printf '%s' "$PROVIDERS" | "$NODE" -e '
 let input = "";
 process.stdin.setEncoding("utf8");
