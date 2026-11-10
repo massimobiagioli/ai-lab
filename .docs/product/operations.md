@@ -30,7 +30,7 @@ make doctor
 make up
 ```
 
-`make setup` fetches the dependencies and warms the Docker toolchain caches; `make generate-key` writes the local secrets. `make up` builds the five images and starts the `core` profile: `postgres`, `redis`, `migrate`, `api`, `worker`, `runner`, `docker-socket-proxy`, `web`. The web UI is at `http://127.0.0.1:8080`.
+`make setup` fetches the dependencies and warms the Docker toolchain caches; `make generate-key` writes the local secrets. `make up` loads `.env` through Compose `--env-file`, builds the five images and starts the `core` profile: `postgres`, `redis`, `migrate`, `api`, `worker`, `runner`, `docker-socket-proxy`, `web`. The web UI is at `http://127.0.0.1:8080`.
 
 `.env` is gitignored. `make generate-key` creates it from `.env.example` if needed and writes a development `AILAB_MASTER_KEY` and `AILAB_RUNNER_TOKEN` in Docker; production requires an operator-supplied key.
 

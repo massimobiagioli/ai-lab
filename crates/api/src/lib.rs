@@ -4,6 +4,7 @@
 
 pub mod metrics;
 pub mod postgres_store;
+pub mod providers;
 pub mod server;
 pub mod trace;
 

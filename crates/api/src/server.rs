@@ -5,7 +5,15 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use ailab_application::{ProblemDetails, Secret};
-use ailab_domain::{DomainError, RunId};
+use ailab_domain::inventory::{EncryptedKey, Provider, ProviderKind};
+use ailab_domain::{DomainError, ProviderId, RunId, WorkspaceId};
+use ailab_infrastructure::crypto::{MasterKey, aad};
+use std::str::FromStr;
+
+use crate::providers::{
+    DEFAULT_WORKSPACE_ID, EncryptedKeyMaterial, InMemoryProviderStore, NewProvider,
+    PostgresProviderStore, ProviderStore, ProviderStoreError,
+};
 use async_trait::async_trait;
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use axum::extract::{FromRequest, FromRequestParts, Path, Query, Request, State};
@@ -334,6 +342,10 @@ pub struct AppState {
     readiness_failures: Arc<std::sync::atomic::AtomicU8>,
     /// Directory of Prometheus textfile metrics appended to `/metrics`.
     textfile_dir: std::path::PathBuf,
+    /// Provider persistence.
+    provider_store: Arc<dyn ProviderStore>,
+    /// Master key for provider key encryption.
+    master_key: Option<MasterKey>,
 }
 
 impl Default for AppState {
@@ -350,18 +362,29 @@ impl AppState {
         let token = std::env::var("AILAB_API_TOKEN")
             .ok()
             .filter(|value| !value.is_empty());
+        let master_key = std::env::var("AILAB_MASTER_KEY")
+            .ok()
+            .and_then(|encoded| MasterKey::from_base64(&encoded, 1).ok());
         if let Ok(url) = std::env::var("AILAB_DATABASE_URL")
             && !url.is_empty()
             && let Ok(pool) = sqlx::postgres::PgPoolOptions::new()
                 .max_connections(10)
                 .connect_lazy(&url)
         {
-            return Self::with_store_and_token(
+            let provider_store = Arc::new(PostgresProviderStore::new(pool.clone()));
+            return Self::build(
                 Arc::new(crate::postgres_store::PostgresRunStore::new(pool)),
                 token,
+                provider_store,
+                master_key,
             );
         }
-        Self::with_store_and_token(Arc::new(InMemoryRunStore::new()), token)
+        Self::build(
+            Arc::new(InMemoryRunStore::new()),
+            token,
+            Arc::new(InMemoryProviderStore::new()),
+            master_key,
+        )
     }
 
     /// Build with a specific store.
@@ -373,6 +396,15 @@ impl AppState {
     /// Build with a specific store and optional bearer token.
     #[must_use]
     pub fn with_store_and_token(store: Arc<dyn RunStore>, token: Option<String>) -> Self {
+        Self::build(store, token, Arc::new(InMemoryProviderStore::new()), None)
+    }
+
+    fn build(
+        store: Arc<dyn RunStore>,
+        token: Option<String>,
+        provider_store: Arc<dyn ProviderStore>,
+        master_key: Option<MasterKey>,
+    ) -> Self {
         let (hub, _) = broadcast::channel(256);
         Self {
             store,
@@ -385,7 +417,23 @@ impl AppState {
             textfile_dir: std::env::var("AILAB_METRICS_TEXTFILE_DIR")
                 .unwrap_or_else(|_| "artifacts/metrics".to_owned())
                 .into(),
+            provider_store,
+            master_key,
         }
+    }
+
+    /// Replace the provider store (tests and alternative adapters).
+    #[must_use]
+    pub fn with_provider_store(mut self, provider_store: Arc<dyn ProviderStore>) -> Self {
+        self.provider_store = provider_store;
+        self
+    }
+
+    /// Set the master key used to encrypt provider keys (tests).
+    #[must_use]
+    pub fn with_master_key(mut self, master_key: MasterKey) -> Self {
+        self.master_key = Some(master_key);
+        self
     }
 
     /// Publish an event to live WebSocket subscribers.
@@ -466,12 +514,15 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/characters", get(not_implemented))
         .route(
             "/api/v1/providers",
-            get(not_implemented).post(not_implemented),
+            get(list_providers).post(create_provider),
         )
-        .route("/api/v1/providers/{id}", get(not_implemented))
+        .route("/api/v1/providers/{id}", get(get_provider))
         .route("/api/v1/providers/{id}/verify", post(not_implemented))
         .route("/api/v1/providers/{id}/rotate", post(not_implemented))
-        .route("/api/v1/providers/{id}/rotate-key", post(not_implemented))
+        .route(
+            "/api/v1/providers/{id}/rotate-key",
+            post(rotate_provider_key),
+        )
         .route("/api/v1/scm-credentials", get(not_implemented))
         .route("/api/v1/models", get(not_implemented))
         .route(
@@ -1004,6 +1055,227 @@ fn enforce(state: &AppState, headers: &HeaderMap, kind: RateLimitKind) -> Result
 
 async fn health_live() -> StatusCode {
     StatusCode::OK
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CreateProviderRequest {
+    name: String,
+    kind: String,
+    base_url: String,
+    api_key: String,
+    #[serde(default)]
+    rate_limit_rpm: Option<u32>,
+    #[serde(default)]
+    rate_limit_tpm: Option<u32>,
+    #[serde(default)]
+    timeout_ms: Option<u32>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RotateProviderKeyRequest {
+    api_key: String,
+}
+
+fn last4(value: &str) -> String {
+    value
+        .chars()
+        .rev()
+        .take(4)
+        .collect::<String>()
+        .chars()
+        .rev()
+        .collect()
+}
+
+#[allow(clippy::result_large_err)]
+fn validate_provider_key(key: &str) -> Result<(), Response> {
+    if !key.starts_with("sk-") {
+        return Err(problem(DomainError::validation(
+            "api_key",
+            "must start with sk-",
+        )));
+    }
+    let length = key.chars().count();
+    if !(20..=256).contains(&length) {
+        return Err(problem(DomainError::validation(
+            "api_key",
+            "must be 20-256 characters",
+        )));
+    }
+    if key.chars().any(char::is_whitespace) {
+        return Err(problem(DomainError::validation(
+            "api_key",
+            "must not contain whitespace",
+        )));
+    }
+    Ok(())
+}
+
+fn provider_store_problem(error: ProviderStoreError) -> Response {
+    match error {
+        ProviderStoreError::NotFound => problem(DomainError::NotFound),
+        ProviderStoreError::Conflict => problem_status(
+            StatusCode::CONFLICT,
+            "PROVIDER_EXISTS",
+            "a provider with this name already exists",
+        ),
+        ProviderStoreError::Backend(message) => {
+            eprintln!("provider store: {message}");
+            problem_status(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "INTERNAL",
+                "provider store failed",
+            )
+        }
+    }
+}
+
+#[allow(clippy::result_large_err)]
+fn master_key(state: &AppState) -> Result<&MasterKey, Response> {
+    state.master_key.as_ref().ok_or_else(|| {
+        problem_status(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "MASTER_KEY_MISSING",
+            "AILAB_MASTER_KEY is not configured; run make generate-key and recreate the stack",
+        )
+    })
+}
+
+async fn list_providers(State(state): State<AppState>) -> Response {
+    match state.provider_store.list().await {
+        Ok(providers) => Json(serde_json::json!({"data": providers})).into_response(),
+        Err(error) => provider_store_problem(error),
+    }
+}
+
+async fn get_provider(State(state): State<AppState>, Path(id): Path<String>) -> Response {
+    match state.provider_store.get(&id).await {
+        Ok(Some(provider)) => Json(provider).into_response(),
+        Ok(None) => problem(DomainError::NotFound),
+        Err(error) => provider_store_problem(error),
+    }
+}
+
+#[allow(clippy::similar_names)]
+async fn create_provider(
+    State(state): State<AppState>,
+    AppJson(body): AppJson<CreateProviderRequest>,
+) -> Response {
+    if body.kind != "deepseek" {
+        return problem(DomainError::validation("kind", "must be deepseek"));
+    }
+    if let Err(response) = validate_provider_key(&body.api_key) {
+        return response;
+    }
+    let master = match master_key(&state) {
+        Ok(master) => master,
+        Err(response) => return response,
+    };
+    let provider_id = ProviderId::generate();
+    let workspace = match WorkspaceId::from_str(DEFAULT_WORKSPACE_ID) {
+        Ok(workspace) => workspace,
+        Err(error) => return problem(error),
+    };
+    let key_version = master.version();
+    let aad = aad(
+        "providers",
+        "api_key",
+        &provider_id.to_string(),
+        key_version,
+    );
+    let Ok(encrypted) = master.encrypt(body.api_key.as_bytes(), &aad) else {
+        return problem_status(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "INTERNAL",
+            "could not encrypt the provider key",
+        );
+    };
+    let last4 = last4(&body.api_key);
+    let encrypted_key = match EncryptedKey::new(
+        encrypted.ciphertext.clone(),
+        encrypted.nonce,
+        key_version,
+        &last4,
+    ) {
+        Ok(key) => key,
+        Err(error) => return problem(error),
+    };
+    let rate_limit_rpm = body.rate_limit_rpm.unwrap_or(600);
+    let rate_limit_tpm = body.rate_limit_tpm.unwrap_or(120_000);
+    let timeout_ms = body.timeout_ms.unwrap_or(120_000);
+    if let Err(error) = Provider::create(
+        provider_id,
+        workspace,
+        body.name.clone(),
+        ProviderKind::DeepSeek,
+        body.base_url.clone(),
+        encrypted_key,
+        rate_limit_rpm,
+        rate_limit_tpm,
+        timeout_ms,
+    ) {
+        return problem(error);
+    }
+    let provider = NewProvider {
+        id: provider_id.to_string(),
+        workspace_id: workspace.to_string(),
+        name: body.name,
+        kind: "deepseek".to_owned(),
+        base_url: body.base_url,
+        key: EncryptedKeyMaterial {
+            ciphertext: encrypted.ciphertext,
+            nonce: encrypted.nonce,
+            key_version,
+            last4,
+        },
+        rate_limit_rpm,
+        rate_limit_tpm,
+        timeout_ms,
+    };
+    match state.provider_store.create(provider).await {
+        Ok(provider) => (StatusCode::CREATED, Json(provider)).into_response(),
+        Err(error) => provider_store_problem(error),
+    }
+}
+
+async fn rotate_provider_key(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    AppJson(body): AppJson<RotateProviderKeyRequest>,
+) -> Response {
+    if let Err(response) = validate_provider_key(&body.api_key) {
+        return response;
+    }
+    let current = match state.provider_store.get(&id).await {
+        Ok(Some(provider)) => provider,
+        Ok(None) => return problem(DomainError::NotFound),
+        Err(error) => return provider_store_problem(error),
+    };
+    let master = match master_key(&state) {
+        Ok(master) => master,
+        Err(response) => return response,
+    };
+    let key_version = current.key_version.saturating_add(1);
+    let aad = aad("providers", "api_key", &id, key_version);
+    let Ok(encrypted) = master.encrypt(body.api_key.as_bytes(), &aad) else {
+        return problem_status(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "INTERNAL",
+            "could not encrypt the provider key",
+        );
+    };
+    let key = EncryptedKeyMaterial {
+        ciphertext: encrypted.ciphertext,
+        nonce: encrypted.nonce,
+        key_version,
+        last4: last4(&body.api_key),
+    };
+    match state.provider_store.rotate_key(&id, key).await {
+        Ok(provider) => Json(provider).into_response(),
+        Err(error) => provider_store_problem(error),
+    }
 }
 
 async fn not_implemented() -> Response {
@@ -1880,5 +2152,71 @@ mod tests {
         assert_eq!(value["status"], 404);
         assert_eq!(value["code"], "NOT_FOUND");
         assert!(value["type"].is_string());
+    }
+
+    #[tokio::test]
+    async fn provider_create_list_and_rotate_never_expose_the_key() {
+        let master = MasterKey::from_base64("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=", 1)
+            .expect("test master key");
+        let state = AppState::with_store(Arc::new(InMemoryRunStore::new())).with_master_key(master);
+        let app = router(state);
+        let key = format!("sk-{}-1234", "test-abcdefghijklmnopqrstuvwxyz");
+        let create_payload = serde_json::json!({
+            "name": "DeepSeek",
+            "kind": "deepseek",
+            "base_url": "https://api.deepseek.com",
+            "api_key": key,
+            "rate_limit_rpm": 60,
+            "rate_limit_tpm": 60000,
+            "timeout_ms": 120_000
+        })
+        .to_string();
+        let create = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/v1/providers")
+                    .header("content-type", "application/json")
+                    .body(Body::from(create_payload))
+                    .expect("request"),
+            )
+            .await
+            .expect("response");
+        assert_eq!(create.status(), StatusCode::CREATED);
+        let created_bytes = create.into_body().collect().await.expect("body").to_bytes();
+        let created: serde_json::Value = serde_json::from_slice(&created_bytes).expect("json");
+        let id = created["id"].as_str().expect("id").to_owned();
+        assert_eq!(created["api_key_last4"], "1234");
+        assert!(!String::from_utf8_lossy(&created_bytes).contains(&key));
+
+        let list = app
+            .clone()
+            .oneshot(request("GET", "/api/v1/providers"))
+            .await
+            .expect("response");
+        assert_eq!(list.status(), StatusCode::OK);
+        let list_body = list.into_body().collect().await.expect("body").to_bytes();
+        assert!(!String::from_utf8_lossy(&list_body).contains(&key));
+
+        let rotated_key = format!("sk-{}-9876", "test-abcdefghijklmnopqrstuvwxyz");
+        let rotate_payload = serde_json::json!({"api_key": rotated_key}).to_string();
+        let rotate = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!("/api/v1/providers/{id}/rotate-key"))
+                    .header("content-type", "application/json")
+                    .body(Body::from(rotate_payload))
+                    .expect("request"),
+            )
+            .await
+            .expect("response");
+        assert_eq!(rotate.status(), StatusCode::OK);
+        let rotated_bytes = rotate.into_body().collect().await.expect("body").to_bytes();
+        let rotated: serde_json::Value = serde_json::from_slice(&rotated_bytes).expect("json");
+        assert_eq!(rotated["api_key_last4"], "9876");
+        assert_eq!(rotated["key_version"], 2);
+        assert!(!String::from_utf8_lossy(&rotated_bytes).contains(&rotated_key));
     }
 }

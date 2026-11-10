@@ -39,8 +39,6 @@ Rules:
   - the key is never accepted as a command-line argument or environment variable;
   - the key is never written to disk, logs or the terminal;
   - the stack must already be running and reachable;
-  - the provider persistence endpoints are owned by WP-07/WP-16;
-    until they land, the command reports HTTP 501 and does not store the key.
 
 Exit codes:
   0  provider created or rotated

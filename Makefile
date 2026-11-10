@@ -3,11 +3,12 @@ SHELL := /bin/bash
 
 ROOT := $(CURDIR)
 COMPOSE_FILE := $(ROOT)/infra/compose/docker-compose.yml
-COMPOSE := docker compose -f $(COMPOSE_FILE)
-COMPOSE_DEV := docker compose -f $(COMPOSE_FILE) -f $(ROOT)/infra/compose/docker-compose.dev.yml
-COMPOSE_OBS := docker compose -f $(COMPOSE_FILE) -f $(ROOT)/infra/compose/docker-compose.observability.yml
-COMPOSE_TLS := docker compose -f $(COMPOSE_FILE) -f $(ROOT)/infra/compose/docker-compose.tls.yml
-COMPOSE_EGRESS := docker compose -f $(COMPOSE_FILE) -f $(ROOT)/infra/compose/docker-compose.egress.yml
+COMPOSE_ENV := $(if $(wildcard $(ROOT)/.env),--env-file $(ROOT)/.env,)
+COMPOSE := docker compose $(COMPOSE_ENV) -f $(COMPOSE_FILE)
+COMPOSE_DEV := docker compose $(COMPOSE_ENV) -f $(COMPOSE_FILE) -f $(ROOT)/infra/compose/docker-compose.dev.yml
+COMPOSE_OBS := docker compose $(COMPOSE_ENV) -f $(COMPOSE_FILE) -f $(ROOT)/infra/compose/docker-compose.observability.yml
+COMPOSE_TLS := docker compose $(COMPOSE_ENV) -f $(COMPOSE_FILE) -f $(ROOT)/infra/compose/docker-compose.tls.yml
+COMPOSE_EGRESS := docker compose $(COMPOSE_ENV) -f $(COMPOSE_FILE) -f $(ROOT)/infra/compose/docker-compose.egress.yml
 WEB := $(ROOT)/scripts/run-web.sh
 
 .PHONY: help setup hooks compose-validate up up-dev up-obs up-tls up-egress down reset logs ps migrate seed seed-demo \
