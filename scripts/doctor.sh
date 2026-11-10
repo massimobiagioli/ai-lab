@@ -91,10 +91,22 @@ if [ -n "$avail_kb" ]; then
   fi
 fi
 
+COMPOSE_FILE="$ROOT/infra/compose/docker-compose.yml"
+stack_ports() {
+  [ -f "$COMPOSE_FILE" ] || return 0
+  docker compose -f "$COMPOSE_FILE" ps -q 2>/dev/null | while IFS= read -r container; do
+    [ -n "$container" ] || continue
+    docker inspect --format '{{range $p, $conf := .NetworkSettings.Ports}}{{range $conf}}{{.HostPort}} {{end}}{{end}}' "$container" 2>/dev/null
+  done
+}
+
+STACK_PORTS="$(stack_ports)"
 if command -v lsof >/dev/null 2>&1; then
   for port in 8080 3000 5432 6379; do
-    if lsof -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then
-      fail "port $port is already in use"
+    if printf '%s\n' "$STACK_PORTS" | tr ' ' '\n' | grep -qx "$port"; then
+      pass "port $port is used by the running AI-Lab stack"
+    elif lsof -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then
+      fail "port $port is already in use by another process"
     else
       pass "port $port is free"
     fi

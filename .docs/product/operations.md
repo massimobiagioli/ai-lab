@@ -55,7 +55,7 @@ curl -fsS http://127.0.0.1:8080/healthz
 docker compose -f infra/compose/docker-compose.yml --profile core exec postgres pg_isready -U ailab
 ```
 
-Readiness semantics: `api` checks Postgres and Redis; `worker` checks Postgres, Redis and a runner; `runner` checks its token and the Docker socket proxy; `web` checks nginx.
+Readiness semantics: `api` checks Postgres and Redis; `worker` checks Postgres, Redis and a runner; `runner` checks its token and the Docker socket proxy; `web` checks nginx. `make doctor` recognizes ports published by the running AI-Lab stack and passes them; it fails only when another process owns a required port.
 
 ## 5. Upgrade
 
