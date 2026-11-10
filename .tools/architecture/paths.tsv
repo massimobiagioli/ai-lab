@@ -28,4 +28,7 @@ crates/orchestrator/	delivery
 crates/orchestrator/src/postgres.rs	coordinator
 crates/api/src/postgres_store.rs	coordinator
 crates/api/src/providers.rs	inventory
+crates/api/src/resources/inventory.rs	inventory
+crates/api/src/resources/lab.rs	lab
+crates/api/src/resources/platform.rs	platform
 crates/llm/	inventory

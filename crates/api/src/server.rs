@@ -14,6 +14,7 @@ use crate::providers::{
     DEFAULT_WORKSPACE_ID, EncryptedKeyMaterial, InMemoryProviderStore, NewProvider,
     PostgresProviderStore, ProviderStore, ProviderStoreError,
 };
+use crate::resources;
 use async_trait::async_trait;
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use axum::extract::{FromRequest, FromRequestParts, Path, Query, Request, State};
@@ -346,6 +347,8 @@ pub struct AppState {
     provider_store: Arc<dyn ProviderStore>,
     /// Master key for provider key encryption.
     master_key: Option<MasterKey>,
+    /// Postgres pool for read resources.
+    pool: Option<sqlx::PgPool>,
 }
 
 impl Default for AppState {
@@ -373,10 +376,11 @@ impl AppState {
         {
             let provider_store = Arc::new(PostgresProviderStore::new(pool.clone()));
             return Self::build(
-                Arc::new(crate::postgres_store::PostgresRunStore::new(pool)),
+                Arc::new(crate::postgres_store::PostgresRunStore::new(pool.clone())),
                 token,
                 provider_store,
                 master_key,
+                Some(pool),
             );
         }
         Self::build(
@@ -384,6 +388,7 @@ impl AppState {
             token,
             Arc::new(InMemoryProviderStore::new()),
             master_key,
+            None,
         )
     }
 
@@ -396,7 +401,13 @@ impl AppState {
     /// Build with a specific store and optional bearer token.
     #[must_use]
     pub fn with_store_and_token(store: Arc<dyn RunStore>, token: Option<String>) -> Self {
-        Self::build(store, token, Arc::new(InMemoryProviderStore::new()), None)
+        Self::build(
+            store,
+            token,
+            Arc::new(InMemoryProviderStore::new()),
+            None,
+            None,
+        )
     }
 
     fn build(
@@ -404,6 +415,7 @@ impl AppState {
         token: Option<String>,
         provider_store: Arc<dyn ProviderStore>,
         master_key: Option<MasterKey>,
+        pool: Option<sqlx::PgPool>,
     ) -> Self {
         let (hub, _) = broadcast::channel(256);
         Self {
@@ -419,6 +431,7 @@ impl AppState {
                 .into(),
             provider_store,
             master_key,
+            pool,
         }
     }
 
@@ -504,32 +517,30 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/openapi.json", get(openapi))
         .route("/api/v1/telemetry", post(ingest_telemetry))
         .route("/api/v1/telemetry/frontend", post(ingest_telemetry))
-        .route("/api/v1/labs", get(not_implemented))
-        .route("/api/v1/labs/{id}", get(not_implemented))
-        .route("/api/v1/agents", get(not_implemented))
-        .route("/api/v1/agents/{id}", get(not_implemented))
-        .route("/api/v1/agents/{id}/cv", get(not_implemented))
-        .route("/api/v1/agents/{id}/pause", post(not_implemented))
-        .route("/api/v1/labs/{id}/agents", get(not_implemented))
-        .route("/api/v1/characters", get(not_implemented))
+        .route("/api/v1/labs", get(list_labs))
+        .route("/api/v1/labs/{id}", get(get_lab))
+        .route("/api/v1/agents", get(list_agents))
+        .route("/api/v1/agents/{id}", get(get_agent))
+        .route("/api/v1/agents/{id}/cv", get(get_agent_cv))
+        .route("/api/v1/agents/{id}/pause", post(pause_agent))
+        .route("/api/v1/agents/{id}/resume", post(resume_agent))
+        .route("/api/v1/labs/{id}/agents", get(list_lab_agents))
+        .route("/api/v1/characters", get(list_characters))
         .route(
             "/api/v1/providers",
             get(list_providers).post(create_provider),
         )
         .route("/api/v1/providers/{id}", get(get_provider))
         .route("/api/v1/providers/{id}/verify", post(not_implemented))
-        .route("/api/v1/providers/{id}/rotate", post(not_implemented))
+        .route("/api/v1/providers/{id}/rotate", post(rotate_provider_key))
         .route(
             "/api/v1/providers/{id}/rotate-key",
             post(rotate_provider_key),
         )
-        .route("/api/v1/scm-credentials", get(not_implemented))
-        .route("/api/v1/models", get(not_implemented))
-        .route(
-            "/api/v1/projects",
-            get(not_implemented).post(not_implemented),
-        )
-        .route("/api/v1/projects/{id}", get(not_implemented))
+        .route("/api/v1/scm-credentials", get(list_scm_credentials))
+        .route("/api/v1/models", get(list_models))
+        .route("/api/v1/projects", get(list_projects).post(not_implemented))
+        .route("/api/v1/projects/{id}", get(get_project))
         .route("/api/v1/projects/{id}/sync", post(not_implemented))
         .route("/api/v1/ideas", get(not_implemented).post(not_implemented))
         .route("/api/v1/ideas/{id}", get(not_implemented))
@@ -556,7 +567,7 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/memory/documents", get(not_implemented))
         .route("/api/v1/memory/documents/{id}", get(not_implemented))
         .route("/api/v1/memory/notes", get(not_implemented))
-        .route("/api/v1/settings", get(not_implemented))
+        .route("/api/v1/settings", get(get_settings))
         .route("/api/v1/webhooks/github", post(not_implemented))
         .route("/api/v1/health/providers", get(health_providers))
         .route("/api/v1/health/scm", get(health_scm))
@@ -1276,6 +1287,172 @@ async fn rotate_provider_key(
         Ok(provider) => Json(provider).into_response(),
         Err(error) => provider_store_problem(error),
     }
+}
+
+#[allow(clippy::result_large_err)]
+fn database(state: &AppState) -> Result<&sqlx::PgPool, Response> {
+    state.pool.as_ref().ok_or_else(|| {
+        problem_status(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "DATABASE_UNAVAILABLE",
+            "the database is not configured",
+        )
+    })
+}
+
+fn resource_list(result: Result<serde_json::Value, String>) -> Response {
+    match result {
+        Ok(value) => Json(serde_json::json!({"data": value})).into_response(),
+        Err(message) => {
+            eprintln!("resource list: {message}");
+            problem_status(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "INTERNAL",
+                "resource query failed",
+            )
+        }
+    }
+}
+
+fn resource_item(result: Result<Option<serde_json::Value>, String>) -> Response {
+    match result {
+        Ok(Some(value)) => Json(value).into_response(),
+        Ok(None) => problem(DomainError::NotFound),
+        Err(message) => {
+            eprintln!("resource item: {message}");
+            problem_status(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "INTERNAL",
+                "resource query failed",
+            )
+        }
+    }
+}
+
+fn resource_object(result: Result<serde_json::Value, String>) -> Response {
+    match result {
+        Ok(value) => Json(value).into_response(),
+        Err(message) => {
+            eprintln!("resource object: {message}");
+            problem_status(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "INTERNAL",
+                "resource query failed",
+            )
+        }
+    }
+}
+
+async fn list_labs(State(state): State<AppState>) -> Response {
+    let pool = match database(&state) {
+        Ok(pool) => pool,
+        Err(response) => return response,
+    };
+    resource_list(resources::list_labs(pool).await)
+}
+
+async fn get_lab(State(state): State<AppState>, Path(id): Path<String>) -> Response {
+    let pool = match database(&state) {
+        Ok(pool) => pool,
+        Err(response) => return response,
+    };
+    resource_item(resources::get_lab(pool, &id).await)
+}
+
+async fn list_agents(State(state): State<AppState>) -> Response {
+    let pool = match database(&state) {
+        Ok(pool) => pool,
+        Err(response) => return response,
+    };
+    resource_list(resources::list_agents(pool, None).await)
+}
+
+async fn list_lab_agents(State(state): State<AppState>, Path(id): Path<String>) -> Response {
+    let pool = match database(&state) {
+        Ok(pool) => pool,
+        Err(response) => return response,
+    };
+    resource_list(resources::list_agents(pool, Some(&id)).await)
+}
+
+async fn get_agent(State(state): State<AppState>, Path(id): Path<String>) -> Response {
+    let pool = match database(&state) {
+        Ok(pool) => pool,
+        Err(response) => return response,
+    };
+    resource_item(resources::get_agent(pool, &id).await)
+}
+
+async fn get_agent_cv(State(state): State<AppState>, Path(id): Path<String>) -> Response {
+    let pool = match database(&state) {
+        Ok(pool) => pool,
+        Err(response) => return response,
+    };
+    resource_item(resources::get_agent_cv(pool, &id).await)
+}
+
+async fn pause_agent(State(state): State<AppState>, Path(id): Path<String>) -> Response {
+    let pool = match database(&state) {
+        Ok(pool) => pool,
+        Err(response) => return response,
+    };
+    resource_item(resources::set_agent_status(pool, &id, "paused").await)
+}
+
+async fn resume_agent(State(state): State<AppState>, Path(id): Path<String>) -> Response {
+    let pool = match database(&state) {
+        Ok(pool) => pool,
+        Err(response) => return response,
+    };
+    resource_item(resources::set_agent_status(pool, &id, "idle").await)
+}
+
+async fn list_characters(State(state): State<AppState>) -> Response {
+    let pool = match database(&state) {
+        Ok(pool) => pool,
+        Err(response) => return response,
+    };
+    resource_list(resources::list_characters(pool).await)
+}
+
+async fn list_models(State(state): State<AppState>) -> Response {
+    let pool = match database(&state) {
+        Ok(pool) => pool,
+        Err(response) => return response,
+    };
+    resource_list(resources::list_models(pool).await)
+}
+
+async fn list_scm_credentials(State(state): State<AppState>) -> Response {
+    let pool = match database(&state) {
+        Ok(pool) => pool,
+        Err(response) => return response,
+    };
+    resource_list(resources::list_scm_credentials(pool).await)
+}
+
+async fn list_projects(State(state): State<AppState>) -> Response {
+    let pool = match database(&state) {
+        Ok(pool) => pool,
+        Err(response) => return response,
+    };
+    resource_list(resources::list_projects(pool).await)
+}
+
+async fn get_project(State(state): State<AppState>, Path(id): Path<String>) -> Response {
+    let pool = match database(&state) {
+        Ok(pool) => pool,
+        Err(response) => return response,
+    };
+    resource_item(resources::get_project(pool, &id).await)
+}
+
+async fn get_settings(State(state): State<AppState>) -> Response {
+    let pool = match database(&state) {
+        Ok(pool) => pool,
+        Err(response) => return response,
+    };
+    resource_object(resources::get_settings(pool).await)
 }
 
 async fn not_implemented() -> Response {
