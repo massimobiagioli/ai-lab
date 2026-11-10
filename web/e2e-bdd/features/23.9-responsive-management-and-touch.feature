@@ -1,7 +1,7 @@
 @inventory @lab @responsive @p1 @ux-030
 Feature: Responsive management and touch
 
-  @E2E-451
+  @E2E-451 @suite-management
   Scenario: E2E-451 Desktop management layout is calm and readable
     Given a viewport at or above 1280 px
     When a management screen renders
@@ -9,7 +9,7 @@ Feature: Responsive management and touch
     Then the content has a comfortable line length and clear gutters
     Then the primary action is not lost in the chrome
 
-  @E2E-452
+  @E2E-452 @suite-management
   Scenario: E2E-452 Tablet management uses collapsible navigation
     Given a viewport between 768 and 1279 px
     When a management screen renders
@@ -17,7 +17,7 @@ Feature: Responsive management and touch
     Then drawers overlay the content
     Then every action remains reachable
 
-  @E2E-453
+  @E2E-453 @suite-management
   Scenario: E2E-453 Phone management becomes a focused single column
     Given a viewport below 768 px
     When a management screen renders
@@ -26,7 +26,7 @@ Feature: Responsive management and touch
     Then drawers become full-screen sheets
     Then the primary action stays visible
 
-  @E2E-454
+  @E2E-454 @suite-management
   Scenario: E2E-454 Orientation changes preserve management state
     Given a completed filter and an open detail
     When I rotate the device
@@ -34,7 +34,7 @@ Feature: Responsive management and touch
     Then the filter and detail are preserved
     Then focus is not lost
 
-  @E2E-455
+  @E2E-455 @suite-management
   Scenario: E2E-455 Touch targets are comfortable
     Given a touch device
     When I inspect management controls
@@ -42,7 +42,7 @@ Feature: Responsive management and touch
     Then adjacent targets do not overlap
     Then no action depends on hover
 
-  @E2E-456
+  @E2E-456 @suite-management
   Scenario: E2E-456 Text zoom does not break the management UI
     Given the browser text zoom is 200 percent
     When a management screen renders
@@ -50,7 +50,7 @@ Feature: Responsive management and touch
     Then critical actions remain visible
     Then the layout remains usable without horizontal scrolling
 
-  @E2E-457
+  @E2E-457 @suite-management
   Scenario: E2E-457 Long values remain accessible on small screens
     Given long names, repository URLs and descriptions
     When the phone layout renders
@@ -58,7 +58,7 @@ Feature: Responsive management and touch
     Then no row action is pushed off screen
     Then the visual hierarchy remains intact
 
-  @E2E-458
+  @E2E-458 @suite-management
   Scenario: E2E-458 Responsive management has no dead ends
     Given every management route at desktop, tablet and phone widths
     When I navigate and act

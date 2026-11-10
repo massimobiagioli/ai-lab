@@ -33,6 +33,7 @@
 The BDD suite is generated from `.docs/e2e/BDD.md` and lives in `web/e2e-bdd/`.
 
 - **Only entry point:** `make bdd`. The Makefile sets `AILAB_BDD_VIA_MAKE=1`; `scripts/run-bdd.sh` and `web/e2e-bdd/playwright.config.ts` refuse direct invocation with a clear message.
+- **Suites:** the 480 scenarios are split into `core`, `kanban`, `delivery`, `platform`, `office` and `management`. Run one with `make bdd SUITE=core`, run the ordered prefix with `make bdd UP_TO=delivery`, run all with `make bdd`, and list the counts with `make bdd-list`. Each scenario carries a `@suite-<id>` tag; the runner passes the matching Playwright `--grep`.
 - **Preflight:** `scripts/bdd-preflight.mjs` reads `.docs/e2e/req.md` and exits `2` when a manual item is still `[ ]`, before feature generation or any test starts. The checklist is manual-only; the current entry is the DeepSeek API key for live runs.
 - **Live key:** `make bdd-set-api-key` reads the key from a hidden prompt, validates it, and creates or rotates the DeepSeek provider. The key is never an argument, a file, an environment variable, a log or a report.
 - **Features:** `.tools/gen-bdd-features.mjs --write` regenerates one feature per BDD area; `--check` fails on drift. Never hand-edit the generated `.feature` files.

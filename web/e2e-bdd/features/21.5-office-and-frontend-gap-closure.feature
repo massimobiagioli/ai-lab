@@ -1,7 +1,7 @@
 @office @frontend @p1 @ux-016
 Feature: Office and frontend gap closure
 
-  @E2E-226
+  @E2E-226 @suite-office
   Scenario: E2E-226 Office camera and object navigation are complete
     Given the office is open
     When I hover an object
@@ -11,7 +11,7 @@ Feature: Office and frontend gap closure
     Then wheel and drag pan and zoom snap to integer factors 1x to 4x
     Then the fit button resets the camera
 
-  @E2E-227
+  @E2E-227 @suite-office
   Scenario: E2E-227 The office scales to sixteen agents without overlap
     Given a lab with sixteen agents
     When the office renders
@@ -19,7 +19,7 @@ Feature: Office and frontend gap closure
     Then no two agents or desks overlap
     Then the layout remains navigable
 
-  @E2E-228
+  @E2E-228 @suite-office
   Scenario: E2E-228 Office assets are licensed and original
     Given the sprite, font and sound manifest
     When the asset linter runs
@@ -27,7 +27,7 @@ Feature: Office and frontend gap closure
     Then a missing license fails the build
     Then no asset is copied from the reference product and no emoji is used in the office
 
-  @E2E-229
+  @E2E-229 @suite-office
   Scenario: E2E-229 Sound and background-tab behaviour respect the operator
     Given the office is running
     When a card completes or is blocked
@@ -36,7 +36,7 @@ Feature: Office and frontend gap closure
     When the tab is backgrounded
     Then simulation pauses but WebSocket state continues to synchronize
 
-  @E2E-230
+  @E2E-230 @suite-office
   Scenario: E2E-230 Frontend budgets, offline mode and event dedupe hold
     Given a production build
     When the bundle and Lighthouse budgets are measured

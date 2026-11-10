@@ -18,6 +18,7 @@ Do not use this skill for the plain Playwright specs in `web/e2e`, for product c
 ## Preconditions
 
 - Read `.docs/e2e/BDD.md` and confirm exactly 480 unique ids `E2E-001` … `E2E-480`.
+- Read `.docs/e2e/suites.json` and confirm the six ordered suites assign every id exactly once.
 - Read `.docs/e2e/req.md` and confirm it is the minimal manual setup checklist. The only expected manual entry is the DeepSeek API key for live runs, loaded with `make bdd-set-api-key`; automated runs use the fake harness.
 - Read `.docs/product/testing.md` for commands, fixtures, seed and flaky policy.
 - Read `AGENTS.md` for the tool registry, documentation index and quality gates.
@@ -48,8 +49,9 @@ Do not use this skill for the plain Playwright specs in `web/e2e`, for product c
    - There are no stop-condition or sign-off sections in the minimal checklist; do not invent them.
    - The error message names the file, the missing item and its section and line, and states that the suite was not started.
 5. Maintain the make-only entry point:
-   - `Makefile` exposes `bdd` and `bdd-set-api-key`; only `bdd` runs the suite, and only `bdd-set-api-key` loads the live key.
-   - `scripts/run-bdd.sh` refuses to run without the guard, runs the preflight first, then the drift check, then `bddgen`, then Playwright.
+   - `Makefile` exposes `bdd`, `bdd-list` and `bdd-set-api-key`; only `bdd` runs the suite, and only `bdd-set-api-key` loads the live key.
+   - `make bdd SUITE=<id>` runs one suite, `make bdd UP_TO=<id>` runs the ordered prefix and `make bdd` runs all six.
+   - `scripts/run-bdd.sh` refuses to run without the guard, runs the preflight first, then the drift check, then resolves the suite selection, then `bddgen`, then Playwright with the matching `--grep`.
    - `web/e2e-bdd/playwright.config.ts` also refuses to run without the guard.
    - Do not add a public `npm run bdd` script.
 6. Load the live key only through `make bdd-set-api-key`:
@@ -80,8 +82,10 @@ Do not use this skill for the plain Playwright specs in `web/e2e`, for product c
 - [ ] Direct runner and direct Playwright config invocation fail with the make-only message.
 - [ ] An incomplete `.docs/e2e/req.md` blocks the suite with the missing-items message and exits `2`.
 - [ ] A complete `.docs/e2e/req.md` lets the suite run.
-- [ ] `scripts/bdd-preflight.test.mjs` and `.tools/bdd-self-test.sh` pass.
-- [ ] `results.json` has one entry per `E2E-001` … `E2E-480`.
+- [ ] `scripts/bdd-preflight.test.mjs`, `scripts/bdd-suites.test.mjs` and `.tools/bdd-self-test.sh` pass.
+- [ ] `.docs/e2e/suites.json` assigns every id to exactly one of the six suites.
+- [ ] `make bdd-list` prints six suites; `SUITE=` and `UP_TO=` select the expected counts.
+- [ ] The full run `results.json` has one entry per `E2E-001` … `E2E-480`; a suite run contains the selected entries only.
 - [ ] `make bdd` writes the full console output to `reports/make-bdd.log`.
 - [ ] Section 22 (Amiga-style UI) attaches palette, scaling, frame-hash, FPS and visual-diff evidence.
 - [ ] Section 23 (Inventory and Lab management UI) attaches token, hierarchy, responsive, a11y, performance and visual evidence.

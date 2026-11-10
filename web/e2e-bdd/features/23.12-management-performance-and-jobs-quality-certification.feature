@@ -1,7 +1,7 @@
 @inventory @lab @performance @certification @p0 @ux-040
 Feature: Management performance and Jobs-quality certification
 
-  @E2E-475
+  @E2E-475 @suite-management
   Scenario: E2E-475 Management interactions feel immediate
     Given the agents, projects, providers and settings routes
     When I search, filter, open a drawer or submit a form
@@ -9,7 +9,7 @@ Feature: Management performance and Jobs-quality certification
     Then the list load p95 is within the route budget
     Then no interaction blocks the main thread with a long task
 
-  @E2E-476
+  @E2E-476 @suite-management
   Scenario: E2E-476 Management routes meet the performance budget
     Given the management routes in a production build
     When Lighthouse and the bundle budgets run
@@ -17,7 +17,7 @@ Feature: Management performance and Jobs-quality certification
     Then the initial JS and CSS budgets hold
     Then the route lazy-loads without a blank frame
 
-  @E2E-477
+  @E2E-477 @suite-management
   Scenario: E2E-477 Management visual baselines cover the responsive matrix
     Given the deterministic seed
     When I capture the agents, projects, providers and settings routes at desktop, tablet and phone widths
@@ -25,7 +25,7 @@ Feature: Management performance and Jobs-quality certification
     Then the pixel diff is at most 0.1 percent with documented masks
     Then the baseline is generated from the seed, not hand-edited
 
-  @E2E-478
+  @E2E-478 @suite-management
   Scenario: E2E-478 Management pages do not shift or jank
     Given a slow network and a large list
     When the page loads and a drawer opens
@@ -33,7 +33,7 @@ Feature: Management performance and Jobs-quality certification
     Then no frame exceeds the long-task budget during interaction
     Then the content remains stable under the pointer
 
-  @E2E-479
+  @E2E-479 @suite-management
   Scenario: E2E-479 Every management scenario attaches evidence
     Given an executed management scenario
     When it completes
@@ -41,7 +41,7 @@ Feature: Management performance and Jobs-quality certification
     Then the artifact paths are referenced by the E2E id
     Then secrets and personal data are redacted
 
-  @E2E-480
+  @E2E-480 @suite-management
   Scenario: E2E-480 The Jobs-quality management certification is release-blocking
     Given the complete management certification suite
     When the release candidate is evaluated

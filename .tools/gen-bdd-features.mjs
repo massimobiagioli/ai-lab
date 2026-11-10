@@ -13,6 +13,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildFeatures, summarize } from './lib/bdd-parser.mjs';
+import { loadSuites, suiteCounts, validateSuites } from './lib/suites.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_ROOT = resolve(HERE, '..');
@@ -96,12 +97,22 @@ function main() {
 
   if (!existsSync(sourceFile)) fail(`missing source: ${sourceFile}`);
   const markdown = readFileSync(sourceFile, 'utf8');
-  const { files, scenarios, errors, expectedCount } = buildFeatures(markdown, { expectedCount: expected });
+  const suites = loadSuites(root);
+  const suiteValidation = validateSuites(suites, expected);
+  if (suiteValidation.errors.length > 0) {
+    process.stderr.write(`gen-bdd-features: invalid suite manifest:\n${suiteValidation.errors.map((e) => `  - ${e}`).join('\n')}\n`);
+    process.exit(1);
+  }
+  const { files, scenarios, errors, expectedCount } = buildFeatures(markdown, {
+    expectedCount: expected,
+    suiteByScenario: suiteValidation.suiteByScenario,
+  });
 
   if (errors.length > 0) {
     process.stderr.write(`gen-bdd-features: invalid BDD source:\n${errors.map((e) => `  - ${e}`).join('\n')}\n`);
     process.exit(1);
   }
+  const counts = suiteCounts(suites);
 
   if (mode === 'write') {
     mkdirSync(outputDir, { recursive: true });
@@ -118,7 +129,8 @@ function main() {
     }
     writeFileSync(join(outputDir, MANIFEST), `${JSON.stringify({ expected: expectedCount, files: [...nextNames].sort(), summary: summarize(files, scenarios) }, null, 2)}\n`, 'utf8');
     const summary = summarize(files, scenarios);
-    process.stdout.write(`gen-bdd-features: wrote ${summary.features} feature files with ${summary.scenarios} scenarios\n`);
+    const suiteSummary = counts.map((entry) => `${entry.id}:${entry.count}`).join(', ');
+    process.stdout.write(`gen-bdd-features: wrote ${summary.features} feature files with ${summary.scenarios} scenarios (${suiteSummary})\n`);
     return;
   }
 
@@ -132,7 +144,8 @@ function main() {
     process.exit(1);
   }
   const summary = summarize(files, scenarios);
-  process.stdout.write(`gen-bdd-features: OK (${summary.features} features, ${summary.scenarios} scenarios, hash ${summary.hash.slice(0, 12)})\n`);
+  const suiteSummary = counts.map((entry) => `${entry.id}:${entry.count}`).join(', ');
+  process.stdout.write(`gen-bdd-features: OK (${summary.features} features, ${summary.scenarios} scenarios, ${suiteSummary}, hash ${summary.hash.slice(0, 12)})\n`);
 }
 
 main();

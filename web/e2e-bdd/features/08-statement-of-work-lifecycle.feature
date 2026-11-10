@@ -1,7 +1,7 @@
 @delivery @sow @p0 @fr-dlv-002
 Feature: Statement of Work lifecycle
 
-  @E2E-083
+  @E2E-083 @suite-delivery
   Scenario: E2E-083 Creating a SOW starts asynchronous generation
     Given an approved idea and a project
     When I call POST /api/v1/projects/{project_id}/sows
@@ -9,7 +9,7 @@ Feature: Statement of Work lifecycle
     Then a generation run is visible with streaming progress
     Then the SOW persists as a structured document plus Markdown artifact
 
-  @E2E-084
+  @E2E-084 @suite-delivery
   Scenario: E2E-084 A generated SOW contains every mandatory section
     Given a completed SOW generation
     When I read the SOW
@@ -18,35 +18,35 @@ Feature: Statement of Work lifecycle
     Then it contains milestones, deliverables, acceptance_criteria and assumptions
     Then it contains risks, timeline, budget, governance and change_control
 
-  @E2E-085
+  @E2E-085 @suite-delivery
   Scenario: E2E-085 A SOW missing or with an empty mandatory section is rejected
     Given a SOW payload with a missing or empty objectives section
     When I validate or approve it
     Then the response status is 422
     Then the violation names the missing section
 
-  @E2E-086
+  @E2E-086 @suite-delivery
   Scenario: E2E-086 A SOW with a short executive summary is rejected
     Given a SOW whose executive_summary is under 120 characters
     When I validate it
     Then the response status is 422
     Then the violation names executive_summary
 
-  @E2E-087
+  @E2E-087 @suite-delivery
   Scenario: E2E-087 Duplicate requirement identifiers are rejected
     Given a SOW with two requirements both named FR-001
     When I validate it
     Then the response status is 422
     Then the violation reports the duplicate id
 
-  @E2E-088
+  @E2E-088 @suite-delivery
   Scenario: E2E-088 Requirements need priority and testable criteria
     Given a SOW with a functional requirement missing a priority or acceptance criterion
     Then validation returns 422
     Then given a non-functional requirement without a numeric target or measurement method
     Then validation returns 422
 
-  @E2E-089
+  @E2E-089 @suite-delivery
   Scenario: E2E-089 A SOW moves from draft to in review to approved
     Given a draft SOW
     When I submit it for review
@@ -54,14 +54,14 @@ Feature: Statement of Work lifecycle
     When I approve it with an approver
     Then the status becomes approved and the approver is recorded
 
-  @E2E-090
+  @E2E-090 @suite-delivery
   Scenario: E2E-090 Approval freezes the current version
     Given an approved SOW at version 1
     When I attempt to edit version 1 in place
     Then the edit is rejected
     Then version 1 remains immutable and readable
 
-  @E2E-091
+  @E2E-091 @suite-delivery
   Scenario: E2E-091 Revision requires a change note and creates a new draft version
     Given an approved SOW at version 1
     When I revise it with an empty change note
@@ -70,7 +70,7 @@ Feature: Statement of Work lifecycle
     Then a new immutable version 2 enters draft
     Then version 1 is unchanged
 
-  @E2E-092
+  @E2E-092 @suite-delivery
   Scenario: E2E-092 Rejection requires a reason and returns to draft
     Given a SOW in review
     When I reject it without a reason
@@ -78,7 +78,7 @@ Feature: Statement of Work lifecycle
     When I reject it with a reason
     Then the SOW returns to draft and the reason is recorded
 
-  @E2E-093
+  @E2E-093 @suite-delivery
   Scenario: E2E-093 Superseding requires a newer approved version
     Given an approved SOW version 1
     When I supersede it with an unapproved draft
@@ -86,7 +86,7 @@ Feature: Statement of Work lifecycle
     When a newer approved version exists
     Then superseding succeeds and the old version is marked superseded
 
-  @E2E-094
+  @E2E-094 @suite-delivery
   Scenario: E2E-094 The SOW diff and export are deterministic
     Given two SOW versions
     When I call GET /api/v1/sows/{sow_id}/diff

@@ -62,6 +62,25 @@ if ! run_node .tools/check-bdd-coverage.mjs; then
   exit 1
 fi
 
+SUITE_ARGS=()
+if [ -n "${AILAB_BDD_SUITE:-}" ]; then SUITE_ARGS+=(--suite "$AILAB_BDD_SUITE"); fi
+if [ -n "${AILAB_BDD_UP_TO:-}" ]; then SUITE_ARGS+=(--up-to "$AILAB_BDD_UP_TO"); fi
+
+SELECTION_JSON="$(run_node scripts/bdd-suites.mjs "${SUITE_ARGS[@]+"${SUITE_ARGS[@]}"}" --json)"
+SELECTION_STATUS=$?
+if [ "$SELECTION_STATUS" -ne 0 ]; then
+  exit "$SELECTION_STATUS"
+fi
+BDD_SUITES="$(printf '%s' "$SELECTION_JSON" | python3 -c 'import json,sys; print(", ".join(json.load(sys.stdin).get("suites", [])))')"
+BDD_GREP="$(printf '%s' "$SELECTION_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("grep", ""))')"
+BDD_TOTAL="$(printf '%s' "$SELECTION_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("total", 0))')"
+echo "BDD suites: ${BDD_SUITES} (${BDD_TOTAL} scenarios)"
+if [ -n "$BDD_GREP" ]; then
+  echo "BDD selection: ${BDD_GREP}"
+else
+  echo "BDD selection: all suites"
+fi
+
 if ! curl -fsS --max-time 5 "$BASE/healthz" >/dev/null 2>&1 \
   && ! curl -fsS --max-time 5 "$BASE/api/v1/health/live" >/dev/null 2>&1; then
   echo "BDD suite not started: the prepared test environment is not reachable at $BASE." >&2
@@ -86,7 +105,11 @@ run_web() {
 }
 
 run_web npx bddgen --config e2e-bdd/playwright.config.ts || exit $?
-run_web npx playwright test --config e2e-bdd/playwright.config.ts
+if [ -n "$BDD_GREP" ]; then
+  run_web npx playwright test --config e2e-bdd/playwright.config.ts --grep "$BDD_GREP"
+else
+  run_web npx playwright test --config e2e-bdd/playwright.config.ts
+fi
 STATUS=$?
 
 if [ -f "$ROOT/web/e2e-bdd/reports/results.json" ]; then

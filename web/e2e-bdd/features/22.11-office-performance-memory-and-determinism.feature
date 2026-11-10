@@ -1,7 +1,7 @@
 @office @performance @p0 @ux-025
 Feature: Office performance, memory and determinism
 
-  @E2E-341
+  @E2E-341 @suite-office
   Scenario: E2E-341 Desktop frame rate meets the target
     Given the office at 1440p with sixteen agents and 200 animated props
     When it runs for five minutes
@@ -9,7 +9,7 @@ Feature: Office performance, memory and determinism
     Then no frame exceeds the long-task budget repeatedly
     Then the FPS samples are attached to the evidence
 
-  @E2E-342
+  @E2E-342 @suite-office
   Scenario: E2E-342 The low-end profile meets the minimum frame rate
     Given the low-end profile with an integrated GPU and reduced effects
     When the office runs
@@ -17,7 +17,7 @@ Feature: Office performance, memory and determinism
     Then the visual state remains truthful
     Then the quality auto-tune does not change the logical frame hash
 
-  @E2E-343
+  @E2E-343 @suite-office
   Scenario: E2E-343 The frame budget is respected
     Given a steady office
     When frame durations are measured
@@ -25,7 +25,7 @@ Feature: Office performance, memory and determinism
     Then no recurring long task exceeds 50 ms during idle
     Then the frame budget is reported per layer
 
-  @E2E-344
+  @E2E-344 @suite-office
   Scenario: E2E-344 Peak heap and long-run memory stay bounded
     Given a ten-minute office soak
     When memory is sampled
@@ -33,7 +33,7 @@ Feature: Office performance, memory and determinism
     Then memory growth is under 10 percent
     Then no unbounded particle or bubble allocation is observed
 
-  @E2E-345
+  @E2E-345 @suite-office
   Scenario: E2E-345 Draw calls and atlas batching stay stable
     Given the full office scene
     When ten consecutive frames are profiled
@@ -41,7 +41,7 @@ Feature: Office performance, memory and determinism
     Then the atlas batch count is stable
     Then no per-frame atlas rebuild occurs
 
-  @E2E-346
+  @E2E-346 @suite-office
   Scenario: E2E-346 A background tab pauses simulation but keeps state in sync
     Given the office is visible
     When the tab is backgrounded
@@ -49,7 +49,7 @@ Feature: Office performance, memory and determinism
     Then the WebSocket state keeps synchronizing
     Then returning to the tab does not replay thousands of frames
 
-  @E2E-347
+  @E2E-347 @suite-office
   Scenario: E2E-347 Resuming a background tab catches up without teleporting
     Given a backgrounded tab and new events
     When I return to the tab
@@ -57,7 +57,7 @@ Feature: Office performance, memory and determinism
     Then agents do not teleport except through valid movement
     Then the frame hash matches a continuously visible client
 
-  @E2E-348
+  @E2E-348 @suite-office
   Scenario: E2E-348 Determinism survives repeated runs
     Given the same seed and event sequence
     When the office runs three times
@@ -65,7 +65,7 @@ Feature: Office performance, memory and determinism
     Then the frame hash is identical
     Then a single event difference changes the hash
 
-  @E2E-349
+  @E2E-349 @suite-office
   Scenario: E2E-349 The optional WebGL2 backend is pixel-identical
     Given the WebGL2 backend is enabled
     When the same frame renders in Canvas 2D and WebGL2
@@ -73,7 +73,7 @@ Feature: Office performance, memory and determinism
     Then the palette, edges and integer scaling match
     Then disabling WebGL2 restores the Canvas 2D reference
 
-  @E2E-350
+  @E2E-350 @suite-office
   Scenario: E2E-350 The office stress test holds for one hour
     Given sixteen agents and 200 animated props
     When the office runs for 60 minutes

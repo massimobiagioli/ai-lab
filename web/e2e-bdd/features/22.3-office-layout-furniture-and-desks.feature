@@ -1,7 +1,7 @@
 @office @visual @p1 @ux-001
 Feature: Office layout, furniture and desks
 
-  @E2E-265
+  @E2E-265 @suite-office
   Scenario: E2E-265 Sixteen agents are visible without overlap
     Given a lab with sixteen active agents
     When the office renders
@@ -9,7 +9,7 @@ Feature: Office layout, furniture and desks
     Then no two agents overlap
     Then no agent is hidden behind furniture
 
-  @E2E-266
+  @E2E-266 @suite-office
   Scenario: E2E-266 Five persistent desks expose identity and state
     Given the default office layout
     When the desks render
@@ -17,7 +17,7 @@ Feature: Office layout, furniture and desks
     Then each plaque shows name, role icon and status LED
     Then each desk keeps its position across edits
 
-  @E2E-267
+  @E2E-267 @suite-office
   Scenario: E2E-267 Hot desks and standing positions are used when desks are full
     Given more agents than the five permanent desks
     When the office renders
@@ -25,7 +25,7 @@ Feature: Office layout, furniture and desks
     Then the layout remains navigable
     Then each hot desk exposes the same inspector interaction
 
-  @E2E-268
+  @E2E-268 @suite-office
   Scenario: E2E-268 Furniture participates in collision and pathfinding
     Given a target tile behind a desk or a plant
     When an agent walks to it
@@ -33,7 +33,7 @@ Feature: Office layout, furniture and desks
     Then the agent never passes through a non-walkable tile
     Then the path is recomputed after a layout change
 
-  @E2E-269
+  @E2E-269 @suite-office
   Scenario: E2E-269 Every interactive object is clickable
     Given the office is open
     When I click the whiteboard, server rack, bookshelf, filing cabinet, meeting table, door, coffee machine, plant and pet
@@ -41,7 +41,7 @@ Feature: Office layout, furniture and desks
     Then decorative objects only play a cosmetic effect
     Then no interactive object is a dead zone
 
-  @E2E-270
+  @E2E-270 @suite-office
   Scenario: E2E-270 Y-sorting places characters correctly against furniture
     Given an agent behind a desk and an agent in front of it
     When the frame renders
@@ -49,7 +49,7 @@ Feature: Office layout, furniture and desks
     Then the agent in front is drawn after the desk
     Then the z-order is stable across frames
 
-  @E2E-271
+  @E2E-271 @suite-office
   Scenario: E2E-271 A retired agent leaves an empty desk with a plaque
     Given a retired agent
     When the office renders
@@ -57,7 +57,7 @@ Feature: Office layout, furniture and desks
     Then the plaque still shows the retired agent identity
     Then the door opens the retired-agent list
 
-  @E2E-272
+  @E2E-272 @suite-office
   Scenario: E2E-272 Spawning does not teleport an existing agent
     Given a new agent is added
     When it appears in the office
@@ -65,7 +65,7 @@ Feature: Office layout, furniture and desks
     Then existing agents are not teleported
     Then the only allowed instant movement is spawn or crash recovery
 
-  @E2E-273
+  @E2E-273 @suite-office
   Scenario: E2E-273 Furniture footprints match the manifest
     Given the furniture manifest
     When each footprint is compared with its hitbox
@@ -73,7 +73,7 @@ Feature: Office layout, furniture and desks
     Then there is no invisible blocker outside the footprint
     Then no visible furniture is walkable by mistake
 
-  @E2E-274
+  @E2E-274 @suite-office
   Scenario: E2E-274 Layout changes invalidate the path cache safely
     Given an agent with a cached path
     When the layout changes

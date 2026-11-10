@@ -161,6 +161,22 @@ Section 22 (E2E-241 – E2E-360) is not a gap closure. It is a new, dedicated Am
 | 23 | Inventory and Lab management UI certification | 120 | E2E-361 – E2E-480 |
 | | **Total** | **480** | |
 
+### Suite split
+
+The 480 scenarios are split into six executable suites. Every scenario carries a `@suite-<id>` tag in the generated feature.
+
+| Order | Suite | Scenarios | IDs |
+|---|---|---|---|
+| 1 | `core` | 41 | E2E-001 – E2E-034, E2E-201 – E2E-207 |
+| 2 | `kanban` | 50 | E2E-035 – E2E-082, E2E-224 – E2E-225 |
+| 3 | `delivery` | 50 | E2E-083 – E2E-126, E2E-214 – E2E-219 |
+| 4 | `platform` | 74 | E2E-127 – E2E-144, E2E-165 – E2E-200, E2E-208 – E2E-213, E2E-220 – E2E-223, E2E-231 – E2E-240 |
+| 5 | `office` | 137 | E2E-145 – E2E-156, E2E-226 – E2E-230, E2E-241 – E2E-360 |
+| 6 | `management` | 128 | E2E-157 – E2E-164, E2E-361 – E2E-480 |
+| | **Total** | **480** | |
+
+Use `make bdd-list` to print the suite table, `make bdd SUITE=<id>` to run one suite, `make bdd UP_TO=<id>` to run the suites in order up to and including the target, and `make bdd` to run all suites.
+
 ---
 
 ## 1. Platform Health and Bootstrap (E2E-001 – E2E-006)

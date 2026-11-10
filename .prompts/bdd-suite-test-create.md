@@ -116,9 +116,11 @@ web/
     ├── manual-scenarios.md                # @manual scenarios with owner and reason
     └── reports/                           # generated: junit, html, json, traces, videos
 .docs/
-└── adr/
-    ├── adr-nnnn-....md                    # BDD library, make-only entry and preflight gate
-    └── registry.md
+├── adr/
+│   ├── adr-nnnn-....md                    # BDD library, make-only entry and preflight gate
+│   └── registry.md
+└── e2e/
+    └── suites.json                        # six suites, ordered, every E2E id assigned once
 AGENTS.md                                  # tool registry rows for the new tools
 .docs/product/testing.md                   # document make bdd, make bdd-set-api-key and the preflight gate
 .docs/STACK.md                             # only if the command surface changed
@@ -163,6 +165,7 @@ Before writing tests:
    - delegate to a semantic dispatcher that executes API, UI, visual and accessibility patterns and fails loudly with `UnsupportedStepError` for unimplemented assertions;
    - be deterministic and support `--check` and `--write`.
 8. Add a fixture-based self-test `.tools/bdd-self-test.sh` that proves the generator and coverage checker fail on a missing id, a duplicate id, a stale feature and an unmatched step.
+9. Define six ordered suites in `.docs/e2e/suites.json` and assign every E2E id to exactly one suite. The generator MUST add a `@suite-<id>` tag to each generated scenario. The suites are `core`, `kanban`, `delivery`, `platform`, `office` and `management`; every suite must be runnable alone, as an ordered prefix and as the full set.
 
 ---
 
@@ -287,14 +290,16 @@ Update `.docs/e2e/req.md` so its only entry says: obtain the DeepSeek key, run `
 
 ## 9. Phase 5 — Make-only entry point and guard
 
-Add the two user-facing targets to the `Makefile`:
+Add the three user-facing targets to the `Makefile`:
 
 ```make
-.PHONY: bdd bdd-set-api-key
+.PHONY: bdd bdd-list bdd-set-api-key
 bdd-set-api-key: ## Load the DeepSeek API key for live BDD runs (hidden prompt)
 	@scripts/bdd-set-api-key.sh
-bdd: ## Run the BDD E2E suite (requires .docs/e2e/req.md to be complete)
-	@AILAB_BDD_VIA_MAKE=1 scripts/run-bdd.sh
+bdd-list: ## List the six BDD suites and their scenario counts
+	@scripts/bdd-suites.sh --list
+bdd: ## Run the BDD E2E suite (all, SUITE=id, or UP_TO=id)
+	@AILAB_BDD_VIA_MAKE=1 AILAB_BDD_SUITE="$(SUITE)" AILAB_BDD_UP_TO="$(UP_TO)" scripts/run-bdd.sh
 ```
 
 Implement `scripts/run-bdd.sh` with this order and no shortcuts:
@@ -302,10 +307,11 @@ Implement `scripts/run-bdd.sh` with this order and no shortcuts:
 1. If `AILAB_BDD_VIA_MAKE` is not `1`, print `bdd: run this suite only via 'make bdd'.` to stderr and exit `2`.
 2. Run `node scripts/bdd-preflight.mjs`. If it exits non-zero, stop immediately; do not generate features and do not run tests.
 3. Run the coverage/drift check `.tools/gen-bdd-features.mjs --check` and `.tools/check-bdd-coverage.mjs`. If either fails, stop with a precise message.
-4. Verify that the prepared stack is reachable through the configured BDD base URL. If it is not reachable, print `BDD suite not started: the prepared test environment is not reachable.` and exit `2`; do not start Docker, do not run `make up`, do not reset or seed data.
-5. Run `npx bddgen --config web/e2e-bdd/playwright.config.ts`.
-6. Run `npx playwright test --config web/e2e-bdd/playwright.config.ts` with the configured reporters.
-7. Write the result summary and exit with the Playwright exit code.
+4. Resolve the suite selection from `AILAB_BDD_SUITE` or `AILAB_BDD_UP_TO` with `scripts/bdd-suites.mjs`. Invalid or combined selections exit `2` before any test starts. Build the Playwright `--grep` from the selected `@suite-*` tags.
+5. Verify that the prepared stack is reachable through the configured BDD base URL. If it is not reachable, print `BDD suite not started: the prepared test environment is not reachable.` and exit `2`; do not start Docker, do not run `make up`, do not reset or seed data.
+6. Run `npx bddgen --config web/e2e-bdd/playwright.config.ts`.
+7. Run `npx playwright test --config web/e2e-bdd/playwright.config.ts --grep "<selection>"` with the configured reporters. Omit `--grep` only for the full run.
+8. Write the result summary and exit with the Playwright exit code.
 
 Enforce the guard in three places:
 
@@ -349,7 +355,8 @@ Do not add a public `npm run bdd` script. If an internal npm script is unavoidab
    - `gen-bdd-features` — generates feature files from `.docs/e2e/BDD.md`;
    - `gen-bdd-steps` — generates exact-match steps for narrative scenarios;
    - `check-bdd-coverage` — verifies 480-id coverage and drift;
-   - `run-bdd` — guarded make-only runner.
+   - `bdd-suites` — lists and resolves the six suites for a single, up-to or all selection;
+   - `run-bdd` — guarded make-only runner for all, `SUITE=id` or `UP_TO=id`.
 2. Document `make bdd`, the preflight gate and the make-only rule in `.docs/product/testing.md`.
 3. Create the ADR for the BDD library, the Make-only entry point and the preflight gate; update `.docs/adr/registry.md` in the same change.
 4. Update `.docs/STACK.md` only if the command surface or a pinned test dependency changes.
@@ -369,7 +376,7 @@ The work is complete only when all of the following pass:
 6. `make bdd` with a complete `.docs/e2e/req.md` and a reachable prepared stack generates the features and runs the suite.
 7. Direct invocation of `scripts/run-bdd.sh` without `AILAB_BDD_VIA_MAKE=1` exits `2` with the make-only message.
 8. Direct invocation of `npx playwright test --config web/e2e-bdd/playwright.config.ts` without the guard fails with the make-only message.
-9. The suite produces `results.json` with one entry per `E2E-001` … `E2E-480`; manual and live scenarios appear as skipped with a reason. `make bdd` also writes the full console output to `web/e2e-bdd/reports/make-bdd.log`.
+9. The full run produces `results.json` with one entry per `E2E-001` … `E2E-480`; manual and live scenarios appear as skipped with a reason. A suite run produces entries for the selected tests only. `make bdd` also writes the full console output to `web/e2e-bdd/reports/make-bdd.log`.
 10. No test calls the real DeepSeek or GitHub API.
 11. No secret appears in features, steps, reports, traces or logs.
 12. `make check`, `npm --prefix web run lint`, `npm --prefix web run build`, `scripts/harness-lint.sh` and `.tools/check-doc-links.sh` still pass.
@@ -381,6 +388,7 @@ The work is complete only when all of the following pass:
 18. No visual threshold, baseline or mask is weakened to make a section-22 scenario pass.
 19. The section-23 management certification runs at desktop, tablet and phone widths and produces token, hierarchy, wizard, validation, responsive, a11y, performance and visual-diff evidence per `E2E-XXX`.
 20. No management baseline, threshold or mask is weakened to make a section-23 scenario pass.
+21. `make bdd-list` prints the six suites; `make bdd SUITE=core` selects 41 tests, `make bdd UP_TO=delivery` selects 141, and `make bdd` selects 480, as verified with `--list` before execution.
 
 ---
 
