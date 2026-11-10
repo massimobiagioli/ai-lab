@@ -4,18 +4,14 @@ use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use ailab_application::{ProblemDetails, Secret};
-use ailab_domain::inventory::{EncryptedKey, Provider, ProviderKind};
-use ailab_domain::{DomainError, ProviderId, RunId, WorkspaceId};
-use ailab_infrastructure::crypto::{MasterKey, aad};
-use std::str::FromStr;
-
-use crate::providers::{
-    DEFAULT_WORKSPACE_ID, EncryptedKeyMaterial, InMemoryProviderStore, NewProvider,
-    PostgresProviderStore, ProviderStore, ProviderStoreError,
+use ailab_application::{
+    CreateAgentInput, CreateLabRequest, CreateProjectRequest, CreateProviderRequest, EventEnvelope,
+    ManagementError, ManagementService, Page, PageQuery, ProblemDetails, RotateProviderKeyRequest,
+    RunCursor, RunStore, Secret, StepView, StoreError, UpdateAgentRequest, UpdateProjectRequest,
 };
-use crate::resources;
-use async_trait::async_trait;
+use ailab_domain::DomainError;
+use ailab_infrastructure::management_memory::InMemoryManagementService;
+use ailab_infrastructure::run_store::InMemoryRunStore;
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use axum::extract::{FromRequest, FromRequestParts, Path, Query, Request, State};
 use axum::http::request::Parts;
@@ -24,226 +20,12 @@ use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
-use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
+use chrono::Utc;
+use serde::Deserialize;
 use tokio::sync::broadcast;
 use tokio::time::interval;
 
-use crate::{
-    EventEnvelope, Page, PageQuery, RateLimitKind, RateLimitPolicy, WsClientMessage,
-    WsServerMessage, hello,
-};
-
-/// Run summary.
-#[derive(Debug, Clone, Serialize)]
-pub struct RunView {
-    /// Run id.
-    pub id: String,
-    /// Card id.
-    pub card_id: String,
-    /// Lab id.
-    pub lab_id: String,
-    /// State.
-    pub state: String,
-    /// Attempt.
-    pub attempt: u8,
-    /// Started at.
-    pub started_at: Option<DateTime<Utc>>,
-    /// Ended at.
-    pub ended_at: Option<DateTime<Utc>>,
-    /// Cost so far.
-    pub cost_microusd: i64,
-    /// Creation timestamp.
-    pub created_at: DateTime<Utc>,
-}
-
-/// Run step.
-#[derive(Debug, Clone, Serialize)]
-pub struct StepView {
-    /// Sequence.
-    pub seq: u32,
-    /// Stage.
-    pub stage: String,
-    /// Kind.
-    pub kind: String,
-    /// Exit code.
-    pub exit_code: Option<i32>,
-    /// Output.
-    pub output: String,
-}
-
-/// Store failure.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum StoreError {
-    /// Not found.
-    NotFound,
-    /// Invalid state for the operation.
-    Conflict,
-}
-
-/// Run store port (in-memory or Postgres).
-#[async_trait]
-pub trait RunStore: Send + Sync {
-    /// Readiness probe (dependency check).
-    async fn ready(&self) -> bool {
-        true
-    }
-    /// Read a run.
-    async fn get(&self, id: &str) -> Option<RunView>;
-    /// Read the ordered steps.
-    async fn steps(&self, id: &str) -> Option<Vec<StepView>>;
-    /// Cancel a queued/running run.
-    async fn cancel(&self, id: &str) -> Result<RunView, StoreError>;
-    /// List runs for a lab.
-    async fn list_by_lab(
-        &self,
-        lab_id: &str,
-        limit: u32,
-        cursor: Option<RunCursor>,
-    ) -> Page<RunView>;
-    /// Enqueue a run for a card.
-    async fn enqueue_card(&self, card_id: &str) -> Result<RunView, StoreError>;
-    /// Events after a sequence.
-    async fn events_after(&self, lab_id: &str, since: i64) -> Vec<EventEnvelope>;
-    /// Append an event to the backfill buffer.
-    async fn append_event(&self, event: EventEnvelope);
-}
-
-#[derive(Default)]
-struct StoreData {
-    runs: BTreeMap<String, RunView>,
-    steps: BTreeMap<String, Vec<StepView>>,
-    events: Vec<EventEnvelope>,
-}
-
-/// In-memory store used by tests/dev.
-#[derive(Default)]
-pub struct InMemoryRunStore {
-    data: Mutex<StoreData>,
-}
-
-impl InMemoryRunStore {
-    /// New empty store.
-    #[must_use]
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// Seed a run (used by tests and the demo).
-    pub fn insert(&self, run: RunView, steps: Vec<StepView>) {
-        if let Ok(mut data) = self.data.lock() {
-            data.steps.insert(run.id.clone(), steps);
-            data.runs.insert(run.id.clone(), run);
-        }
-    }
-}
-
-#[async_trait]
-impl RunStore for InMemoryRunStore {
-    async fn get(&self, id: &str) -> Option<RunView> {
-        self.data.lock().ok()?.runs.get(id).cloned()
-    }
-
-    async fn steps(&self, id: &str) -> Option<Vec<StepView>> {
-        self.data.lock().ok()?.steps.get(id).cloned()
-    }
-
-    async fn cancel(&self, id: &str) -> Result<RunView, StoreError> {
-        let mut data = self.data.lock().map_err(|_| StoreError::Conflict)?;
-        let run = data.runs.get_mut(id).ok_or(StoreError::NotFound)?;
-        if run.state != "queued" && run.state != "running" {
-            return Err(StoreError::Conflict);
-        }
-        "cancelled".clone_into(&mut run.state);
-        run.ended_at = Some(Utc::now());
-        let view = run.clone();
-        drop(data);
-        Ok(view)
-    }
-
-    async fn list_by_lab(
-        &self,
-        lab_id: &str,
-        limit: u32,
-        cursor: Option<RunCursor>,
-    ) -> Page<RunView> {
-        let Some(data) = self.data.lock().ok() else {
-            return Page {
-                data: Vec::new(),
-                next_cursor: None,
-                total_estimate: 0,
-            };
-        };
-        let mut all: Vec<RunView> = data
-            .runs
-            .values()
-            .filter(|run| run.lab_id == lab_id)
-            .cloned()
-            .collect();
-        all.sort_by(|a, b| {
-            b.created_at
-                .cmp(&a.created_at)
-                .then_with(|| b.id.cmp(&a.id))
-        });
-        if let Some(cursor) = &cursor {
-            all.retain(|run| {
-                run.created_at < cursor.created_at
-                    || (run.created_at == cursor.created_at && run.id < cursor.id)
-            });
-        }
-        let limit = usize::try_from(limit).unwrap_or(usize::MAX);
-        let page: Vec<RunView> = all.iter().take(limit).cloned().collect();
-        let next_cursor = (page.len() == limit && !page.is_empty()).then(|| {
-            let last = page.last().expect("non-empty");
-            format!("{}|{}", last.created_at.to_rfc3339(), last.id)
-        });
-        Page {
-            data: page,
-            next_cursor,
-            total_estimate: u64::try_from(all.len()).unwrap_or(u64::MAX),
-        }
-    }
-
-    async fn enqueue_card(&self, card_id: &str) -> Result<RunView, StoreError> {
-        let mut data = self.data.lock().map_err(|_| StoreError::Conflict)?;
-        let run = RunView {
-            id: RunId::generate().as_uuid().to_string(),
-            card_id: card_id.to_owned(),
-            lab_id: "default".to_owned(),
-            state: "queued".to_owned(),
-            attempt: 1,
-            started_at: None,
-            ended_at: None,
-            cost_microusd: 0,
-            created_at: Utc::now(),
-        };
-        data.runs.insert(run.id.clone(), run.clone());
-        data.steps.insert(run.id.clone(), Vec::new());
-        drop(data);
-        Ok(run)
-    }
-
-    async fn events_after(&self, lab_id: &str, since: i64) -> Vec<EventEnvelope> {
-        let Some(data) = self.data.lock().ok() else {
-            return Vec::new();
-        };
-        crate::events_after(&data.events, since)
-            .into_iter()
-            .filter(|event| event.lab_id.to_string() == lab_id)
-            .collect()
-    }
-
-    async fn append_event(&self, event: EventEnvelope) {
-        if let Ok(mut data) = self.data.lock()
-            && !data
-                .events
-                .iter()
-                .any(|existing| existing.event_id == event.event_id)
-        {
-            data.events.push(event);
-        }
-    }
-}
+use crate::{RateLimitKind, RateLimitPolicy, WsClientMessage, WsServerMessage, hello};
 
 /// Rate limiter.
 pub struct RateLimiter {
@@ -343,12 +125,8 @@ pub struct AppState {
     readiness_failures: Arc<std::sync::atomic::AtomicU8>,
     /// Directory of Prometheus textfile metrics appended to `/metrics`.
     textfile_dir: std::path::PathBuf,
-    /// Provider persistence.
-    provider_store: Arc<dyn ProviderStore>,
-    /// Master key for provider key encryption.
-    master_key: Option<MasterKey>,
-    /// Postgres pool for read resources.
-    pool: Option<sqlx::PgPool>,
+    /// Management application service.
+    management: Arc<dyn ManagementService>,
 }
 
 impl Default for AppState {
@@ -365,30 +143,16 @@ impl AppState {
         let token = std::env::var("AILAB_API_TOKEN")
             .ok()
             .filter(|value| !value.is_empty());
-        let master_key = std::env::var("AILAB_MASTER_KEY")
-            .ok()
-            .and_then(|encoded| MasterKey::from_base64(&encoded, 1).ok());
         if let Ok(url) = std::env::var("AILAB_DATABASE_URL")
             && !url.is_empty()
-            && let Ok(pool) = sqlx::postgres::PgPoolOptions::new()
-                .max_connections(10)
-                .connect_lazy(&url)
+            && let Ok(services) = ailab_infrastructure::postgres::connect_lazy(&url)
         {
-            let provider_store = Arc::new(PostgresProviderStore::new(pool.clone()));
-            return Self::build(
-                Arc::new(crate::postgres_store::PostgresRunStore::new(pool.clone())),
-                token,
-                provider_store,
-                master_key,
-                Some(pool),
-            );
+            return Self::build(services.runs, token, services.management);
         }
         Self::build(
             Arc::new(InMemoryRunStore::new()),
             token,
-            Arc::new(InMemoryProviderStore::new()),
-            master_key,
-            None,
+            Arc::new(InMemoryManagementService::new()),
         )
     }
 
@@ -401,21 +165,13 @@ impl AppState {
     /// Build with a specific store and optional bearer token.
     #[must_use]
     pub fn with_store_and_token(store: Arc<dyn RunStore>, token: Option<String>) -> Self {
-        Self::build(
-            store,
-            token,
-            Arc::new(InMemoryProviderStore::new()),
-            None,
-            None,
-        )
+        Self::build(store, token, Arc::new(InMemoryManagementService::new()))
     }
 
     fn build(
         store: Arc<dyn RunStore>,
         token: Option<String>,
-        provider_store: Arc<dyn ProviderStore>,
-        master_key: Option<MasterKey>,
-        pool: Option<sqlx::PgPool>,
+        management: Arc<dyn ManagementService>,
     ) -> Self {
         let (hub, _) = broadcast::channel(256);
         Self {
@@ -429,23 +185,14 @@ impl AppState {
             textfile_dir: std::env::var("AILAB_METRICS_TEXTFILE_DIR")
                 .unwrap_or_else(|_| "artifacts/metrics".to_owned())
                 .into(),
-            provider_store,
-            master_key,
-            pool,
+            management,
         }
     }
 
-    /// Replace the provider store (tests and alternative adapters).
+    /// Replace the management service (tests).
     #[must_use]
-    pub fn with_provider_store(mut self, provider_store: Arc<dyn ProviderStore>) -> Self {
-        self.provider_store = provider_store;
-        self
-    }
-
-    /// Set the master key used to encrypt provider keys (tests).
-    #[must_use]
-    pub fn with_master_key(mut self, master_key: MasterKey) -> Self {
-        self.master_key = Some(master_key);
+    pub fn with_management(mut self, management: Arc<dyn ManagementService>) -> Self {
+        self.management = management;
         self
     }
 
@@ -517,21 +264,27 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/openapi.json", get(openapi))
         .route("/api/v1/telemetry", post(ingest_telemetry))
         .route("/api/v1/telemetry/frontend", post(ingest_telemetry))
-        .route("/api/v1/labs", get(list_labs))
+        .route("/api/v1/labs", get(list_labs).post(create_lab))
         .route("/api/v1/labs/{id}", get(get_lab))
         .route("/api/v1/agents", get(list_agents))
-        .route("/api/v1/agents/{id}", get(get_agent))
+        .route(
+            "/api/v1/agents/{id}",
+            get(get_agent).patch(update_agent).delete(retire_agent),
+        )
         .route("/api/v1/agents/{id}/cv", get(get_agent_cv))
         .route("/api/v1/agents/{id}/pause", post(pause_agent))
         .route("/api/v1/agents/{id}/resume", post(resume_agent))
-        .route("/api/v1/labs/{id}/agents", get(list_lab_agents))
+        .route(
+            "/api/v1/labs/{id}/agents",
+            get(list_lab_agents).post(create_agent),
+        )
         .route("/api/v1/characters", get(list_characters))
         .route(
             "/api/v1/providers",
             get(list_providers).post(create_provider),
         )
         .route("/api/v1/providers/{id}", get(get_provider))
-        .route("/api/v1/providers/{id}/verify", post(not_implemented))
+        .route("/api/v1/providers/{id}/verify", post(verify_provider))
         .route("/api/v1/providers/{id}/rotate", post(rotate_provider_key))
         .route(
             "/api/v1/providers/{id}/rotate-key",
@@ -539,9 +292,12 @@ pub fn router(state: AppState) -> Router {
         )
         .route("/api/v1/scm-credentials", get(list_scm_credentials))
         .route("/api/v1/models", get(list_models))
-        .route("/api/v1/projects", get(list_projects).post(not_implemented))
-        .route("/api/v1/projects/{id}", get(get_project))
-        .route("/api/v1/projects/{id}/sync", post(not_implemented))
+        .route("/api/v1/projects", get(list_projects).post(create_project))
+        .route(
+            "/api/v1/projects/{id}",
+            get(get_project).patch(update_project),
+        )
+        .route("/api/v1/projects/{id}/sync", post(sync_project))
         .route("/api/v1/ideas", get(not_implemented).post(not_implemented))
         .route("/api/v1/ideas/{id}", get(not_implemented))
         .route("/api/v1/sows", get(not_implemented))
@@ -994,15 +750,6 @@ fn b64decode(input: &str) -> Option<Vec<u8>> {
     Some(output)
 }
 
-/// Run keyset cursor.
-#[derive(Debug, Clone)]
-pub struct RunCursor {
-    /// Creation timestamp of the last row.
-    pub created_at: DateTime<Utc>,
-    /// Run id of the last row.
-    pub id: String,
-}
-
 fn decode_run_cursor(cursor: &str) -> Option<RunCursor> {
     let text = String::from_utf8(b64decode(cursor)?).ok()?;
     let (timestamp, id) = text.split_once('|')?;
@@ -1068,186 +815,48 @@ async fn health_live() -> StatusCode {
     StatusCode::OK
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-struct CreateProviderRequest {
-    name: String,
-    kind: String,
-    base_url: String,
-    api_key: String,
-    #[serde(default)]
-    rate_limit_rpm: Option<u32>,
-    #[serde(default)]
-    rate_limit_tpm: Option<u32>,
-    #[serde(default)]
-    timeout_ms: Option<u32>,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-struct RotateProviderKeyRequest {
-    api_key: String,
-}
-
-fn last4(value: &str) -> String {
-    value
-        .chars()
-        .rev()
-        .take(4)
-        .collect::<String>()
-        .chars()
-        .rev()
-        .collect()
-}
-
-#[allow(clippy::result_large_err)]
-fn validate_provider_key(key: &str) -> Result<(), Response> {
-    if !key.starts_with("sk-") {
-        return Err(problem(DomainError::validation(
-            "api_key",
-            "must start with sk-",
-        )));
-    }
-    let length = key.chars().count();
-    if !(20..=256).contains(&length) {
-        return Err(problem(DomainError::validation(
-            "api_key",
-            "must be 20-256 characters",
-        )));
-    }
-    if key.chars().any(char::is_whitespace) {
-        return Err(problem(DomainError::validation(
-            "api_key",
-            "must not contain whitespace",
-        )));
-    }
-    Ok(())
-}
-
-fn provider_store_problem(error: ProviderStoreError) -> Response {
+fn management_problem(error: ManagementError) -> Response {
     match error {
-        ProviderStoreError::NotFound => problem(DomainError::NotFound),
-        ProviderStoreError::Conflict => problem_status(
-            StatusCode::CONFLICT,
-            "PROVIDER_EXISTS",
-            "a provider with this name already exists",
-        ),
-        ProviderStoreError::Backend(message) => {
-            eprintln!("provider store: {message}");
+        ManagementError::Validation { code, message } => {
+            problem_status(StatusCode::UNPROCESSABLE_ENTITY, code, &message)
+        }
+        ManagementError::Conflict { code, message } => {
+            problem_status(StatusCode::CONFLICT, code, &message)
+        }
+        ManagementError::NotFound => problem(DomainError::NotFound),
+        ManagementError::Backend(message) => {
+            eprintln!("management: {message}");
             problem_status(
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "INTERNAL",
-                "provider store failed",
+                "management operation failed",
             )
         }
     }
 }
 
-#[allow(clippy::result_large_err)]
-fn master_key(state: &AppState) -> Result<&MasterKey, Response> {
-    state.master_key.as_ref().ok_or_else(|| {
-        problem_status(
-            StatusCode::SERVICE_UNAVAILABLE,
-            "MASTER_KEY_MISSING",
-            "AILAB_MASTER_KEY is not configured; run make generate-key and recreate the stack",
-        )
-    })
-}
-
 async fn list_providers(State(state): State<AppState>) -> Response {
-    match state.provider_store.list().await {
-        Ok(providers) => Json(serde_json::json!({"data": providers})).into_response(),
-        Err(error) => provider_store_problem(error),
+    match state.management.list_providers().await {
+        Ok(providers) => Json(providers).into_response(),
+        Err(error) => management_problem(error),
     }
 }
 
 async fn get_provider(State(state): State<AppState>, Path(id): Path<String>) -> Response {
-    match state.provider_store.get(&id).await {
+    match state.management.get_provider(&id).await {
         Ok(Some(provider)) => Json(provider).into_response(),
         Ok(None) => problem(DomainError::NotFound),
-        Err(error) => provider_store_problem(error),
+        Err(error) => management_problem(error),
     }
 }
 
-#[allow(clippy::similar_names)]
 async fn create_provider(
     State(state): State<AppState>,
     AppJson(body): AppJson<CreateProviderRequest>,
 ) -> Response {
-    if body.kind != "deepseek" {
-        return problem(DomainError::validation("kind", "must be deepseek"));
-    }
-    if let Err(response) = validate_provider_key(&body.api_key) {
-        return response;
-    }
-    let master = match master_key(&state) {
-        Ok(master) => master,
-        Err(response) => return response,
-    };
-    let provider_id = ProviderId::generate();
-    let workspace = match WorkspaceId::from_str(DEFAULT_WORKSPACE_ID) {
-        Ok(workspace) => workspace,
-        Err(error) => return problem(error),
-    };
-    let key_version = master.version();
-    let aad = aad(
-        "providers",
-        "api_key",
-        &provider_id.to_string(),
-        key_version,
-    );
-    let Ok(encrypted) = master.encrypt(body.api_key.as_bytes(), &aad) else {
-        return problem_status(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "INTERNAL",
-            "could not encrypt the provider key",
-        );
-    };
-    let last4 = last4(&body.api_key);
-    let encrypted_key = match EncryptedKey::new(
-        encrypted.ciphertext.clone(),
-        encrypted.nonce,
-        key_version,
-        &last4,
-    ) {
-        Ok(key) => key,
-        Err(error) => return problem(error),
-    };
-    let rate_limit_rpm = body.rate_limit_rpm.unwrap_or(600);
-    let rate_limit_tpm = body.rate_limit_tpm.unwrap_or(120_000);
-    let timeout_ms = body.timeout_ms.unwrap_or(120_000);
-    if let Err(error) = Provider::create(
-        provider_id,
-        workspace,
-        body.name.clone(),
-        ProviderKind::DeepSeek,
-        body.base_url.clone(),
-        encrypted_key,
-        rate_limit_rpm,
-        rate_limit_tpm,
-        timeout_ms,
-    ) {
-        return problem(error);
-    }
-    let provider = NewProvider {
-        id: provider_id.to_string(),
-        workspace_id: workspace.to_string(),
-        name: body.name,
-        kind: "deepseek".to_owned(),
-        base_url: body.base_url,
-        key: EncryptedKeyMaterial {
-            ciphertext: encrypted.ciphertext,
-            nonce: encrypted.nonce,
-            key_version,
-            last4,
-        },
-        rate_limit_rpm,
-        rate_limit_tpm,
-        timeout_ms,
-    };
-    match state.provider_store.create(provider).await {
+    match state.management.create_provider(body).await {
         Ok(provider) => (StatusCode::CREATED, Json(provider)).into_response(),
-        Err(error) => provider_store_problem(error),
+        Err(error) => management_problem(error),
     }
 }
 
@@ -1256,203 +865,188 @@ async fn rotate_provider_key(
     Path(id): Path<String>,
     AppJson(body): AppJson<RotateProviderKeyRequest>,
 ) -> Response {
-    if let Err(response) = validate_provider_key(&body.api_key) {
-        return response;
-    }
-    let current = match state.provider_store.get(&id).await {
-        Ok(Some(provider)) => provider,
-        Ok(None) => return problem(DomainError::NotFound),
-        Err(error) => return provider_store_problem(error),
-    };
-    let master = match master_key(&state) {
-        Ok(master) => master,
-        Err(response) => return response,
-    };
-    let key_version = current.key_version.saturating_add(1);
-    let aad = aad("providers", "api_key", &id, key_version);
-    let Ok(encrypted) = master.encrypt(body.api_key.as_bytes(), &aad) else {
-        return problem_status(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "INTERNAL",
-            "could not encrypt the provider key",
-        );
-    };
-    let key = EncryptedKeyMaterial {
-        ciphertext: encrypted.ciphertext,
-        nonce: encrypted.nonce,
-        key_version,
-        last4: last4(&body.api_key),
-    };
-    match state.provider_store.rotate_key(&id, key).await {
+    match state.management.rotate_provider_key(&id, body).await {
         Ok(provider) => Json(provider).into_response(),
-        Err(error) => provider_store_problem(error),
+        Err(error) => management_problem(error),
     }
 }
 
-#[allow(clippy::result_large_err)]
-fn database(state: &AppState) -> Result<&sqlx::PgPool, Response> {
-    state.pool.as_ref().ok_or_else(|| {
-        problem_status(
-            StatusCode::SERVICE_UNAVAILABLE,
-            "DATABASE_UNAVAILABLE",
-            "the database is not configured",
-        )
-    })
-}
-
-fn resource_list(result: Result<serde_json::Value, String>) -> Response {
-    match result {
-        Ok(value) => Json(serde_json::json!({"data": value})).into_response(),
-        Err(message) => {
-            eprintln!("resource list: {message}");
-            problem_status(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "INTERNAL",
-                "resource query failed",
-            )
-        }
-    }
-}
-
-fn resource_item(result: Result<Option<serde_json::Value>, String>) -> Response {
-    match result {
-        Ok(Some(value)) => Json(value).into_response(),
-        Ok(None) => problem(DomainError::NotFound),
-        Err(message) => {
-            eprintln!("resource item: {message}");
-            problem_status(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "INTERNAL",
-                "resource query failed",
-            )
-        }
-    }
-}
-
-fn resource_object(result: Result<serde_json::Value, String>) -> Response {
-    match result {
-        Ok(value) => Json(value).into_response(),
-        Err(message) => {
-            eprintln!("resource object: {message}");
-            problem_status(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "INTERNAL",
-                "resource query failed",
-            )
-        }
+async fn verify_provider(State(state): State<AppState>, Path(id): Path<String>) -> Response {
+    match state.management.verify_provider(&id).await {
+        Ok(provider) => Json(provider).into_response(),
+        Err(error) => management_problem(error),
     }
 }
 
 async fn list_labs(State(state): State<AppState>) -> Response {
-    let pool = match database(&state) {
-        Ok(pool) => pool,
-        Err(response) => return response,
-    };
-    resource_list(resources::list_labs(pool).await)
+    match state.management.list_labs().await {
+        Ok(labs) => Json(labs).into_response(),
+        Err(error) => management_problem(error),
+    }
 }
 
 async fn get_lab(State(state): State<AppState>, Path(id): Path<String>) -> Response {
-    let pool = match database(&state) {
-        Ok(pool) => pool,
-        Err(response) => return response,
-    };
-    resource_item(resources::get_lab(pool, &id).await)
+    match state.management.get_lab(&id).await {
+        Ok(Some(lab)) => Json(lab).into_response(),
+        Ok(None) => problem(DomainError::NotFound),
+        Err(error) => management_problem(error),
+    }
 }
 
 async fn list_agents(State(state): State<AppState>) -> Response {
-    let pool = match database(&state) {
-        Ok(pool) => pool,
-        Err(response) => return response,
-    };
-    resource_list(resources::list_agents(pool, None).await)
+    match state.management.list_agents(None).await {
+        Ok(agents) => Json(agents).into_response(),
+        Err(error) => management_problem(error),
+    }
 }
 
 async fn list_lab_agents(State(state): State<AppState>, Path(id): Path<String>) -> Response {
-    let pool = match database(&state) {
-        Ok(pool) => pool,
-        Err(response) => return response,
-    };
-    resource_list(resources::list_agents(pool, Some(&id)).await)
+    match state.management.list_agents(Some(&id)).await {
+        Ok(agents) => Json(agents).into_response(),
+        Err(error) => management_problem(error),
+    }
 }
 
 async fn get_agent(State(state): State<AppState>, Path(id): Path<String>) -> Response {
-    let pool = match database(&state) {
-        Ok(pool) => pool,
-        Err(response) => return response,
-    };
-    resource_item(resources::get_agent(pool, &id).await)
+    match state.management.get_agent(&id).await {
+        Ok(Some(agent)) => Json(agent).into_response(),
+        Ok(None) => problem(DomainError::NotFound),
+        Err(error) => management_problem(error),
+    }
 }
 
 async fn get_agent_cv(State(state): State<AppState>, Path(id): Path<String>) -> Response {
-    let pool = match database(&state) {
-        Ok(pool) => pool,
-        Err(response) => return response,
-    };
-    resource_item(resources::get_agent_cv(pool, &id).await)
+    match state.management.get_agent_cv(&id).await {
+        Ok(Some(cv)) => Json(cv).into_response(),
+        Ok(None) => problem(DomainError::NotFound),
+        Err(error) => management_problem(error),
+    }
 }
 
 async fn pause_agent(State(state): State<AppState>, Path(id): Path<String>) -> Response {
-    let pool = match database(&state) {
-        Ok(pool) => pool,
-        Err(response) => return response,
-    };
-    resource_item(resources::set_agent_status(pool, &id, "paused").await)
+    match state.management.set_agent_status(&id, "paused").await {
+        Ok(Some(agent)) => Json(agent).into_response(),
+        Ok(None) => problem(DomainError::NotFound),
+        Err(error) => management_problem(error),
+    }
 }
 
 async fn resume_agent(State(state): State<AppState>, Path(id): Path<String>) -> Response {
-    let pool = match database(&state) {
-        Ok(pool) => pool,
-        Err(response) => return response,
-    };
-    resource_item(resources::set_agent_status(pool, &id, "idle").await)
+    match state.management.set_agent_status(&id, "idle").await {
+        Ok(Some(agent)) => Json(agent).into_response(),
+        Ok(None) => problem(DomainError::NotFound),
+        Err(error) => management_problem(error),
+    }
 }
 
 async fn list_characters(State(state): State<AppState>) -> Response {
-    let pool = match database(&state) {
-        Ok(pool) => pool,
-        Err(response) => return response,
-    };
-    resource_list(resources::list_characters(pool).await)
+    match state.management.list_characters().await {
+        Ok(characters) => Json(characters).into_response(),
+        Err(error) => management_problem(error),
+    }
 }
 
 async fn list_models(State(state): State<AppState>) -> Response {
-    let pool = match database(&state) {
-        Ok(pool) => pool,
-        Err(response) => return response,
-    };
-    resource_list(resources::list_models(pool).await)
+    match state.management.list_models().await {
+        Ok(models) => Json(models).into_response(),
+        Err(error) => management_problem(error),
+    }
 }
 
 async fn list_scm_credentials(State(state): State<AppState>) -> Response {
-    let pool = match database(&state) {
-        Ok(pool) => pool,
-        Err(response) => return response,
-    };
-    resource_list(resources::list_scm_credentials(pool).await)
+    match state.management.list_scm_credentials().await {
+        Ok(credentials) => Json(credentials).into_response(),
+        Err(error) => management_problem(error),
+    }
 }
 
 async fn list_projects(State(state): State<AppState>) -> Response {
-    let pool = match database(&state) {
-        Ok(pool) => pool,
-        Err(response) => return response,
-    };
-    resource_list(resources::list_projects(pool).await)
+    match state.management.list_projects().await {
+        Ok(projects) => Json(projects).into_response(),
+        Err(error) => management_problem(error),
+    }
 }
 
 async fn get_project(State(state): State<AppState>, Path(id): Path<String>) -> Response {
-    let pool = match database(&state) {
-        Ok(pool) => pool,
-        Err(response) => return response,
-    };
-    resource_item(resources::get_project(pool, &id).await)
+    match state.management.get_project(&id).await {
+        Ok(Some(project)) => Json(project).into_response(),
+        Ok(None) => problem(DomainError::NotFound),
+        Err(error) => management_problem(error),
+    }
 }
 
 async fn get_settings(State(state): State<AppState>) -> Response {
-    let pool = match database(&state) {
-        Ok(pool) => pool,
-        Err(response) => return response,
-    };
-    resource_object(resources::get_settings(pool).await)
+    match state.management.get_settings().await {
+        Ok(settings) => Json(settings).into_response(),
+        Err(error) => management_problem(error),
+    }
+}
+
+async fn create_lab(
+    State(state): State<AppState>,
+    AppJson(body): AppJson<CreateLabRequest>,
+) -> Response {
+    match state.management.create_lab(body).await {
+        Ok(lab) => (StatusCode::CREATED, Json(lab)).into_response(),
+        Err(error) => management_problem(error),
+    }
+}
+
+async fn create_agent(
+    State(state): State<AppState>,
+    Path(lab_id): Path<String>,
+    AppJson(body): AppJson<CreateAgentInput>,
+) -> Response {
+    match state.management.create_agent(&lab_id, body).await {
+        Ok(agent) => (StatusCode::CREATED, Json(agent)).into_response(),
+        Err(error) => management_problem(error),
+    }
+}
+
+async fn update_agent(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    AppJson(body): AppJson<UpdateAgentRequest>,
+) -> Response {
+    match state.management.update_agent(&id, body).await {
+        Ok(agent) => Json(agent).into_response(),
+        Err(error) => management_problem(error),
+    }
+}
+
+async fn retire_agent(State(state): State<AppState>, Path(id): Path<String>) -> Response {
+    match state.management.retire_agent(&id).await {
+        Ok(agent) => Json(agent).into_response(),
+        Err(error) => management_problem(error),
+    }
+}
+
+async fn create_project(
+    State(state): State<AppState>,
+    AppJson(body): AppJson<CreateProjectRequest>,
+) -> Response {
+    match state.management.create_project(body).await {
+        Ok(project) => (StatusCode::CREATED, Json(project)).into_response(),
+        Err(error) => management_problem(error),
+    }
+}
+
+async fn update_project(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    AppJson(body): AppJson<UpdateProjectRequest>,
+) -> Response {
+    match state.management.update_project(&id, body).await {
+        Ok(project) => Json(project).into_response(),
+        Err(error) => management_problem(error),
+    }
+}
+
+async fn sync_project(State(state): State<AppState>, Path(id): Path<String>) -> Response {
+    match state.management.sync_project(&id).await {
+        Ok(project) => (StatusCode::ACCEPTED, Json(project)).into_response(),
+        Err(error) => management_problem(error),
+    }
 }
 
 async fn not_implemented() -> Response {
@@ -2002,7 +1596,9 @@ async fn handle_socket(mut socket: WebSocket, state: AppState, query: WsQuery) {
 mod tests {
     use super::*;
     use ailab_application::Outbox;
+    use ailab_application::RunView;
     use ailab_domain::{Actor, DomainEvent, LabId};
+    use ailab_infrastructure::crypto::MasterKey;
     use axum::body::Body;
     use axum::http::Request;
     use http_body_util::BodyExt;
@@ -2335,7 +1931,9 @@ mod tests {
     async fn provider_create_list_and_rotate_never_expose_the_key() {
         let master = MasterKey::from_base64("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=", 1)
             .expect("test master key");
-        let state = AppState::with_store(Arc::new(InMemoryRunStore::new())).with_master_key(master);
+        let management = InMemoryManagementService::new().with_master_key(master);
+        let state = AppState::with_store(Arc::new(InMemoryRunStore::new()))
+            .with_management(Arc::new(management));
         let app = router(state);
         let key = format!("sk-{}-1234", "test-abcdefghijklmnopqrstuvwxyz");
         let create_payload = serde_json::json!({

@@ -1,14 +1,15 @@
 //! Postgres-backed run store for the edge API.
 
+use std::collections::BTreeMap;
+use std::sync::Mutex;
+
 use ailab_domain::{EventId, LabId, RunId};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
-use crate::EventEnvelope;
-use crate::Page;
-use crate::server::{RunStore, RunView, StepView, StoreError};
+use ailab_application::{EventEnvelope, Page, RunCursor, RunStore, RunView, StepView, StoreError};
 
 /// Postgres run store.
 #[derive(Debug, Clone)]
@@ -118,7 +119,7 @@ impl RunStore for PostgresRunStore {
         &self,
         lab_id: &str,
         limit: u32,
-        cursor: Option<crate::server::RunCursor>,
+        cursor: Option<RunCursor>,
     ) -> Page<RunView> {
         let Ok(lab) = Uuid::parse_str(lab_id) else {
             return Page {
@@ -269,4 +270,140 @@ pub fn parse_run_id(value: &str) -> Option<RunId> {
     Uuid::parse_str(value)
         .ok()
         .and_then(|uuid| RunId::new(uuid).ok())
+}
+
+#[derive(Default)]
+struct StoreData {
+    runs: BTreeMap<String, RunView>,
+    steps: BTreeMap<String, Vec<StepView>>,
+    events: Vec<EventEnvelope>,
+}
+
+/// In-memory store used by tests/dev.
+#[derive(Default)]
+pub struct InMemoryRunStore {
+    data: Mutex<StoreData>,
+}
+
+impl InMemoryRunStore {
+    /// New empty store.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Seed a run (used by tests and the demo).
+    pub fn insert(&self, run: RunView, steps: Vec<StepView>) {
+        if let Ok(mut data) = self.data.lock() {
+            data.steps.insert(run.id.clone(), steps);
+            data.runs.insert(run.id.clone(), run);
+        }
+    }
+}
+
+#[async_trait]
+impl RunStore for InMemoryRunStore {
+    async fn get(&self, id: &str) -> Option<RunView> {
+        self.data.lock().ok()?.runs.get(id).cloned()
+    }
+
+    async fn steps(&self, id: &str) -> Option<Vec<StepView>> {
+        self.data.lock().ok()?.steps.get(id).cloned()
+    }
+
+    async fn cancel(&self, id: &str) -> Result<RunView, StoreError> {
+        let mut data = self.data.lock().map_err(|_| StoreError::Conflict)?;
+        let run = data.runs.get_mut(id).ok_or(StoreError::NotFound)?;
+        if run.state != "queued" && run.state != "running" {
+            return Err(StoreError::Conflict);
+        }
+        "cancelled".clone_into(&mut run.state);
+        run.ended_at = Some(Utc::now());
+        let view = run.clone();
+        drop(data);
+        Ok(view)
+    }
+
+    async fn list_by_lab(
+        &self,
+        lab_id: &str,
+        limit: u32,
+        cursor: Option<RunCursor>,
+    ) -> Page<RunView> {
+        let Some(data) = self.data.lock().ok() else {
+            return Page {
+                data: Vec::new(),
+                next_cursor: None,
+                total_estimate: 0,
+            };
+        };
+        let mut all: Vec<RunView> = data
+            .runs
+            .values()
+            .filter(|run| run.lab_id == lab_id)
+            .cloned()
+            .collect();
+        all.sort_by(|a, b| {
+            b.created_at
+                .cmp(&a.created_at)
+                .then_with(|| b.id.cmp(&a.id))
+        });
+        if let Some(cursor) = &cursor {
+            all.retain(|run| {
+                run.created_at < cursor.created_at
+                    || (run.created_at == cursor.created_at && run.id < cursor.id)
+            });
+        }
+        let limit = usize::try_from(limit).unwrap_or(usize::MAX);
+        let page: Vec<RunView> = all.iter().take(limit).cloned().collect();
+        let next_cursor = (page.len() == limit && !page.is_empty()).then(|| {
+            let last = page.last().expect("non-empty");
+            format!("{}|{}", last.created_at.to_rfc3339(), last.id)
+        });
+        Page {
+            data: page,
+            next_cursor,
+            total_estimate: u64::try_from(all.len()).unwrap_or(u64::MAX),
+        }
+    }
+
+    async fn enqueue_card(&self, card_id: &str) -> Result<RunView, StoreError> {
+        let mut data = self.data.lock().map_err(|_| StoreError::Conflict)?;
+        let run = RunView {
+            id: RunId::generate().as_uuid().to_string(),
+            card_id: card_id.to_owned(),
+            lab_id: "default".to_owned(),
+            state: "queued".to_owned(),
+            attempt: 1,
+            started_at: None,
+            ended_at: None,
+            cost_microusd: 0,
+            created_at: Utc::now(),
+        };
+        data.runs.insert(run.id.clone(), run.clone());
+        data.steps.insert(run.id.clone(), Vec::new());
+        drop(data);
+        Ok(run)
+    }
+
+    async fn events_after(&self, lab_id: &str, since: i64) -> Vec<EventEnvelope> {
+        let Some(data) = self.data.lock().ok() else {
+            return Vec::new();
+        };
+        ailab_application::events_after(&data.events, since)
+            .into_iter()
+            .filter(|event| event.lab_id.to_string() == lab_id)
+            .collect()
+    }
+
+    async fn append_event(&self, event: EventEnvelope) {
+        if let Ok(mut data) = self.data.lock()
+            && !data
+                .events
+                .iter()
+                .any(|existing| existing.event_id == event.event_id)
+        {
+            data.events.push(event);
+        }
+    }
 }

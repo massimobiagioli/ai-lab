@@ -25,5 +25,4 @@ ailab-infrastructure = { path = "../infrastructure" }
 chrono = { version = "0.4", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "uuid", "chrono"] }
 uuid = { version = "1", features = ["serde", "v7"] }

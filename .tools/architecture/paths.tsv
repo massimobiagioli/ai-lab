@@ -14,6 +14,8 @@ crates/application/src/delivery	delivery
 crates/application/src/memory	memory
 crates/application/src/platform	platform
 crates/application/src/scm	scm
+crates/application/src/delivery	delivery
+crates/application/src/management	coordinator
 crates/infrastructure/src	platform
 crates/infrastructure/src/inventory	inventory
 crates/infrastructure/src/lab	lab
@@ -22,13 +24,12 @@ crates/infrastructure/src/delivery	delivery
 crates/infrastructure/src/memory	memory
 crates/infrastructure/src/platform	platform
 crates/infrastructure/src/scm	scm
+crates/infrastructure/src/management_postgres.rs	coordinator
+crates/infrastructure/src/management_memory.rs	coordinator
+crates/infrastructure/src/run_store.rs	coordinator
+crates/infrastructure/src/postgres.rs	coordinator
 crates/memory/	memory
 crates/scm/	scm
 crates/orchestrator/	delivery
 crates/orchestrator/src/postgres.rs	coordinator
-crates/api/src/postgres_store.rs	coordinator
-crates/api/src/providers.rs	inventory
-crates/api/src/resources/inventory.rs	inventory
-crates/api/src/resources/lab.rs	lab
-crates/api/src/resources/platform.rs	platform
 crates/llm/	inventory
